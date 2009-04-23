@@ -50,26 +50,26 @@ $Id$
 #define is_meta_nostrip(x)      ((x)->metaType & META_NOSTRIP)
 #define is_meta_use_strcoll(x)  ((x)->metaType & META_USE_STRCOLL)
 
-int properties_compatible( struct metaEntry *m1, struct metaEntry *m2 );
+SWINT_T properties_compatible( struct metaEntry *m1, struct metaEntry *m2 );
 
 void add_default_metanames(IndexFILE *);
 
 struct metaEntry * getMetaNameByNameNoAlias(INDEXDATAHEADER * header, char *word);
 struct metaEntry * getMetaNameByName(INDEXDATAHEADER *, char *);
-struct metaEntry * getMetaNameByID(INDEXDATAHEADER *, int);
+struct metaEntry * getMetaNameByID(INDEXDATAHEADER *, SWINT_T);
 
 struct metaEntry * getPropNameByNameNoAlias(INDEXDATAHEADER * header, char *word);
 struct metaEntry * getPropNameByName(INDEXDATAHEADER *, char *);
-struct metaEntry * getPropNameByID(INDEXDATAHEADER *, int);
+struct metaEntry * getPropNameByID(INDEXDATAHEADER *, SWINT_T);
 
 
-struct metaEntry * addMetaEntry(INDEXDATAHEADER *header, char *metaname, int metaType, int metaID);
-struct metaEntry * addNewMetaEntry(INDEXDATAHEADER *header, char *metaWord, int metaType, int metaID);
+struct metaEntry * addMetaEntry(INDEXDATAHEADER *header, char *metaname, SWINT_T metaType, SWINT_T metaID);
+struct metaEntry * addNewMetaEntry(INDEXDATAHEADER *header, char *metaWord, SWINT_T metaType, SWINT_T metaID);
 struct metaEntry * cloneMetaEntry(INDEXDATAHEADER *header, struct metaEntry *meta );
 
 void freeMetaEntries( INDEXDATAHEADER * );
-int isDontBumpMetaName(struct swline *,char *tag);
-int is_meta_entry( struct metaEntry *meta_entry, char *name );
+SWINT_T isDontBumpMetaName(struct swline *,char *tag);
+SWINT_T is_meta_entry( struct metaEntry *meta_entry, char *name );
 void ClearInMetaFlags(INDEXDATAHEADER * header);
 
 void init_property_list(INDEXDATAHEADER *header);

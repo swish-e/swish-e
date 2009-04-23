@@ -55,8 +55,8 @@ did not update license info here because
  * - changed all occurences of 'char *' into 'const char *' where possible.
  * - exported functions needed in which.c
  */
-static int group_member (GID_T gid);
-static char *extract_colon_unit (const char *string, int *p_index);
+static SWINT_T group_member (GID_T gid);
+static char *extract_colon_unit (const char *string, SWINT_T *p_index);
 
 /*===========================================================================
  *
@@ -67,9 +67,9 @@ static char *extract_colon_unit (const char *string, int *p_index);
 
 #if defined (HAVE_GETGROUPS)
 /* The number of groups that this user is a member of. */
-static int ngroups = 0;
+static SWINT_T ngroups = 0;
 static GID_T *group_array = (GID_T *)NULL;
-static int default_group_array_size = 0;
+static SWINT_T default_group_array_size = 0;
 #endif /* HAVE_GETGROUPS */
 
 #if !defined (NOGROUP)
@@ -77,7 +77,7 @@ static int default_group_array_size = 0;
 #endif
 
 /* Return non-zero if GID is one that we have in our groups list. */
-static int
+static SWINT_T
 group_member (GID_T gid)
 {
   static GID_T pgid = (GID_T)NOGROUP;
@@ -122,7 +122,7 @@ group_member (GID_T gid)
 
   /* Search through the list looking for GID. */
   {
-    register int i;
+    register SWINT_T i;
 
     for (i = 0; i < ngroups; i++)
       if (gid == group_array[i])
@@ -142,11 +142,11 @@ group_member (GID_T gid)
    The EXISTS bit is non-zero if the file is found.
    The EXECABLE bit is non-zero the file is executble.
    Zero is returned if the file is not found. */
-int
+SWINT_T
 file_status (const char *name)
 {
   struct stat finfo;
-  static int user_id = -1;
+  static SWINT_T user_id = -1;
 
   /* Determine whether this file exists or not. */
   if (stat (name, &finfo) < 0)
@@ -177,7 +177,7 @@ file_status (const char *name)
      others to be able to exec a file. */
   if (user_id == 0)
     {
-      int bits;
+      SWINT_T bits;
 
       bits = (u_mode_bits (finfo.st_mode) |
               g_mode_bits (finfo.st_mode) |
@@ -204,7 +204,7 @@ file_status (const char *name)
 /* Return 1 if STRING is an absolute program name; it is absolute if it
    contains any slashes.  This is used to decide whether or not to look
    up through $PATH. */
-int
+SWINT_T
 absolute_program (const char *string)
 {
   return ((char *)strchr (string, '/') != (char *)NULL);
@@ -214,9 +214,9 @@ absolute_program (const char *string)
    return the next one pointed to by (P_INDEX), or NULL if there are no more.
    Advance (P_INDEX) to the character after the colon. */
 char *
-extract_colon_unit (const char *string, int *p_index)
+extract_colon_unit (const char *string, SWINT_T *p_index)
 {
-  int i, start;
+  SWINT_T i, start;
   char path_separator;
 
 #if defined( PATH_SEPARATOR )
@@ -227,7 +227,7 @@ extract_colon_unit (const char *string, int *p_index)
 
   i = *p_index;
 
-  if (!string || (i >= (int)strlen (string)))
+  if (!string || (i >= (SWINT_T)strlen (string)))
     return ((char *)NULL);
 
   /* Each call to this routine leaves the index pointing at a colon if
@@ -269,7 +269,7 @@ extract_colon_unit (const char *string, int *p_index)
    the index is modified by this function.
    Return the next element of PATH_LIST or NULL if there are no more. */
 char *
-get_next_path_element (const char *path_list, int *path_index_pointer)
+get_next_path_element (const char *path_list, SWINT_T *path_index_pointer)
 {
   char *path;
 
@@ -290,10 +290,10 @@ get_next_path_element (const char *path_list, int *path_index_pointer)
 /* Turn PATH, a directory, and NAME, a filename, into a full pathname.
    This allocates new memory and returns it. */
 char *
-make_full_pathname (const char *path, const char *name, int name_len)
+make_full_pathname (const char *path, const char *name, SWINT_T name_len)
 {
   char *full_path;
-  int path_len;
+  SWINT_T path_len;
 
   path_len = strlen (path);
   full_path = (char *) xmalloc (2 + path_len + name_len);

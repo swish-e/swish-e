@@ -31,6 +31,6 @@ $Id$
 */
 
 
-int isokword (SWISH *,char *,IndexFILE *);
-int getdoctype (char *filename, struct IndexContents *indexcontents);
-struct StoreDescription *hasdescription (int, struct StoreDescription *);
+SWINT_T isokword (SWISH *,char *,IndexFILE *);
+SWINT_T getdoctype (char *filename, struct IndexContents *indexcontents);
+struct StoreDescription *hasdescription (SWINT_T, struct StoreDescription *);

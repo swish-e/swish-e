@@ -41,7 +41,7 @@
 #endif
 
 
-static unsigned char *compress_property( propEntry *prop, SWISH *sw, int *buf_len, int *uncompressed_len );
+static unsigned char *compress_property( propEntry *prop, SWISH *sw, SWINT_T *buf_len, SWINT_T *uncompressed_len );
 
 
 /*******************************************************************
@@ -59,11 +59,11 @@ void     WritePropertiesToDisk( SWISH *sw , FileRec *fi )
     INDEXDATAHEADER *header = &indexf->header;
     docProperties   *docProperties = fi->docProperties;
     propEntry       *prop;
-    int             uncompressed_len;
+    SWINT_T             uncompressed_len;
     unsigned char   *buf;
-    int             buf_len;
-    int             count;
-    int             i;
+    SWINT_T             buf_len;
+    SWINT_T             count;
+    SWINT_T             i;
     
 
     /* initialize the first time called */
@@ -93,7 +93,7 @@ void     WritePropertiesToDisk( SWISH *sw , FileRec *fi )
     for( i = 0; i < count; i++ )
     {
         /* convert the count to a propID */
-        int propID = header->propIDX_to_metaID[i];  // here's the array created in init_property_list()
+        SWINT_T propID = header->propIDX_to_metaID[i];  // here's the array created in init_property_list()
 
 
         /* Here's why I need to redo the properties so it's always header->property_count size in the fi rec */
@@ -139,7 +139,7 @@ void     WritePropertiesToDisk( SWISH *sw , FileRec *fi )
 *
 *********************************************************************/
 
-static unsigned char *compress_property( propEntry *prop, SWISH *sw, int *buf_len, int *uncompressed_len )
+static unsigned char *compress_property( propEntry *prop, SWISH *sw, SWINT_T *buf_len, SWINT_T *uncompressed_len )
 {
 #ifndef HAVE_ZLIB
     *buf_len = prop->propLen;
@@ -149,7 +149,7 @@ static unsigned char *compress_property( propEntry *prop, SWISH *sw, int *buf_le
 #else
     unsigned char  *PropBuf;     /* For compressing and uncompressing */
     uLongf          dest_size;
-    int             zlib_status = 0;
+    SWINT_T             zlib_status = 0;
 
 
     /* Don't bother compressing smaller items */
@@ -170,7 +170,7 @@ static unsigned char *compress_property( propEntry *prop, SWISH *sw, int *buf_le
 
     zlib_status = compress2( (Bytef *)PropBuf, &dest_size, prop->propValue, prop->propLen, sw->PropCompressionLevel);
     if ( zlib_status != Z_OK )
-        progerr("Property Compression Error.  zlib compress2 returned: %d  Prop len: %d compress buf size: %d compress level:%d", zlib_status, prop->propLen, (int)dest_size,sw->PropCompressionLevel);
+        progerr("Property Compression Error.  zlib compress2 returned: %lld  Prop len: %lld compress buf size: %lld compress level:%lld", zlib_status, prop->propLen, (SWINT_T)dest_size,sw->PropCompressionLevel);
 
 
     /* Make sure it's compressed enough */
@@ -181,7 +181,7 @@ static unsigned char *compress_property( propEntry *prop, SWISH *sw, int *buf_le
         return prop->propValue;
     }
 
-    *buf_len = (int)dest_size;
+    *buf_len = (SWINT_T)dest_size;
     *uncompressed_len = prop->propLen;
 
     return PropBuf;

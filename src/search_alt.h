@@ -46,7 +46,7 @@ typedef struct {                /* 2001-03-12 rasc */
     char   *and;                /* Logical Search  */
     char   *or;                 /* Operators (user) */
     char   *not;
-    int     defaultrule;        /* missing op == this rule */
+    SWINT_T     defaultrule;        /* missing op == this rule */
 }
 LOGICAL_OP;
 
@@ -56,7 +56,7 @@ LOGICAL_OP;
 
 struct MOD_SearchAlt {
    /* public:  */
-    int     enableAltSearchSyntax;         /* Alternate search strings 0/1  */
+    SWINT_T     enableAltSearchSyntax;         /* Alternate search strings 0/1  */
     LOGICAL_OP srch_op;                    /* search operator words         */
 
    /* private: don't use outside this module! */
@@ -73,7 +73,7 @@ struct MOD_SearchAlt {
 void initModule_SearchAlt   (SWISH *sw);
 void freeModule_SearchAlt   (SWISH *sw);
 
-int     u_SelectDefaultRulenum(SWISH * sw, char *word);
+SWINT_T     u_SelectDefaultRulenum(SWISH * sw, char *word);
 
 #endif
 

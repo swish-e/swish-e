@@ -61,7 +61,7 @@ $Id$
 ** portable format
 */
 #ifndef LITTLE_ENDIAN
-static const int swish_endian_test_value = 1;
+static const SWINT_T swish_endian_test_value = 1;
 #define LITTLE_ENDIAN (*(const unsigned char *)&swish_endian_test_value)
 #endif
 
@@ -70,9 +70,9 @@ static const int swish_endian_test_value = 1;
 
 /* 2002-11 jmruiz */
 /* Get required size in bytes for a given compressed number */
-int sizeofcompint(int number)
+SWINT_T sizeofcompint(SWINT_T number)
 {
-int size = 0;
+SWINT_T size = 0;
     do
     {
         size++;
@@ -84,7 +84,7 @@ int size = 0;
 /* Compress a number and writes it to a file */
 void    compress1(int num, FILE * fp, int (*f_putc) (int, FILE *))
 {
-    int     _i = 0,
+    SWINT_T     _i = 0,
             _r = num;
     unsigned char _s[MAXINTCOMPSIZE];
 
@@ -111,9 +111,9 @@ void    compress1(int num, FILE * fp, int (*f_putc) (int, FILE *))
 /* Compress a number and writes it to a buffer */
 /* buffer must be previously allocated */
 /* returns the decreased buffer pointer after storing the compressed number in it */
-unsigned char *SW_compress2(int num, unsigned char *buffer)
+unsigned char *SW_compress2(SWINT_T num, unsigned char *buffer)
 {
-    int     _i = num;
+    SWINT_T     _i = num;
 
     /* Trivial case: 0 */
     if(!_i)
@@ -138,9 +138,9 @@ unsigned char *SW_compress2(int num, unsigned char *buffer)
 /* Compress a number and writes it to a buffer */
 /* buffer must be previously allocated */
 /* returns the incrmented buffer pointer after storing the compressed number in it */
-unsigned char *compress3(int num, unsigned char *buffer)
+unsigned char *compress3(SWINT_T num, unsigned char *buffer)
 {
-    int     _i = 0,
+    SWINT_T     _i = 0,
             _r = num;
     unsigned char _s[MAXINTCOMPSIZE];
 
@@ -166,10 +166,10 @@ unsigned char *compress3(int num, unsigned char *buffer)
 /* Uncompress a number from a file */
 int     uncompress1(FILE * fp, int (*f_getc) (FILE *))
 {
-    int     _c;
-    int     num = 0;
+    SWINT_T     _c;
+    SWINT_T     num = 0;
     
-    /* printf("uncompress: _c = %d num = %d\n", _c, num); */
+    /* printf("uncompress: _c = %lld num = %lld\n", _c, num); */
 
     do
     {
@@ -182,7 +182,7 @@ int     uncompress1(FILE * fp, int (*f_getc) (FILE *))
         num <<= 7;
         num |= _c & 127;
         
-        /* printf("uncompress: _c = %d num = %d\n", _c, num); */
+        /* printf("uncompress: _c = %lld num = %lld\n", _c, num); */
         
         if (!num)
             break;
@@ -194,15 +194,15 @@ int     uncompress1(FILE * fp, int (*f_getc) (FILE *))
 
 /* same routine but this works with a memory forward buffer instead of file */
 /* it also increases the buffer pointer */
-int     uncompress2(unsigned char **buffer)
+SWINT_T     uncompress2(unsigned char **buffer)
 {
-    int     _c;
-    int     num = 0;
+    SWINT_T     _c;
+    SWINT_T     num = 0;
     unsigned char *p = *buffer;
 
     do
     {
-        _c = (int) ((unsigned char) *p++);
+        _c = (SWINT_T) ((unsigned char) *p++);
         num <<= 7;
         num |= _c & 127;
         if (!num)
@@ -214,12 +214,12 @@ int     uncompress2(unsigned char **buffer)
     return num;
 }
 
-/* Routines to make long integers portable */
-unsigned long PACKLONG(unsigned long num)
+/* Routines to make SWINT_T integers portable */
+SWUINT_T PACKLONG(SWUINT_T num)
 {
-    unsigned long tmp = 0L;
+    SWUINT_T tmp = 0L;
     unsigned char *s;
-    int sz_long = sizeof(unsigned long);  
+    SWINT_T sz_long = sizeof(SWUINT_T);  
 
     if (num && LITTLE_ENDIAN)
     {
@@ -232,10 +232,10 @@ unsigned long PACKLONG(unsigned long num)
     return num;
 }
 
-/* Same routine - Packs long in buffer */
-void    PACKLONG2(unsigned long num, unsigned char *s)
+/* Same routine - Packs SWINT_T in buffer */
+void    PACKLONG2(SWUINT_T num, unsigned char *s)
 {
-    int sz_long = sizeof(unsigned long);
+    SWINT_T sz_long = sizeof(SWUINT_T);
 
     if(LITTLE_ENDIAN)
     {
@@ -249,10 +249,10 @@ void    PACKLONG2(unsigned long num, unsigned char *s)
 }
 
 
-unsigned long UNPACKLONG(unsigned long num)
+SWUINT_T UNPACKLONG(SWUINT_T num)
 {
-    int sz_long = sizeof(unsigned long);
-	unsigned long tmp = 0;
+    SWINT_T sz_long = sizeof(SWUINT_T);
+	SWUINT_T tmp = 0;
     unsigned char *s = (unsigned char *) &num;
 
     if(LITTLE_ENDIAN)
@@ -264,11 +264,11 @@ unsigned long UNPACKLONG(unsigned long num)
     return num;
 }
 
-/* Same macro - UnPacks long from buffer */
-unsigned long UNPACKLONG2(unsigned char *s)
+/* Same macro - UnPacks SWINT_T from buffer */
+SWUINT_T UNPACKLONG2(unsigned char *s)
 {
-    int sz_long = sizeof(unsigned long);
-	unsigned long tmp = 0;
+    SWINT_T sz_long = sizeof(SWUINT_T);
+	SWUINT_T tmp = 0;
 
     if(LITTLE_ENDIAN)
     {
@@ -288,7 +288,7 @@ sw_off_t PACKFILEOFFSET(sw_off_t num)
 {
     sw_off_t tmp = (sw_off_t)0;
     unsigned char *s;
-    int sz_off_t = sizeof(sw_off_t);
+    SWINT_T sz_off_t = sizeof(sw_off_t);
 
     if (num && LITTLE_ENDIAN)
     {
@@ -304,7 +304,7 @@ sw_off_t PACKFILEOFFSET(sw_off_t num)
 /* Same routine - Packs file offset into a buffer */
 void    PACKFILEOFFSET2(sw_off_t num, unsigned char *s)
 {
-    int sz_off_t = sizeof(sw_off_t);
+    SWINT_T sz_off_t = sizeof(sw_off_t);
 
     if(LITTLE_ENDIAN)
     {
@@ -320,7 +320,7 @@ void    PACKFILEOFFSET2(sw_off_t num, unsigned char *s)
 /* Routine to unpack a file offset */
 sw_off_t UNPACKFILEOFFSET(sw_off_t num)
 {
-    int sz_off_t = sizeof(sw_off_t);
+    SWINT_T sz_off_t = sizeof(sw_off_t);
     sw_off_t tmp = (sw_off_t)0;
     unsigned char *s = (unsigned char *) &num;
 
@@ -336,7 +336,7 @@ sw_off_t UNPACKFILEOFFSET(sw_off_t num)
 /* Same routine - UnPacks file offset from buffer */
 sw_off_t UNPACKFILEOFFSET2(unsigned char *s)
 {
-    int sz_off_t = sizeof(sw_off_t);
+    SWINT_T sz_off_t = sizeof(sw_off_t);
     sw_off_t tmp = (sw_off_t)0;
 
     if(LITTLE_ENDIAN)
@@ -384,7 +384,7 @@ explain better. This was useful for xml files with fields that contains
 just one value. For example:
 <code>00001</code>
 <date>20001231</date>
-But, now, I am not sure if this is useful because long time ago I
+But, now, I am not sure if this is useful because SWINT_T time ago I
 changed the position counter to not be reseted after a each field
 change.
 I need to check this.
@@ -413,13 +413,13 @@ I wonder if storing the initial postion would improve that much.
 
 
 
-void compress_location_values(unsigned char **buf,unsigned char **flagp,int filenum,int frequency, unsigned int *posdata)
+void compress_location_values(unsigned char **buf,unsigned char **flagp,SWINT_T filenum,SWINT_T frequency, SWUINT_T *posdata)
 {
     unsigned char *p = *buf;
     unsigned char *flag;
-    int structure = GET_STRUCTURE(posdata[0]);
-    int common_structure = COMMON_STRUCTURE;
-    int i;
+    SWINT_T structure = GET_STRUCTURE(posdata[0]);
+    SWINT_T common_structure = COMMON_STRUCTURE;
+    SWINT_T i;
 
     /* Make room for flag and init it */
     flag = p;
@@ -439,7 +439,7 @@ void compress_location_values(unsigned char **buf,unsigned char **flagp,int file
         /* In this way we have 0bbbbbbb in *flag 
         ** where bbbbbbb is the position and the leading 0 bit
         ** indicates that frequency is 1 and position is < 128 */
-        *flag = (unsigned char) ((int)(GET_POSITION(posdata[0])));
+        *flag = (unsigned char) ((SWINT_T)(GET_POSITION(posdata[0])));
     }
     else
     {
@@ -481,10 +481,10 @@ void compress_location_values(unsigned char **buf,unsigned char **flagp,int file
     *buf = p;
 }
 
-void compress_location_positions(unsigned char **buf,unsigned char *flag,int frequency, unsigned int *posdata)
+void compress_location_positions(unsigned char **buf,unsigned char *flag,SWINT_T frequency, SWUINT_T *posdata)
 {
     unsigned char *p = *buf;
-    int i, j;
+    SWINT_T i, j;
 
     if((*flag) & IS_FLAG)
     { 
@@ -531,12 +531,12 @@ static unsigned char *compress_location(SWISH * sw, LOCATION * l)
 {
     unsigned char *p,
            *q;
-    int     i,
+    SWINT_T     i,
             max_size;
     unsigned char *flag;
     struct MOD_Index *idx = sw->Index;
 
-    /* check if the work buffer is long enough */
+    /* check if the work buffer is SWINT_T enough */
     /* just to avoid bufferoverruns */
     /* In the worst case and integer will need MAXINTCOMPSIZE bytes */
     /* but fortunatelly this is very uncommon */
@@ -545,7 +545,7 @@ static unsigned char *compress_location(SWISH * sw, LOCATION * l)
 ** Added an extra byte (MAXINTCOMPSIZE+1) for each position's structure
 */
 
-    max_size = sizeof(unsigned char) + sizeof(LOCATION *) + (((sizeof(LOCATION) / sizeof(int) + 1) + (l->frequency - 1)) * (MAXINTCOMPSIZE + sizeof(unsigned char)));
+    max_size = sizeof(unsigned char) + sizeof(LOCATION *) + (((sizeof(LOCATION) / sizeof(SWINT_T) + 1) + (l->frequency - 1)) * (MAXINTCOMPSIZE + sizeof(unsigned char)));
 
 
     /* reallocate if needed */
@@ -589,7 +589,7 @@ static unsigned char *compress_location(SWISH * sw, LOCATION * l)
 }
 
 
-void uncompress_location_values(unsigned char **buf,unsigned char *flag, int *filenum,int *frequency)
+void uncompress_location_values(unsigned char **buf,unsigned char *flag, SWINT_T *filenum,SWINT_T *frequency)
 {
     unsigned char *p = *buf;
 
@@ -612,26 +612,26 @@ void uncompress_location_values(unsigned char **buf,unsigned char *flag, int *fi
     *buf = p;
 }
 
-unsigned long four_bit_count = 0;
-unsigned long four_bit_bytes = 0;
-unsigned long not_four = 0;
-unsigned long not_four_bytes = 0;
-unsigned long four_bit_called = 0;
-unsigned long not_four_called;
+SWUINT_T four_bit_count = 0;
+SWUINT_T four_bit_bytes = 0;
+SWUINT_T not_four = 0;
+SWUINT_T not_four_bytes = 0;
+SWUINT_T four_bit_called = 0;
+SWUINT_T not_four_called;
 
 
-void uncompress_location_positions(unsigned char **buf, unsigned char flag, int frequency, unsigned int *posdata)
+void uncompress_location_positions(unsigned char **buf, unsigned char flag, SWINT_T frequency, SWUINT_T *posdata)
 {
-    int i, j, tmp;
+    SWINT_T i, j, tmp;
     unsigned char *p = *buf;
-    int common_structure = 0;
-    int structure = 0;
+    SWINT_T common_structure = 0;
+    SWINT_T structure = 0;
 
     /* Check for special case frequency == 1 and position[0] < 128 and structure == IN_FILE */
     if (!(flag & IS_FLAG))
     {
         structure = IN_FILE;
-        posdata[0] =  SET_POSDATA((int)(flag),structure);
+        posdata[0] =  SET_POSDATA((SWINT_T)(flag),structure);
     }
     else
     {
@@ -650,13 +650,13 @@ void uncompress_location_positions(unsigned char **buf, unsigned char flag, int 
                     break;
 
                 default:
-                    structure = (int)((unsigned char) *p++);
+                    structure = (SWINT_T)((unsigned char) *p++);
                     break;
             }
         }
 
         /* First position is always "as is" */
-        posdata[0] = (unsigned int)uncompress2(&p);
+        posdata[0] = (SWUINT_T)uncompress2(&p);
 
         /* Check if positions where stored as two values per byte or the old "compress" style */
         if(flag & POS_4_BIT)
@@ -664,9 +664,9 @@ void uncompress_location_positions(unsigned char **buf, unsigned char flag, int 
             for (i = 1, j = 0; i < frequency; i++, j++)
             {
                 if(j%2)
-                    posdata[i] = (unsigned int)((unsigned int)p[j/2] & (unsigned int)0x0F);
+                    posdata[i] = (SWUINT_T)((SWUINT_T)p[j/2] & (SWUINT_T)0x0F);
                 else
-                    posdata[i] = (unsigned int)((unsigned int)p[j/2] >> (unsigned int)4);
+                    posdata[i] = (SWUINT_T)((SWUINT_T)p[j/2] >> (SWUINT_T)4);
             }
             p += ((j + 1)/2);
         }
@@ -675,7 +675,7 @@ void uncompress_location_positions(unsigned char **buf, unsigned char flag, int 
             for (i = 1; i < frequency; i++)
             {
                 tmp = uncompress2(&p);
-                posdata[i] = (unsigned int)tmp;
+                posdata[i] = (SWUINT_T)tmp;
             }
         }
         /* Position were compressed incrementally. So restore them */
@@ -686,7 +686,7 @@ void uncompress_location_positions(unsigned char **buf, unsigned char flag, int 
         for(i = 0; i < frequency; i++)
         {
             if(!common_structure)
-                structure = (int)((unsigned char) *p++);
+                structure = (SWINT_T)((unsigned char) *p++);
 
             posdata[i] = SET_POSDATA(posdata[i],structure);
         }
@@ -739,15 +739,15 @@ void    CompressCurrentLocEntry(SWISH * sw, ENTRY * e)
 **
 ** On exit returns the new size of the compressed buffer
 */
-int compress_worddata(unsigned char *wdata,int wdata_size, int economic)
+SWINT_T compress_worddata(unsigned char *wdata,SWINT_T wdata_size, SWINT_T economic)
 {
 #ifndef HAVE_ZLIB
     return wdata_size;
 #else
     unsigned char  *WDataBuf;     /* For compressing and uncompressing */
     uLongf          dest_size;
-    int             zlib_status = 0;
-    int             off_wdata, len_chunk, off_out;
+    SWINT_T             zlib_status = 0;
+    SWINT_T             off_wdata, len_chunk, off_out;
     unsigned char   local_buffer_out[Z_BUFSIZE];/* Just to avoid emalloc/efree overhead and for deflate method */
     unsigned char   local_buffer_in[Z_BUFSIZE];/* Just to avoid emalloc/efree overhead*/
 
@@ -879,18 +879,18 @@ int compress_worddata(unsigned char *wdata,int wdata_size, int economic)
 
         /* Get an output buffer */
         if( dest_size > Z_BUFSIZE )
-            WDataBuf = (unsigned char *) emalloc((int)dest_size );
+            WDataBuf = (unsigned char *) emalloc((SWINT_T)dest_size );
         else
             WDataBuf = local_buffer_out;
 
         zlib_status = compress2((Bytef *)WDataBuf, &dest_size, wdata, wdata_size, 9);
         if ( zlib_status != Z_OK )
-            progerr("WordData Compression Error.  zlib compress2 returned: %d  Worddata size: %d compress buf size: %d", zlib_status, wdata_size, (int)dest_size);
+            progerr("WordData Compression Error.  zlib compress2 returned: %lld  Worddata size: %lld compress buf size: %lld", zlib_status, wdata_size, (SWINT_T)dest_size);
 
         /* Make sure it's compressed enough -- should check that destsize is not > MAXINT */
-        if ( (int)dest_size < wdata_size )
+        if ( (SWINT_T)dest_size < wdata_size )
         {
-            memcpy(wdata,WDataBuf,(int)dest_size);
+            memcpy(wdata,WDataBuf,(SWINT_T)dest_size);
         }
         else
         {
@@ -901,7 +901,7 @@ int compress_worddata(unsigned char *wdata,int wdata_size, int economic)
             efree(WDataBuf);
     }
 
-    return (int)dest_size;
+    return (SWINT_T)dest_size;
 #endif
 }
 
@@ -909,11 +909,11 @@ int compress_worddata(unsigned char *wdata,int wdata_size, int economic)
 /* 2002/11 jmruiz
 ** Routine to uncompress worddata
 */
-void uncompress_worddata(unsigned char **buf, int *buf_size, int saved_bytes)
+void uncompress_worddata(unsigned char **buf, SWINT_T *buf_size, SWINT_T saved_bytes)
 {
 #ifdef HAVE_ZLIB
     unsigned char *new_buf;
-    int             zlib_status = 0;
+    SWINT_T             zlib_status = 0;
     uLongf          new_buf_size = (uLongf)(*buf_size + saved_bytes);
 
     if(! saved_bytes)     /* nothing to do */
@@ -923,12 +923,12 @@ void uncompress_worddata(unsigned char **buf, int *buf_size, int saved_bytes)
     if ( zlib_status != Z_OK )
     {
         // $$$ make sure this works ok if returning null $$$
-        progwarn("Failed to uncompress Property. zlib uncompress returned: %d.  uncompressed size: %d buf_len: %d saved_bytes: %d\n",
+        progwarn("Failed to uncompress Property. zlib uncompress returned: %lld.  uncompressed size: %lld buf_len: %lld saved_bytes: %lld\n",
             zlib_status, new_buf_size, *buf_size, saved_bytes );
         return;
     }
     efree(*buf);
-    *buf_size = (int)new_buf_size;
+    *buf_size = (SWINT_T)new_buf_size;
     *buf = new_buf;
 #else
     if ( saved_bytes )
@@ -944,8 +944,8 @@ void uncompress_worddata(unsigned char **buf, int *buf_size, int saved_bytes)
 ** Here are two reasons for using compressed numbers in worddata
 ** instead of longs:
 **   - Compressed numbers are more portable: longs are usually 4 bytes
-**     long in a 32 bit machine but in a 64 bit alpha they are 8 bytes
-**     long (this a waste of space).
+**     SWINT_T in a 32 bit machine but in a 64 bit alpha they are 8 bytes
+**     SWINT_T (this a waste of space).
 **   - The obvious one is that compressed numbers use less disk space
 **
 ** BTW, Any change in worddata will also affect to dump.c, merge.c and search.c
@@ -956,7 +956,7 @@ void uncompress_worddata(unsigned char **buf, int *buf_size, int saved_bytes)
 **
 **  Entering this routine nextposmetaID is the offset to next metaid
 **  in bytes starting to count them from the begining of worddata.
-**  It is a packed long number (sizeof(long) bytes).
+**  It is a packed SWINT_T number (sizeof(SWINT_T) bytes).
 **
 **  Exiting this routine, nextposmetaID has changed to be the size of
 **  the data block and is stored as a compressed number.
@@ -965,11 +965,11 @@ void uncompress_worddata(unsigned char **buf, int *buf_size, int saved_bytes)
 **  <tfreq><metaID><data_len><data><metaID><data_len><data>...
 **
 */
-void    remove_worddata_longs(unsigned char *worddata,int *sz_worddata)
+void    remove_worddata_longs(unsigned char *worddata,SWINT_T *sz_worddata)
 {
     unsigned char *src,*dst;   //source and dest pointers for worddata
-    unsigned int metaID, tfrequency, data_len;
-    unsigned long nextposmetaID;
+    SWUINT_T metaID, tfrequency, data_len;
+    SWUINT_T nextposmetaID;
 
     src = worddata;
 
@@ -982,10 +982,10 @@ void    remove_worddata_longs(unsigned char *worddata,int *sz_worddata)
     {
         /* Get offset to next one */
         nextposmetaID = UNPACKLONG2(src);
-        src += sizeof(long);
+        src += sizeof(SWINT_T);
 
         /* Compute data length for this metaID */
-        data_len = (int)nextposmetaID - (src - worddata);
+        data_len = (SWINT_T)nextposmetaID - (src - worddata);
 
         /* Store data_len as a compressed number */
         dst = compress3(data_len,dst);

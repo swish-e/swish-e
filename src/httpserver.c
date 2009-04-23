@@ -34,7 +34,7 @@ $Id$
 ** change sprintf to snprintf to avoid corruption
 ** SRE 11/17/99
 **
-** fixed cast to int problems pointed out by "gcc -Wall"
+** fixed cast to SWINT_T problems pointed out by "gcc -Wall"
 ** SRE 2/22/00
 ** 
 */
@@ -67,9 +67,9 @@ $Id$
 static httpserverinfo *servers = 0;
 
 
-static void parserobotstxt(char *robots_buffer, int buflen, httpserverinfo *server);
-static char *isolatevalue(char *line, char *keyword, int *plen);
-static int serverinlist(char *url, struct swline *list);
+static void parserobotstxt(char *robots_buffer, SWINT_T buflen, httpserverinfo *server);
+static char *isolatevalue(char *line, char *keyword, SWINT_T *plen);
+static SWINT_T serverinlist(char *url, struct swline *list);
 
 
 
@@ -80,12 +80,12 @@ httpserverinfo *getserverinfo(SWISH *sw, char *url)
 {
     httpserverinfo *server;
     char *method;
-    int methodlen;
+    SWINT_T methodlen;
     char *serverport;
-    int serverportlen;
-    static int lencontenttype=0;
+    SWINT_T serverportlen;
+    static SWINT_T lencontenttype=0;
     static char *contenttype=NULL;
-    static int lenbuffer=0;
+    static SWINT_T lenbuffer=0;
     static char *buffer=NULL;
     FILE *fp;
     struct MOD_Index *idx = sw->Index;
@@ -162,7 +162,7 @@ httpserverinfo *getserverinfo(SWISH *sw, char *url)
     ** having both User-agent and Disallow lines (the second interpretation above).
     **/
     if (strncmp(server->baseurl, "http", 4) == 0) {
-		if((int)(strlen(server->baseurl)+20)>=lenbuffer) {
+		if((SWINT_T)(strlen(server->baseurl)+20)>=lenbuffer) {
 			lenbuffer=strlen(server->baseurl)+20+200;
 			buffer=erealloc(buffer,lenbuffer+1);
 		}
@@ -171,20 +171,20 @@ httpserverinfo *getserverinfo(SWISH *sw, char *url)
 
 
         file_prefix = emalloc( strlen(idx->tmpdir) + MAXPIDLEN + strlen("/swishspider@.contents+fill") );
-        sprintf(file_prefix, "%s/swishspider@%ld", idx->tmpdir, (long) lgetpid());
+        sprintf(file_prefix, "%s/swishspider@%lld", idx->tmpdir, (SWINT_T) lgetpid());
 
 
 		if (get(sw,contenttype, &last_modified, &server->lastretrieval, file_prefix, buffer) == 200)
 		{
 		    char   *robots_buffer;
-		    int     filelen;
-		    int     bytes_read;
+		    SWINT_T     filelen;
+		    SWINT_T     bytes_read;
 		    
-			if((int)(strlen(idx->tmpdir)+MAXPIDLEN+30)>=lenbuffer) {
+			if((SWINT_T)(strlen(idx->tmpdir)+MAXPIDLEN+30)>=lenbuffer) {
 				lenbuffer=strlen(idx->tmpdir)+MAXPIDLEN+30+200;
 				buffer=erealloc(buffer,lenbuffer+1);
 			}
-			sprintf(buffer, "%s/swishspider@%ld.contents", idx->tmpdir, (long)lgetpid());
+			sprintf(buffer, "%s/swishspider@%lld.contents", idx->tmpdir, (SWINT_T)lgetpid());
 			fp = fopen(buffer, F_READ_TEXT);
 
 			filelen = getsize(buffer);
@@ -202,21 +202,21 @@ httpserverinfo *getserverinfo(SWISH *sw, char *url)
 		}
 		efree( file_prefix );
 		
-		cmdf(unlink, "%s/swishspider@%ld.response", idx->tmpdir, lgetpid());
-		cmdf(unlink, "%s/swishspider@%ld.contents", idx->tmpdir, lgetpid());
-		cmdf(unlink, "%s/swishspider@%ld.links", idx->tmpdir, lgetpid());
+		cmdf(unlink, "%s/swishspider@%lld.response", idx->tmpdir, lgetpid());
+		cmdf(unlink, "%s/swishspider@%lld.contents", idx->tmpdir, lgetpid());
+		cmdf(unlink, "%s/swishspider@%lld.links", idx->tmpdir, lgetpid());
     }
 	
     return server;
 }
 
 
-int urldisallowed(SWISH *sw, char *url)
+SWINT_T urldisallowed(SWISH *sw, char *url)
 {
     httpserverinfo *server;
     robotrules *rule;
     char *uri;
-    int urilen;
+    SWINT_T urilen;
 	
     if ((server = getserverinfo(sw, url)) == 0) {
 		return 1;
@@ -272,7 +272,7 @@ static char useragent[] = "user-agent:";
 static char disallow[] = "disallow:";
 static char swishspider[] = "swishspider";
 
-static void parserobotstxt(char *robots_buffer, int buflen, httpserverinfo *server)
+static void parserobotstxt(char *robots_buffer, SWINT_T buflen, httpserverinfo *server)
 {
     char *buffer;
     char *bufend = robots_buffer + buflen -1;  // last char of string
@@ -281,7 +281,7 @@ static void parserobotstxt(char *robots_buffer, int buflen, httpserverinfo *serv
     enum {START, USERAGENT, DISALLOW} state = START;
     enum {SPECIFIC, GENERIC, SKIPPING} useragentstate = SKIPPING;
     char *p;
-    int len;
+    SWINT_T len;
     robotrules *entry;
     robotrules *entry2;
 	
@@ -373,11 +373,11 @@ static void parserobotstxt(char *robots_buffer, int buflen, httpserverinfo *serv
 }
 
 
-static char *isolatevalue(char *line, char *keyword, int *plen)
+static char *isolatevalue(char *line, char *keyword, SWINT_T *plen)
 {
 
     /* Find the beginning of the value  **/
-    for (line += strlen(keyword); *line && isspace((int)((unsigned char)*line)); line++ ) { /* cast to int 2/22/00 */
+    for (line += strlen(keyword); *line && isspace((SWINT_T)((unsigned char)*line)); line++ ) { /* cast to SWINT_T 2/22/00 */
     }
 
     if ( !strlen(line) )
@@ -387,23 +387,23 @@ static char *isolatevalue(char *line, char *keyword, int *plen)
     }
 	
     /* Strip off trailing spaces  **/
-    for (*plen = strlen(line); isspace((int)((unsigned char)*(line + *plen - 1))); (*plen)--) { /* cast to int 2/22/00 */
+    for (*plen = strlen(line); isspace((SWINT_T)((unsigned char)*(line + *plen - 1))); (*plen)--) { /* cast to SWINT_T 2/22/00 */
     }
 	
     return line;
 }
 
 
-int equivalentserver(SWISH *sw, char *url, char *baseurl)
+SWINT_T equivalentserver(SWISH *sw, char *url, char *baseurl)
 {
 char *method;
-int methodlen;
+SWINT_T methodlen;
 char *serverport;
-int serverportlen;
+SWINT_T serverportlen;
 char *basemethod;
-int basemethodlen;
+SWINT_T basemethodlen;
 char *baseserverport;
-int baseserverportlen;
+SWINT_T baseserverportlen;
 struct multiswline *walk=NULL;
 struct MOD_HTTP *http = sw->HTTP;
 	
@@ -438,16 +438,16 @@ struct MOD_HTTP *http = sw->HTTP;
 }
 
 
-static int serverinlist(char *url, struct swline *list)
+static SWINT_T serverinlist(char *url, struct swline *list)
 {
     char *method;
-    int methodlen;
+    SWINT_T methodlen;
     char *serverport;
-    int serverportlen;
+    SWINT_T serverportlen;
     char *listmethod;
-    int listmethodlen;
+    SWINT_T listmethodlen;
     char *listserverport;
-    int listserverportlen;
+    SWINT_T listserverportlen;
     
     method = url_method(url, &methodlen);
     serverport = url_serverport(url, &serverportlen);

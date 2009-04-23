@@ -51,7 +51,7 @@
 typedef struct
 {
     char   *metaName;
-    int     metaType;           /* see metanames.h for values. All values must be "ored" */
+    SWINT_T     metaType;           /* see metanames.h for values. All values must be "ored" */
 }
 defaultMetaNames;
 
@@ -95,9 +95,9 @@ static defaultMetaNames SwishDefaultMetaNames[] = {
 /* Add the Internal swish metanames to the index file structure */
 void    add_default_metanames(IndexFILE * indexf)
 {
-    int     i;
+    SWINT_T     i;
 
-    for (i = 0; i < (int)(sizeof(SwishDefaultMetaNames) / sizeof(SwishDefaultMetaNames[0])); i++)
+    for (i = 0; i < (SWINT_T)(sizeof(SwishDefaultMetaNames) / sizeof(SwishDefaultMetaNames[0])); i++)
         addMetaEntry(&indexf->header, SwishDefaultMetaNames[i].metaName, SwishDefaultMetaNames[i].metaType, 0);
 }
 
@@ -117,7 +117,7 @@ void    add_default_metanames(IndexFILE * indexf)
  */
 
 
-struct metaEntry *addMetaEntry(INDEXDATAHEADER *header, char *metaname, int metaType, int metaID)
+struct metaEntry *addMetaEntry(INDEXDATAHEADER *header, char *metaname, SWINT_T metaType, SWINT_T metaID)
 {
     struct metaEntry *tmpEntry = NULL;
     char *metaWord;
@@ -175,9 +175,9 @@ static struct metaEntry *create_meta_entry( char *name )
 *
 ************************************************************************************/
 
-struct metaEntry *addNewMetaEntry(INDEXDATAHEADER *header, char *metaWord, int metaType, int metaID)
+struct metaEntry *addNewMetaEntry(INDEXDATAHEADER *header, char *metaWord, SWINT_T metaType, SWINT_T metaID)
 {
-    int    metaCounter = header->metaCounter;
+    SWINT_T    metaCounter = header->metaCounter;
     struct metaEntry *newEntry;
     struct metaEntry **metaEntryArray = header->metaEntryArray;
     newEntry = create_meta_entry( metaWord );
@@ -253,7 +253,7 @@ struct metaEntry *cloneMetaEntry(INDEXDATAHEADER *header, struct metaEntry *meta
 
 void ClearInMetaFlags(INDEXDATAHEADER * header)
 {
-    int     i;
+    SWINT_T     i;
 
     for (i = 0; i < header->metaCounter; i++)
         header->metaEntryArray[i]->in_tag = 0;
@@ -274,7 +274,7 @@ void ClearInMetaFlags(INDEXDATAHEADER * header)
 
 void init_property_list(INDEXDATAHEADER *header)
 {
-    int i;
+    SWINT_T i;
 
     /* only needs to be called one time */
     if ( header->property_count )
@@ -290,8 +290,8 @@ void init_property_list(INDEXDATAHEADER *header)
     }
 
 
-    header->propIDX_to_metaID = emalloc( (1 + header->metaCounter) * sizeof( int ) );
-    header->metaID_to_PropIDX = emalloc( (1 + header->metaCounter) * sizeof( int ) );
+    header->propIDX_to_metaID = emalloc( (1 + header->metaCounter) * sizeof( SWINT_T ) );
+    header->metaID_to_PropIDX = emalloc( (1 + header->metaCounter) * sizeof( SWINT_T ) );
 
     for (i = 0; i < header->metaCounter; i++)
     {
@@ -329,7 +329,7 @@ void init_property_list(INDEXDATAHEADER *header)
 
 struct metaEntry *getMetaNameByNameNoAlias(INDEXDATAHEADER * header, char *word)
 {
-    int     i;
+    SWINT_T     i;
 
     for (i = 0; i < header->metaCounter; i++)
         if (is_meta_index(header->metaEntryArray[i]) && !strcasecmp(header->metaEntryArray[i]->metaName, word))
@@ -346,7 +346,7 @@ struct metaEntry *getMetaNameByNameNoAlias(INDEXDATAHEADER * header, char *word)
 
 struct metaEntry *getMetaNameByName(INDEXDATAHEADER * header, char *word)
 {
-    int     i;
+    SWINT_T     i;
 
     for (i = 0; i < header->metaCounter; i++)
         if (is_meta_index(header->metaEntryArray[i]) && !strcasecmp(header->metaEntryArray[i]->metaName, word))
@@ -361,9 +361,9 @@ struct metaEntry *getMetaNameByName(INDEXDATAHEADER * header, char *word)
 /* Returns the structure associated with the metaName ID if it exists
 */
 
-struct metaEntry *getMetaNameByID(INDEXDATAHEADER *header, int number)
+struct metaEntry *getMetaNameByID(INDEXDATAHEADER *header, SWINT_T number)
 {
-    int     i;
+    SWINT_T     i;
 
     for (i = 0; i < header->metaCounter; i++)
     {
@@ -379,7 +379,7 @@ struct metaEntry *getMetaNameByID(INDEXDATAHEADER *header, int number)
 
 struct metaEntry *getPropNameByNameNoAlias(INDEXDATAHEADER * header, char *word)
 {
-    int     i;
+    SWINT_T     i;
 
     for (i = 0; i < header->metaCounter; i++)
         if (is_meta_property(header->metaEntryArray[i]) && !strcasecmp(header->metaEntryArray[i]->metaName, word))
@@ -396,7 +396,7 @@ struct metaEntry *getPropNameByNameNoAlias(INDEXDATAHEADER * header, char *word)
 
 struct metaEntry *getPropNameByName(INDEXDATAHEADER * header, char *word)
 {
-    int     i;
+    SWINT_T     i;
 
 
     for (i = 0; i < header->metaCounter; i++)
@@ -412,9 +412,9 @@ struct metaEntry *getPropNameByName(INDEXDATAHEADER * header, char *word)
 /* Returns the structure associated with the metaName ID if it exists
 */
 
-struct metaEntry *getPropNameByID(INDEXDATAHEADER *header, int number)
+struct metaEntry *getPropNameByID(INDEXDATAHEADER *header, SWINT_T number)
 {
-    int     i;
+    SWINT_T     i;
 
     for (i = 0; i < header->metaCounter; i++)
     {
@@ -431,7 +431,7 @@ struct metaEntry *getPropNameByID(INDEXDATAHEADER *header, int number)
 
 /* This is really used to check for seeing which internal metaname is being requested */
 
-int is_meta_entry( struct metaEntry *meta_entry, char *name )
+SWINT_T is_meta_entry( struct metaEntry *meta_entry, char *name )
 {
     return strcasecmp( meta_entry->metaName, name ) == 0;
 }
@@ -448,7 +448,7 @@ int is_meta_entry( struct metaEntry *meta_entry, char *name )
 
 void   freeMetaEntries( INDEXDATAHEADER *header )
 {
-    int i;
+    SWINT_T i;
 
     /* Make sure there are meta names assigned */
     if ( !header->metaCounter )
@@ -487,7 +487,7 @@ void   freeMetaEntries( INDEXDATAHEADER *header )
 ***************************************************************************/
 
 
-int isDontBumpMetaName( struct swline *tmplist, char *tag)
+SWINT_T isDontBumpMetaName( struct swline *tmplist, char *tag)
 {
 char *tmptag;
 
@@ -512,23 +512,23 @@ char *tmptag;
 }
 
 /*************************************************
-* int properties_compatible -
+* SWINT_T properties_compatible -
 *
 *  checks to see if two properties can be compared
 *
 **************************************************/
-int properties_compatible( struct metaEntry *m1, struct metaEntry *m2 )
+SWINT_T properties_compatible( struct metaEntry *m1, struct metaEntry *m2 )
 {
-    int mask = META_STRING | META_NUMBER | META_DATE | META_IGNORE_CASE;
+    SWINT_T mask = META_STRING | META_NUMBER | META_DATE | META_IGNORE_CASE;
     return (m1->metaType & mask ) == ( m2->metaType & mask);
 }
 
 
 
-static struct metaEntry **meta_entries_for_index( IndexFILE *indexf, int want_props )
+static struct metaEntry **meta_entries_for_index( IndexFILE *indexf, SWINT_T want_props )
 {
     INDEXDATAHEADER *header = NULL;
-    int     i, n;
+    SWINT_T     i, n;
     struct metaEntry **entries;
 
     header = &indexf->header;
@@ -539,7 +539,7 @@ static struct metaEntry **meta_entries_for_index( IndexFILE *indexf, int want_pr
     entries = (struct metaEntry **)emalloc( sizeof(struct metaEntry *) * ( 1 + header->metaCounter ) );
     for (i = 0, n = 0; i < header->metaCounter; i++)
     {
-      int is_prop = (is_meta_property(header->metaEntryArray[i]) && !header->metaEntryArray[i]->alias);
+      SWINT_T is_prop = (is_meta_property(header->metaEntryArray[i]) && !header->metaEntryArray[i]->alias);
       if (is_prop == want_props)
       {
         entries[n] = header->metaEntryArray[i];
@@ -652,7 +652,7 @@ const char *SwishMetaName( struct  metaEntry *meta )
 *
 **********************************************************************/
 
-int SwishMetaType( struct  metaEntry *meta )
+SWINT_T SwishMetaType( struct  metaEntry *meta )
 {
   return( meta->metaType & (META_STRING | META_NUMBER | META_DATE) );
 }
@@ -662,7 +662,7 @@ int SwishMetaType( struct  metaEntry *meta )
 *
 **********************************************************************/
 
-int SwishMetaID( struct  metaEntry *meta )
+SWINT_T SwishMetaID( struct  metaEntry *meta )
 {
   return( meta->metaID );
 }

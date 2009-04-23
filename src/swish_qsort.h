@@ -40,7 +40,7 @@
  
  */
 
-typedef int		 cmp_t (const void *, const void *);
+typedef SWINT_T		 cmp_t (const void *, const void *);
 
 void
 swish_qsort(void *a, size_t n, size_t es, cmp_t *cmp);

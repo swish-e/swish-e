@@ -32,6 +32,7 @@ $Id$
 #ifndef SEARCHSWISH_H
 #define SEARCHSWISH_H 1
 
+#include "swishtypes.h"
 #include "time.h"  /* for time_t, which isn't really needed */
 
 #ifdef __cplusplus
@@ -61,8 +62,8 @@ typedef union
 {
     const char           *string;
     const char          **string_list;
-          unsigned long   number;
-          int             boolean;
+          SWUINT_T   number;
+          SWINT_T             boolean;
 } SWISH_HEADER_VALUE;
 
 
@@ -86,8 +87,8 @@ SWISH_META_LIST SwishPropertyList( SW_HANDLE, const char *index_name );
 SWISH_META_LIST SwishResultMetaList( SW_RESULT );
 SWISH_META_LIST SwishResultPropertyList( SW_RESULT );
 const char *SwishMetaName( SW_META );
-int SwishMetaType( SW_META );
-int SwishMetaID( SW_META );
+SWINT_T SwishMetaType( SW_META );
+SWINT_T SwishMetaID( SW_META );
 
 /* Limit searches by structure */
 
@@ -119,8 +120,8 @@ SW_RESULTS SwishQuery(SW_HANDLE, char *words );
 
 SW_SEARCH New_Search_Object( SW_HANDLE, char *query );
 
-void SwishRankScheme( SW_HANDLE sw, int scheme );
-void SwishReturnRawRank( SW_HANDLE sw, int flag );
+void SwishRankScheme( SW_HANDLE sw, SWINT_T scheme );
+void SwishReturnRawRank( SW_HANDLE sw, SWINT_T flag );
 void SwishSetRefPtr( SW_HANDLE sw, void *address );
 void *SwishGetRefPtr( SW_HANDLE sw );
 
@@ -129,30 +130,30 @@ void *SwishResults_parent( SW_RESULTS results );
 void *SwishResult_parent( SW_RESULT result );
 void ResultsSetRefPtr( SW_RESULTS results, void *address );
 
-void SwishSetStructure( SW_SEARCH srch, int structure );
-int  SwishGetStructure( SW_SEARCH srch);
+void SwishSetStructure( SW_SEARCH srch, SWINT_T structure );
+SWINT_T  SwishGetStructure( SW_SEARCH srch);
 void SwishPhraseDelimiter( SW_SEARCH srch, char delimiter );
 char SwishGetPhraseDelimiter( SW_SEARCH srch );
 void SwishSetSort( SW_SEARCH srch, char *sort );
 void SwishSetQuery( SW_SEARCH srch, char *query );
 
-int SwishSetSearchLimit( SW_SEARCH srch, char *propertyname, char *low, char *hi);
+SWINT_T SwishSetSearchLimit( SW_SEARCH srch, char *propertyname, char *low, char *hi);
 void SwishResetSearchLimit( SW_SEARCH srch );
 
 SW_RESULTS SwishExecute( SW_SEARCH, char *optional_query );
 
 /* Headers specific to results */
-int SwishHits( SW_RESULTS );
+SWINT_T SwishHits( SW_RESULTS );
 SWISH_HEADER_VALUE SwishParsedWords( SW_RESULTS, const char *index_name );
 SWISH_HEADER_VALUE SwishRemovedStopwords( SW_RESULTS, const char *index_name );
 
 
 
-int SwishSeekResult( SW_RESULTS, int position );
+SWINT_T SwishSeekResult( SW_RESULTS, SWINT_T position );
 SW_RESULT SwishNextResult( SW_RESULTS );
 
 char *SwishResultPropertyStr(SW_RESULT, char *propertyname);
-unsigned long SwishResultPropertyULong(SW_RESULT, char *propertyname);
+SWUINT_T SwishResultPropertyULong(SW_RESULT, char *propertyname);
 SW_HANDLE SW_ResultToSW_HANDLE( SW_RESULT );
 SW_HANDLE SW_ResultsToSW_HANDLE( SW_RESULTS );
 
@@ -163,8 +164,8 @@ void Free_Results_Object( SW_RESULTS results );
 void SwishClose( SW_HANDLE );
 
 
-int  SwishError( SW_HANDLE );           /* test if error state - returns error number */
-int  SwishCriticalError( SW_HANDLE );   /* true if show stopping error */
+SWINT_T  SwishError( SW_HANDLE );           /* test if error state - returns error number */
+SWINT_T  SwishCriticalError( SW_HANDLE );   /* true if show stopping error */
 void SwishAbortLastError( SW_HANDLE );  /* format and abort the error message */
 
 char *SwishErrorString( SW_HANDLE );    /* string for the error number */
@@ -184,8 +185,8 @@ char *SwishStemWord( SW_HANDLE, char *word );  /* Really this is depreciated */
 SW_FUZZYWORD SwishFuzzyWord( SW_RESULT r, char *word );
 SW_FUZZYWORD SwishFuzzify( SW_HANDLE sw, const char *index_name, char *word );
 const char **SwishFuzzyWordList( SW_FUZZYWORD fw );
-int SwishFuzzyWordCount( SW_FUZZYWORD fw );
-int SwishFuzzyWordError( SW_FUZZYWORD fw );
+SWINT_T SwishFuzzyWordCount( SW_FUZZYWORD fw );
+SWINT_T SwishFuzzyWordError( SW_FUZZYWORD fw );
 void SwishFuzzyWordFree( SW_FUZZYWORD fw );
 const char *SwishFuzzyMode( SW_RESULT r );
 
@@ -208,10 +209,10 @@ PropType;
 typedef union
 {                               /* storage of the PropertyValue */
     char   *v_str;              /* strings */
-    int     v_int;              /* Integer */
+    SWINT_T     v_int;              /* Integer */
     time_t  v_date;             /* Date    */
     double  v_float;            /* Double Float */
-    unsigned long v_ulong;      /* Unsigned long */
+    SWUINT_T v_ulong;      /* Unsigned SWINT_T */
 }
 u_PropValue1;
  
@@ -219,11 +220,11 @@ typedef struct
 {                               /* Propvalue with type info */
     PropType datatype;
     u_PropValue1 value;
-    int      destroy;           /* flag to destroy (free) any pointer type */
+    SWINT_T      destroy;           /* flag to destroy (free) any pointer type */
 } 
 PropValue;
 
-PropValue *getResultPropValue (SW_RESULT result, char *name, int ID);
+PropValue *getResultPropValue (SW_RESULT result, char *name, SWINT_T ID);
 void    freeResultPropValue(PropValue *pv);
 
 #ifdef __cplusplus

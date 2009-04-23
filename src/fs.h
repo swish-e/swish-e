@@ -56,14 +56,14 @@ struct MOD_FS
 {
     PATH_LIST   filerules;
     PATH_LIST   filematch;
-    int         followsymlinks;
+    SWINT_T         followsymlinks;
 
 };
 
 
 void initModule_FS (SWISH *);
 void freeModule_FS (SWISH *);
-int  configModule_FS (SWISH *, StringList *);
+SWINT_T  configModule_FS (SWISH *, StringList *);
 
 #ifdef __cplusplus
 }

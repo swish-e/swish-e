@@ -55,16 +55,16 @@ $Id$
   // $$$ routine description missing (who ever did it)
 
 
-void	translatecharHeaderOut (SWISH *sw,  int v, INDEXDATAHEADER *h )
+void	translatecharHeaderOut (SWISH *sw,  SWINT_T v, INDEXDATAHEADER *h )
 {
-    int   from_pos = 0;
-    int   to_pos = 0;
-    int   len,
+    SWINT_T   from_pos = 0;
+    SWINT_T   to_pos = 0;
+    SWINT_T   len,
           i;
     char *from,
          *to;
 
-    len  = sizeof(h->translatecharslookuptable) / sizeof(int);
+    len  = sizeof(h->translatecharslookuptable) / sizeof(SWINT_T);
     from = (char *) emalloc(len+1);
     to   = (char *) emalloc(len+1);
 

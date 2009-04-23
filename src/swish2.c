@@ -60,7 +60,7 @@ static IndexFILE *free_index( IndexFILE *indexf );
 
 
 /* Moved here so it's in the library */
-unsigned int DEBUG_MASK = 0;
+SWUINT_T DEBUG_MASK = 0;
 
 /*************************************************************************
 * SwishNew -- create a search swish structure
@@ -111,7 +111,7 @@ static IndexFILE *free_index( IndexFILE *indexf )
 {
     IndexFILE  *next = indexf->next;
     SWISH      *sw = indexf->sw;
-    int         i;
+    SWINT_T         i;
     
     /* Close any pending DB */
     if ( indexf->DB )
@@ -225,7 +225,7 @@ SWISH  *SwishInit(char *indexfiles)
 {
     StringList *sl = NULL;
     SWISH  *sw;
-    int     i;
+    SWINT_T     i;
 
     sw = SwishNew();
     if (!indexfiles || !*indexfiles)
@@ -272,7 +272,7 @@ SWISH  *SwishInit(char *indexfiles)
 * Returns false on Failure
 **************************************************/
 
-int     SwishAttach(SWISH * sw)
+SWINT_T     SwishAttach(SWISH * sw)
 {
     IndexFILE *indexlist = sw->indexlist;  /* head of list of indexes */
     IndexFILE *tmplist;
@@ -303,7 +303,7 @@ int     SwishAttach(SWISH * sw)
 *
 ****************************************************************************/
 
-int open_single_index( SWISH *sw, IndexFILE *indexf, int db_mode )
+SWINT_T open_single_index( SWISH *sw, IndexFILE *indexf, SWINT_T db_mode )
 {
     INDEXDATAHEADER *header = &indexf->header;
 

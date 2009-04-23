@@ -50,8 +50,8 @@ typedef struct robotrules {
 
 
 httpserverinfo *getserverinfo (SWISH *sw, char *url);
-int urldisallowed (SWISH *sw, char *url);
-int equivalentserver (SWISH *sw, char *url, char *baseurl);
+SWINT_T urldisallowed (SWISH *sw, char *url);
+SWINT_T equivalentserver (SWISH *sw, char *url, char *baseurl);
 
 
 #endif

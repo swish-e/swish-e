@@ -44,7 +44,7 @@ Mon May  9 10:57:22 CDT 2005 -- added GPL notice
 #include "error.h"
 #include "swregex.h"
 
-static char *regex_replace( char *str, regex_list *regex, int offset, int *matched );
+static char *regex_replace( char *str, regex_list *regex, SWINT_T offset, SWINT_T *matched );
 
 
 /*********************************************************************
@@ -66,15 +66,15 @@ static char *regex_replace( char *str, regex_list *regex, int offset, int *match
 *   
 *
 **********************************************************************/
-void add_regex_patterns( char *name, regex_list **reg_list, char **params, int regex_pattern )
+void add_regex_patterns( char *name, regex_list **reg_list, char **params, SWINT_T regex_pattern )
 {
-    int     negate;
+    SWINT_T     negate;
     char    *word;
     char    *pos;
     char    *ptr;
-    int     delimiter;
-    int     cflags;
-    int     global;
+    SWINT_T     delimiter;
+    SWINT_T     cflags;
+    SWINT_T     global;
     
 
     while ( *params )
@@ -99,7 +99,7 @@ void add_regex_patterns( char *name, regex_list **reg_list, char **params, int r
         }
 
         word = *params;       
-        delimiter = (int)*word;
+        delimiter = (SWINT_T)*word;
 
         word++; /* past the first delimiter */
 
@@ -147,12 +147,12 @@ void  add_replace_expression( char *name, regex_list **reg_list, char *expressio
 {
     char    *word = estrdup( expression );
     char    *save = word;
-    int     delimiter = (int)*word;
+    SWINT_T     delimiter = (SWINT_T)*word;
     char    *pos;
     char    *pattern = NULL;
     char    *replace = NULL;
-    int     cflags = REG_EXTENDED;
-    int     global = 0;
+    SWINT_T     cflags = REG_EXTENDED;
+    SWINT_T     global = 0;
     char    *ptr;
     
 
@@ -203,10 +203,10 @@ void  add_replace_expression( char *name, regex_list **reg_list, char *expressio
 *   
 *
 **********************************************************************/
-int match_regex_list( char *str, regex_list *regex, char *comment )
+SWINT_T match_regex_list( char *str, regex_list *regex, char *comment )
 {
     regmatch_t pmatch[1];
-    int        matched;
+    SWINT_T        matched;
 
     while ( regex )
     {
@@ -232,7 +232,7 @@ int match_regex_list( char *str, regex_list *regex, char *comment )
 *
 *
 **********************************************************************/
-char *process_regex_list( char *str, regex_list *regex, int *matched )
+char *process_regex_list( char *str, regex_list *regex, SWINT_T *matched )
 {
     if ( DEBUG_MASK & DEBUG_REGEX && regex )
         printf("\nOriginal String: '%s'\n", str );
@@ -267,15 +267,15 @@ char *process_regex_list( char *str, regex_list *regex, int *matched )
 *
 *
 **********************************************************************/
-static char *regex_replace( char *str, regex_list *regex, int offset, int *matched )
+static char *regex_replace( char *str, regex_list *regex, SWINT_T offset, SWINT_T *matched )
 {
     regmatch_t pmatch[MAXPAR];
     char   *c;
     char   *newstr;
-    int     escape = 0;
-    int     pos = 0;
-    int     j;
-    int     last_offset = 0;
+    SWINT_T     escape = 0;
+    SWINT_T     pos = 0;
+    SWINT_T     j;
+    SWINT_T     last_offset = 0;
 
     if ( DEBUG_MASK & DEBUG_REGEX )
         printf("replace %s =~ m[%s][%s]: %s\n", str + offset, regex->pattern, regex->replace,
@@ -290,7 +290,7 @@ static char *regex_replace( char *str, regex_list *regex, int offset, int *match
     (*matched)++;        
 
 
-    /* allocate a string long enough */
+    /* allocate a string SWINT_T enough */
     newstr = (char *) emalloc( offset + strlen( str ) + regex->replace_length + (regex->replace_count * strlen( str )) + 1 );
 
     /* Copy everything before string */
@@ -347,7 +347,7 @@ static char *regex_replace( char *str, regex_list *regex, int offset, int *match
 
             else if ( *c >= '0' && *c <= '9' )
             {
-                int i = (int)( *c ) - (int)'0';
+                SWINT_T i = (SWINT_T)( *c ) - (SWINT_T)'0';
 
                 if ( pmatch[i].rm_so != -1 )
                 {
@@ -386,7 +386,7 @@ static char *regex_replace( char *str, regex_list *regex, int offset, int *match
     /* This allow /g processing to match repeatedly */
     /* I'm sure there a way to mess this up and end up with a regex loop... */
     
-    if ( regex->global && last_offset < (int)strlen( newstr ) )
+    if ( regex->global && last_offset < (SWINT_T)strlen( newstr ) )
         newstr = regex_replace( newstr, regex, last_offset, matched );
 
     return newstr;
@@ -427,16 +427,16 @@ void free_regex_list( regex_list **reg_list )
 *
 *****************************************************************************/
 
-void add_regular_expression( regex_list **reg_list, char *pattern, char *replace, int cflags, int global, int negate )
+void add_regular_expression( regex_list **reg_list, char *pattern, char *replace, SWINT_T cflags, SWINT_T global, SWINT_T negate )
 {
     regex_list *new_node = emalloc( sizeof( regex_list ) );
     regex_list *last;
     char       *c;
-    int         status;
-    int         escape = 0;
+    SWINT_T         status;
+    SWINT_T         escape = 0;
 
     if ( (status = regcomp( &new_node->re, pattern, cflags )))
-        progerr("Failed to complie regular expression '%s', pattern. Error: %d", pattern, status );
+        progerr("Failed to complie regular expression '%s', pattern. Error: %lld", pattern, status );
 
 
 

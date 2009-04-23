@@ -91,11 +91,11 @@ static void load_word_hash_from_buffer(WORD_HASH_TABLE *table_ptr, char *buffer)
 
 
 
-sw_off_t read_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf, unsigned char **buffer, int *sz_buffer)
+sw_off_t read_worddata(SWISH * sw, ENTRY * ep, IndexFILE * indexf, unsigned char **buffer, SWINT_T *sz_buffer)
 {
 sw_off_t wordID;
 char *word = ep->word;
-int saved_bytes = 0;
+SWINT_T saved_bytes = 0;
 
     DB_InitReadWords(sw, indexf->DB);
     DB_ReadWordHash(sw, word, &wordID, indexf->DB);
@@ -130,21 +130,21 @@ int saved_bytes = 0;
 // $$$ to be rewritten as function = smaller code (rasc)
 
 #define parse_int_from_buffer(num,s) (num) = UNPACKLONG2((s))
-#define parse_int2_from_buffer(num1,num2,s) (num1) = UNPACKLONG2((s));(num2) = UNPACKLONG2((s+sizeof(long)))
-#define parse_int3_from_buffer(num1,num2,num3,s) (num1) = UNPACKLONG2((s));(num2) = UNPACKLONG2((s+sizeof(long))); (num3) = UNPACKLONG2((s+sizeof(long)+sizeof(long)))
+#define parse_int2_from_buffer(num1,num2,s) (num1) = UNPACKLONG2((s));(num2) = UNPACKLONG2((s+sizeof(SWINT_T)))
+#define parse_int3_from_buffer(num1,num2,num3,s) (num1) = UNPACKLONG2((s));(num2) = UNPACKLONG2((s+sizeof(SWINT_T))); (num3) = UNPACKLONG2((s+sizeof(SWINT_T)+sizeof(SWINT_T)))
 #define parse_int4_from_buffer(num1,num2,num3,num4,s) \
 { \
 	(num1) = UNPACKLONG2((s));\
-	(num2) = UNPACKLONG2((s+sizeof(long)));\
-	(num3) = UNPACKLONG2((s+sizeof(long)+sizeof(long))); \
-	(num4) = UNPACKLONG2((s+sizeof(long)+sizeof(long)+sizeof(long))); \
+	(num2) = UNPACKLONG2((s+sizeof(SWINT_T)));\
+	(num3) = UNPACKLONG2((s+sizeof(SWINT_T)+sizeof(SWINT_T))); \
+	(num4) = UNPACKLONG2((s+sizeof(SWINT_T)+sizeof(SWINT_T)+sizeof(SWINT_T))); \
 }
 
 void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
 {
-    int     id,
+    SWINT_T     id,
             len;
-    unsigned long    tmp, tmp1, tmp2, tmp3, tmp4;
+    SWUINT_T    tmp, tmp1, tmp2, tmp3, tmp4;
     unsigned char   *buffer;
 
     DB_InitReadHeader(sw, DB);
@@ -252,7 +252,7 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
             break;
 */
         case TRANSLATECHARTABLE_ID:
-            parse_integer_table_from_buffer(header->translatecharslookuptable, sizeof(header->translatecharslookuptable) / sizeof(int), (char *)buffer);
+            parse_integer_table_from_buffer(header->translatecharslookuptable, sizeof(header->translatecharslookuptable) / sizeof(SWINT_T), (char *)buffer);
             break;
 
         case STOPWORDS_ID:
@@ -271,14 +271,14 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
         case TOTALWORDSPERFILE_ID:
             if ( !header->ignoreTotalWordCountWhenRanking )
             {
-                header->TotalWordsPerFile = emalloc( header->totalfiles * sizeof(int) );
+                header->TotalWordsPerFile = emalloc( header->totalfiles * sizeof(SWINT_T) );
                 parse_integer_table_from_buffer(header->TotalWordsPerFile, header->totalfiles, (char *)buffer);
             }
             break;
 #endif
 
         default:
-            progerr("Severe index error in header.  Unknown index header ID: %d", id );
+            progerr("Severe index error in header.  Unknown index header ID: %lld", id );
             break;
         }
         efree(buffer);
@@ -292,9 +292,9 @@ void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
 
 void    parse_MetaNames_from_buffer(INDEXDATAHEADER *header, char *buffer)
 {
-    int     len;
-    int     num_metanames;
-    int     metaType,
+    SWINT_T     len;
+    SWINT_T     num_metanames;
+    SWINT_T     metaType,
             i,
             alias,
             sort_len,
@@ -330,7 +330,7 @@ void    parse_MetaNames_from_buffer(INDEXDATAHEADER *header, char *buffer)
 
         /* add the meta tag */
         if ( !(m = addNewMetaEntry(header, word, metaType, metaID)))
-            progerr("failed to add new meta entry '%s:%d'", word, metaID );
+            progerr("failed to add new meta entry '%s:%lld'", word, metaID );
 
         m->alias = alias;
         m->rank_bias = bias;
@@ -343,9 +343,9 @@ void    parse_MetaNames_from_buffer(INDEXDATAHEADER *header, char *buffer)
 
 static void load_word_hash_from_buffer(WORD_HASH_TABLE *table_ptr, char *buffer)
 {
-    int     len;
-    int        num_words;
-    int     i;
+    SWINT_T     len;
+    SWINT_T        num_words;
+    SWINT_T     i;
     char   *word = NULL;
 
     unsigned char   *s = (unsigned char *)buffer;
@@ -368,9 +368,9 @@ static void load_word_hash_from_buffer(WORD_HASH_TABLE *table_ptr, char *buffer)
 
 
 
-void parse_integer_table_from_buffer(int table[], int table_size, char *buffer)
+void parse_integer_table_from_buffer(SWINT_T table[], SWINT_T table_size, char *buffer)
 {
-    int     tmp,i;
+    SWINT_T     tmp,i;
     unsigned char    *s = (unsigned char *)buffer;
 
     tmp = uncompress2(&s);   /* Jump the number of elements */
@@ -383,7 +383,7 @@ void parse_integer_table_from_buffer(int table[], int table_size, char *buffer)
 
 /* Used by rank.c */
 
-int getTotalWordsInFile( IndexFILE *indexf, int filenum )
+SWINT_T getTotalWordsInFile( IndexFILE *indexf, SWINT_T filenum )
 {
     if ( filenum < 1 || filenum > indexf->header.totalfiles )
         progerr("getTotalWordsInFile passed an invalied file number");
@@ -405,7 +405,7 @@ int getTotalWordsInFile( IndexFILE *indexf, int filenum )
 /*---------- General entry point of DB module ----------*/
 
 
-void   *DB_Open (SWISH *sw, char *dbname, int mode)
+void   *DB_Open (SWISH *sw, char *dbname, SWINT_T mode)
 {
    return sw->Db->DB_Open(sw, dbname,mode);
 }
@@ -416,83 +416,83 @@ void    DB_Close(SWISH *sw, void *DB)
 }
 
 
-int     DB_InitReadHeader(SWISH *sw, void *DB)
+SWINT_T     DB_InitReadHeader(SWISH *sw, void *DB)
 {
    return sw->Db->DB_InitReadHeader(DB);
 }
 
-int     DB_ReadHeaderData(SWISH *sw, int *id, unsigned char **s, int *len, void *DB)
+SWINT_T     DB_ReadHeaderData(SWISH *sw, SWINT_T *id, unsigned char **s, SWINT_T *len, void *DB)
 {
    return sw->Db->DB_ReadHeaderData(id, s, len, DB);
 }
 
-int     DB_EndReadHeader(SWISH *sw, void *DB)
+SWINT_T     DB_EndReadHeader(SWISH *sw, void *DB)
 {
    return sw->Db->DB_EndReadHeader(DB);
 }
 
 
 
-int     DB_InitReadWords(SWISH *sw, void *DB)
+SWINT_T     DB_InitReadWords(SWISH *sw, void *DB)
 {
    return sw->Db->DB_InitReadWords(DB);
 }
 
-int     DB_ReadWordHash(SWISH *sw, char *word, sw_off_t *wordID, void *DB)
+SWINT_T     DB_ReadWordHash(SWISH *sw, char *word, sw_off_t *wordID, void *DB)
 {
    return sw->Db->DB_ReadWordHash(word, wordID, DB);
 }
 
-int     DB_ReadFirstWordInvertedIndex(SWISH *sw, char *word, char **resultword, sw_off_t *wordID, void *DB)
+SWINT_T     DB_ReadFirstWordInvertedIndex(SWISH *sw, char *word, char **resultword, sw_off_t *wordID, void *DB)
 {
    return sw->Db->DB_ReadFirstWordInvertedIndex(word, resultword, wordID, DB);
 }
 
-int     DB_ReadNextWordInvertedIndex(SWISH *sw, char *word, char **resultword, sw_off_t *wordID, void *DB)
+SWINT_T     DB_ReadNextWordInvertedIndex(SWISH *sw, char *word, char **resultword, sw_off_t *wordID, void *DB)
 {
    return sw->Db->DB_ReadNextWordInvertedIndex(word, resultword, wordID, DB);
 }
 
-long    DB_ReadWordData(SWISH *sw, sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *DB)
+SWINT_T    DB_ReadWordData(SWISH *sw, sw_off_t wordID, unsigned char **worddata, SWINT_T *data_size, SWINT_T *saved_bytes, void *DB)
 {
    return sw->Db->DB_ReadWordData(wordID, worddata, data_size, saved_bytes, DB);
 }
 
-int     DB_EndReadWords(SWISH *sw, void *DB)
+SWINT_T     DB_EndReadWords(SWISH *sw, void *DB)
 {
    return sw->Db->DB_EndReadWords(DB);
 }
 
 
-int     DB_CheckFileNum(SWISH *sw, int filenum, void *DB)
+SWINT_T     DB_CheckFileNum(SWISH *sw, SWINT_T filenum, void *DB)
 {
    return sw->Db->DB_CheckFileNum(filenum, DB);
 }
 
-int     DB_ReadFileNum(SWISH *sw, unsigned char *filedata, void *DB)
+SWINT_T     DB_ReadFileNum(SWISH *sw, unsigned char *filedata, void *DB)
 {
    return sw->Db->DB_ReadFileNum( filedata, DB);
 }
 
  
-int     DB_InitReadSortedIndex(SWISH *sw, void *DB)
+SWINT_T     DB_InitReadSortedIndex(SWISH *sw, void *DB)
 {
    return sw->Db->DB_InitReadSortedIndex(DB);
 }
 
-int     DB_ReadSortedIndex(SWISH *sw, int propID, unsigned char **data, int *sz_data,void *DB)
+SWINT_T     DB_ReadSortedIndex(SWISH *sw, SWINT_T propID, unsigned char **data, SWINT_T *sz_data,void *DB)
 {
    return sw->Db->DB_ReadSortedIndex(propID, data, sz_data,DB);
 }
 
 /* ******* This is now a macro and accessies the native data by default
-int     DB_ReadSortedData(SWISH *sw, int *data,int index, int *value, void *DB)
+SWINT_T     DB_ReadSortedData(SWISH *sw, SWINT_T *data,SWINT_T index, SWINT_T *value, void *DB)
 {
    return sw->Db->DB_ReadSortedData(data,index,value,DB);
 }
 *******/
 
-int     DB_EndReadSortedIndex(SWISH *sw, void *DB)
+SWINT_T     DB_EndReadSortedIndex(SWISH *sw, void *DB)
 {
    return sw->Db->DB_EndReadSortedIndex(DB);
 }
@@ -504,7 +504,7 @@ void    DB_ReadPropPositions(SWISH *sw, IndexFILE *indexf, FileRec *fi, void *db
 }
 
 
-char *DB_ReadProperty(SWISH *sw, IndexFILE *indexf, FileRec *fi, int propID, int *buf_len, int *uncompressed_len, void *db)
+char *DB_ReadProperty(SWISH *sw, IndexFILE *indexf, FileRec *fi, SWINT_T propID, SWINT_T *buf_len, SWINT_T *uncompressed_len, void *db)
 {
     return sw->Db->DB_ReadProperty( indexf, fi, propID, buf_len, uncompressed_len, db );
 }
@@ -513,7 +513,7 @@ char *DB_ReadProperty(SWISH *sw, IndexFILE *indexf, FileRec *fi, int propID, int
 
 #ifdef USE_BTREE
 
-int       DB_ReadTotalWordsPerFile(SWISH *sw, int index, int *value, void *DB)
+SWINT_T       DB_ReadTotalWordsPerFile(SWISH *sw, SWINT_T index, SWINT_T *value, void *DB)
 {
     return sw->Db->DB_ReadTotalWordsPerFile(sw, index, value, DB);
 }
@@ -523,13 +523,13 @@ int       DB_ReadTotalWordsPerFile(SWISH *sw, int index, int *value, void *DB)
 
 
 /* 11/00 Function to read all words starting with a character */
-char   *getfilewords(SWISH * sw, int c, IndexFILE * indexf)
+char   *getfilewords(SWISH * sw, SWINT_T c, IndexFILE * indexf)
 {
-    int     i,
+    SWINT_T     i,
             j;
-    int     wordlen;
+    SWINT_T     wordlen;
     char   *buffer, *resultword;
-    int     bufferpos,
+    SWINT_T     bufferpos,
             bufferlen;
     unsigned char    word[2];
     sw_off_t    wordID;
@@ -539,7 +539,7 @@ char   *getfilewords(SWISH * sw, int c, IndexFILE * indexf)
     if (!c)
         return "";
     /* Check if already read */
-    j = (int) ((unsigned char) c);
+    j = (SWINT_T) ((unsigned char) c);
     if (indexf->keywords[j])
         return (indexf->keywords[j]);
 
@@ -549,7 +549,7 @@ char   *getfilewords(SWISH * sw, int c, IndexFILE * indexf)
     word[1]='\0';
 
     DB_ReadFirstWordInvertedIndex(sw, (char *)word, &resultword, &wordID, indexf->DB);
-    i = (int) ((unsigned char) c);
+    i = (SWINT_T) ((unsigned char) c);
     if (!wordID)
     {
         DB_EndReadWords(sw, indexf->DB);
@@ -566,7 +566,7 @@ char   *getfilewords(SWISH * sw, int c, IndexFILE * indexf)
 
     memcpy(buffer, resultword, wordlen);
     efree(resultword);
-    if (c != (int)((unsigned char) buffer[bufferpos]))
+    if (c != (SWINT_T)((unsigned char) buffer[bufferpos]))
     {
         buffer[bufferpos] = '\0';
         indexf->keywords[j] = buffer;
@@ -588,7 +588,7 @@ char   *getfilewords(SWISH * sw, int c, IndexFILE * indexf)
         }
         memcpy(buffer + bufferpos, resultword, wordlen);
         efree(resultword);
-        if (c != (int)((unsigned char)buffer[bufferpos]))
+        if (c != (SWINT_T)((unsigned char)buffer[bufferpos]))
         {
             buffer[bufferpos] = '\0';
             break;

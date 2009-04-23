@@ -105,7 +105,7 @@ void progerrno(char *msgfmt,...)
 
 /********** These are an attempt to prevent aborting in the library *********/
 
-void set_progerr(int errornum, SWISH *sw, char *msgfmt,...)
+void set_progerr(SWINT_T errornum, SWISH *sw, char *msgfmt,...)
 {
   va_list args;
 
@@ -123,7 +123,7 @@ void reset_lasterror(SWISH *sw)
 }
 
 
-void set_progerrno(int errornum, SWISH *sw, char *msgfmt,...)
+void set_progerrno(SWINT_T errornum, SWISH *sw, char *msgfmt,...)
 {
   va_list args;
   char *errstr = strerror(errno);
@@ -175,8 +175,8 @@ void progwarnno(char *msgfmt,...)
 
 typedef struct
 {
-    int     critical;   /* If true the calling code needs to call SwishClose */
-    int     error_num;
+    SWINT_T     critical;   /* If true the calling code needs to call SwishClose */
+    SWINT_T     error_num;
     char    *message_string;
 } error_msg_map;
 
@@ -218,7 +218,7 @@ static error_msg_map swishErrors[]={
 *
 ******************************************************************/
 
-int     SwishError(SWISH * sw)
+SWINT_T     SwishError(SWISH * sw)
 {
     if (!sw)
         return INVALID_SWISH_HANDLE;
@@ -280,16 +280,16 @@ char   *SwishLastErrorMsg(SWISH *sw )
 ******************************************************************/
 
 
-char *getErrorString(int number)
+char *getErrorString(SWINT_T number)
 {
-    int i;
+    SWINT_T i;
     static char message[50];
     
-    for (i = 0; i < (int)(sizeof(swishErrors) / sizeof(swishErrors[0])); i++)
+    for (i = 0; i < (SWINT_T)(sizeof(swishErrors) / sizeof(swishErrors[0])); i++)
         if ( number == swishErrors[i].error_num )
             return swishErrors[i].message_string;
 
-    sprintf( message, "Invalid error number '%d'", number );
+    sprintf( message, "Invalid error number '%lld'", number );
     return( message );
 }
 
@@ -309,14 +309,14 @@ char *getErrorString(int number)
 ******************************************************************/
 
 
-int SwishCriticalError(SWISH *sw)
+SWINT_T SwishCriticalError(SWISH *sw)
 {
-    int i;
+    SWINT_T i;
 
     if ( !sw )
         return 1;
     
-    for (i = 0; i < (int)(sizeof(swishErrors) / sizeof(swishErrors[0])); i++)
+    for (i = 0; i < (SWINT_T)(sizeof(swishErrors) / sizeof(swishErrors[0])); i++)
         if ( sw->lasterror == swishErrors[i].error_num )
             return swishErrors[i].critical;
 

@@ -56,7 +56,7 @@ typedef struct
 {
     const char         *description;
     SWISH_HEADER_TYPE   data_type;
-    int                 min_verbose_level;
+    SWINT_T                 min_verbose_level;
     size_t              offset;
 } HEADER_MAP;
 
@@ -117,11 +117,11 @@ static void print_header_value( SWISH *sw, const char *name, SWISH_HEADER_VALUE 
 
 void print_index_headers( IndexFILE *indexf )
 {
-    int i;
-    int array_size = sizeof(header_map) / sizeof(header_map[0]);
+    SWINT_T i;
+    SWINT_T array_size = sizeof(header_map) / sizeof(header_map[0]);
     SWISH_HEADER_VALUE value;
     SWISH_HEADER_TYPE data_type;
-    int verbose_level = indexf->sw->headerOutVerbose;
+    SWINT_T verbose_level = indexf->sw->headerOutVerbose;
 
    
     for (i = 0; i < array_size; i++)
@@ -144,8 +144,8 @@ void print_index_headers( IndexFILE *indexf )
 
 const char **SwishHeaderNames(SWISH *sw)
 {
-    int array_size = sizeof(header_map) / sizeof(header_map[0]);
-    int i;
+    SWINT_T array_size = sizeof(header_map) / sizeof(header_map[0]);
+    SWINT_T i;
 
     if ( !sw )
         progerr("SwishHeaderNames requires a valid swish handle");
@@ -175,7 +175,7 @@ const char **SwishHeaderNames(SWISH *sw)
 const char **SwishIndexNames(SWISH *sw)
 {
     IndexFILE          *indexf;
-    int                 index_count;
+    SWINT_T                 index_count;
 
     if ( !sw )
         progerr("SwishIndexNames requires a valid swish handle");
@@ -280,7 +280,7 @@ static SWISH_HEADER_VALUE fetch_single_header( IndexFILE *indexf, HEADER_MAP *he
 
         case SWISH_NUMBER:
         case SWISH_BOOL:
-            value.number = *(unsigned long *) data_pointer;
+            value.number = *(SWUINT_T *) data_pointer;
 
             /* $$$ Ugly hack alert! */
             /* correct for removed files */
@@ -338,7 +338,7 @@ static SWISH_HEADER_VALUE fetch_single_header( IndexFILE *indexf, HEADER_MAP *he
 
 
         default:
-            progerr("Invalid HEADER type '%d'", header_map->data_type );
+            progerr("Invalid HEADER type '%lld'", header_map->data_type );
     }
 
     return value;  /* make MS compiler happy */
@@ -352,8 +352,8 @@ static SWISH_HEADER_VALUE fetch_single_header( IndexFILE *indexf, HEADER_MAP *he
 
 static SWISH_HEADER_VALUE fetch_header( IndexFILE *indexf, const char *name,  SWISH_HEADER_TYPE *data_type  )
 {
-    int i;
-    int array_size = sizeof(header_map) / sizeof(header_map[0]);
+    SWINT_T i;
+    SWINT_T array_size = sizeof(header_map) / sizeof(header_map[0]);
     SWISH_HEADER_VALUE value;
 
     value.string = NULL;
@@ -424,7 +424,7 @@ SWISH_HEADER_VALUE SwishRemovedStopwords( RESULTS_OBJECT *results, const char *i
 
 static const char **create_string_list( SWISH *sw, struct swline *swline )
 {
-    int i;
+    SWINT_T i;
     struct swline *cur_item;
 
     /* first count up how many items there are */
@@ -457,9 +457,9 @@ static const char **create_string_list( SWISH *sw, struct swline *swline )
 
 static const char **string_list_from_hash( SWISH *sw, WORD_HASH_TABLE table )
 {
-    int i;
+    SWINT_T i;
     struct swline *sp, *next;
-    int count;
+    SWINT_T count;
 
     i = table.count + 1;  /* always return one */
 
@@ -553,7 +553,7 @@ static void print_header_value( SWISH *sw, const char *name, SWISH_HEADER_VALUE 
             return;
 
         case SWISH_NUMBER:
-            printf(" %lu\n", head_value.number );
+            printf(" %llu\n", head_value.number );
             return;
 
         case SWISH_BOOL:
@@ -576,7 +576,7 @@ static void print_header_value( SWISH *sw, const char *name, SWISH_HEADER_VALUE 
             SwishAbortLastError( sw );
 
         default:
-            printf(" Unknown header type '%d'\n", (int)head_type );
+            printf(" Unknown header type '%lld'\n", (SWINT_T)head_type );
             return;
     }
 }

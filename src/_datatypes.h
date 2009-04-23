@@ -59,7 +59,7 @@ SwDataType;
 typedef union
 {                               /* storage of the DataValue */
     char   *v_str;              /* strings */
-    int     v_int;              /* Integer */
+    SWINT_T     v_int;              /* Integer */
     time_t  v_date;             /* Date    */
     double  v_float;            /* Double Float */
 }
@@ -80,7 +80,7 @@ SwDataValue;
 char *datavalue2str (SwDataValue *v);
 char *datavalue2strfmt (SwDataValue *v, char *altfmt);
 SwDataValue *str2var (char *s, SwDataType dt);
-int datavaluecmp (SwDataValue *a, SwDataValue *b);
+SWINT_T datavaluecmp (SwDataValue *a, SwDataValue *b);
 
 
 #endif

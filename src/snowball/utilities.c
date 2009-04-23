@@ -32,8 +32,8 @@ extern void lose_s(symbol * p) {
    -- used to implement hop and next in the utf8 case.
 */
 
-extern int skip_utf8(const symbol * p, int c, int lb, int l, int n) {
-    int b;
+extern SWINT_T skip_utf8(const symbol * p, SWINT_T c, SWINT_T lb, SWINT_T l, SWINT_T n) {
+    SWINT_T b;
     if (n >= 0) {
         for (; n > 0; n--) {
             if (c >= l) return -1;
@@ -65,8 +65,8 @@ extern int skip_utf8(const symbol * p, int c, int lb, int l, int n) {
 
 /* Code for character groupings: utf8 cases */
 
-static int get_utf8(const symbol * p, int c, int l, int * slot) {
-    int b0, b1;
+static SWINT_T get_utf8(const symbol * p, SWINT_T c, SWINT_T l, SWINT_T * slot) {
+    SWINT_T b0, b1;
     if (c >= l) return 0;
     b0 = p[c++];
     if (b0 < 0xC0 || c == l) {   /* 1100 0000 */
@@ -79,8 +79,8 @@ static int get_utf8(const symbol * p, int c, int l, int * slot) {
     * slot = (b0 & 0xF) << 12 | (b1 & 0x3F) << 6 | (p[c] & 0x3F); return 3;
 }
 
-static int get_b_utf8(const symbol * p, int c, int lb, int * slot) {
-    int b0, b1;
+static SWINT_T get_b_utf8(const symbol * p, SWINT_T c, SWINT_T lb, SWINT_T * slot) {
+    SWINT_T b0, b1;
     if (c <= lb) return 0;
     b0 = p[--c];
     if (b0 < 0x80 || c == lb) {   /* 1000 0000 */
@@ -93,10 +93,10 @@ static int get_b_utf8(const symbol * p, int c, int lb, int * slot) {
     * slot = (p[c] & 0xF) << 12 | (b1 & 0x3F) << 6 | (b0 & 0x3F); return 3;
 }
 
-extern int in_grouping_U(struct SN_env * z, const unsigned char * s, int min, int max, int repeat) {
+extern SWINT_T in_grouping_U(struct SN_env * z, const unsigned char * s, SWINT_T min, SWINT_T max, SWINT_T repeat) {
     do {
-	int ch;
-	int w = get_utf8(z->p, z->c, z->l, & ch);
+	SWINT_T ch;
+	SWINT_T w = get_utf8(z->p, z->c, z->l, & ch);
 	unless (w) return -1;
 	if (ch > max || (ch -= min) < 0 || (s[ch >> 3] & (0X1 << (ch & 0X7))) == 0)
 	    return w;
@@ -105,10 +105,10 @@ extern int in_grouping_U(struct SN_env * z, const unsigned char * s, int min, in
     return 0;
 }
 
-extern int in_grouping_b_U(struct SN_env * z, const unsigned char * s, int min, int max, int repeat) {
+extern SWINT_T in_grouping_b_U(struct SN_env * z, const unsigned char * s, SWINT_T min, SWINT_T max, SWINT_T repeat) {
     do {
-	int ch;
-	int w = get_b_utf8(z->p, z->c, z->lb, & ch);
+	SWINT_T ch;
+	SWINT_T w = get_b_utf8(z->p, z->c, z->lb, & ch);
 	unless (w) return -1;
 	if (ch > max || (ch -= min) < 0 || (s[ch >> 3] & (0X1 << (ch & 0X7))) == 0)
 	    return w;
@@ -117,10 +117,10 @@ extern int in_grouping_b_U(struct SN_env * z, const unsigned char * s, int min, 
     return 0;
 }
 
-extern int out_grouping_U(struct SN_env * z, const unsigned char * s, int min, int max, int repeat) {
+extern SWINT_T out_grouping_U(struct SN_env * z, const unsigned char * s, SWINT_T min, SWINT_T max, SWINT_T repeat) {
     do {
-	int ch;
-	int w = get_utf8(z->p, z->c, z->l, & ch);
+	SWINT_T ch;
+	SWINT_T w = get_utf8(z->p, z->c, z->l, & ch);
 	unless (w) return -1;
 	unless (ch > max || (ch -= min) < 0 || (s[ch >> 3] & (0X1 << (ch & 0X7))) == 0)
 	    return w;
@@ -129,10 +129,10 @@ extern int out_grouping_U(struct SN_env * z, const unsigned char * s, int min, i
     return 0;
 }
 
-extern int out_grouping_b_U(struct SN_env * z, const unsigned char * s, int min, int max, int repeat) {
+extern SWINT_T out_grouping_b_U(struct SN_env * z, const unsigned char * s, SWINT_T min, SWINT_T max, SWINT_T repeat) {
     do {
-	int ch;
-	int w = get_b_utf8(z->p, z->c, z->lb, & ch);
+	SWINT_T ch;
+	SWINT_T w = get_b_utf8(z->p, z->c, z->lb, & ch);
 	unless (w) return -1;
 	unless (ch > max || (ch -= min) < 0 || (s[ch >> 3] & (0X1 << (ch & 0X7))) == 0)
 	    return w;
@@ -143,9 +143,9 @@ extern int out_grouping_b_U(struct SN_env * z, const unsigned char * s, int min,
 
 /* Code for character groupings: non-utf8 cases */
 
-extern int in_grouping(struct SN_env * z, const unsigned char * s, int min, int max, int repeat) {
+extern SWINT_T in_grouping(struct SN_env * z, const unsigned char * s, SWINT_T min, SWINT_T max, SWINT_T repeat) {
     do {
-	int ch;
+	SWINT_T ch;
 	if (z->c >= z->l) return -1;
 	ch = z->p[z->c];
 	if (ch > max || (ch -= min) < 0 || (s[ch >> 3] & (0X1 << (ch & 0X7))) == 0)
@@ -155,9 +155,9 @@ extern int in_grouping(struct SN_env * z, const unsigned char * s, int min, int 
     return 0;
 }
 
-extern int in_grouping_b(struct SN_env * z, const unsigned char * s, int min, int max, int repeat) {
+extern SWINT_T in_grouping_b(struct SN_env * z, const unsigned char * s, SWINT_T min, SWINT_T max, SWINT_T repeat) {
     do {
-	int ch;
+	SWINT_T ch;
 	if (z->c <= z->lb) return -1;
 	ch = z->p[z->c - 1];
 	if (ch > max || (ch -= min) < 0 || (s[ch >> 3] & (0X1 << (ch & 0X7))) == 0)
@@ -167,9 +167,9 @@ extern int in_grouping_b(struct SN_env * z, const unsigned char * s, int min, in
     return 0;
 }
 
-extern int out_grouping(struct SN_env * z, const unsigned char * s, int min, int max, int repeat) {
+extern SWINT_T out_grouping(struct SN_env * z, const unsigned char * s, SWINT_T min, SWINT_T max, SWINT_T repeat) {
     do {
-	int ch;
+	SWINT_T ch;
 	if (z->c >= z->l) return -1;
 	ch = z->p[z->c];
 	unless (ch > max || (ch -= min) < 0 || (s[ch >> 3] & (0X1 << (ch & 0X7))) == 0)
@@ -179,9 +179,9 @@ extern int out_grouping(struct SN_env * z, const unsigned char * s, int min, int
     return 0;
 }
 
-extern int out_grouping_b(struct SN_env * z, const unsigned char * s, int min, int max, int repeat) {
+extern SWINT_T out_grouping_b(struct SN_env * z, const unsigned char * s, SWINT_T min, SWINT_T max, SWINT_T repeat) {
     do {
-	int ch;
+	SWINT_T ch;
 	if (z->c <= z->lb) return -1;
 	ch = z->p[z->c - 1];
 	unless (ch > max || (ch -= min) < 0 || (s[ch >> 3] & (0X1 << (ch & 0X7))) == 0)
@@ -191,46 +191,46 @@ extern int out_grouping_b(struct SN_env * z, const unsigned char * s, int min, i
     return 0;
 }
 
-extern int eq_s(struct SN_env * z, int s_size, const symbol * s) {
+extern SWINT_T eq_s(struct SN_env * z, SWINT_T s_size, const symbol * s) {
     if (z->l - z->c < s_size || memcmp(z->p + z->c, s, s_size * sizeof(symbol)) != 0) return 0;
     z->c += s_size; return 1;
 }
 
-extern int eq_s_b(struct SN_env * z, int s_size, const symbol * s) {
+extern SWINT_T eq_s_b(struct SN_env * z, SWINT_T s_size, const symbol * s) {
     if (z->c - z->lb < s_size || memcmp(z->p + z->c - s_size, s, s_size * sizeof(symbol)) != 0) return 0;
     z->c -= s_size; return 1;
 }
 
-extern int eq_v(struct SN_env * z, const symbol * p) {
+extern SWINT_T eq_v(struct SN_env * z, const symbol * p) {
     return eq_s(z, SIZE(p), p);
 }
 
-extern int eq_v_b(struct SN_env * z, const symbol * p) {
+extern SWINT_T eq_v_b(struct SN_env * z, const symbol * p) {
     return eq_s_b(z, SIZE(p), p);
 }
 
-extern int find_among(struct SN_env * z, const struct among * v, int v_size) {
+extern SWINT_T find_among(struct SN_env * z, const struct among * v, SWINT_T v_size) {
 
-    int i = 0;
-    int j = v_size;
+    SWINT_T i = 0;
+    SWINT_T j = v_size;
 
-    int c = z->c; int l = z->l;
+    SWINT_T c = z->c; SWINT_T l = z->l;
     symbol * q = z->p + c;
 
     const struct among * w;
 
-    int common_i = 0;
-    int common_j = 0;
+    SWINT_T common_i = 0;
+    SWINT_T common_j = 0;
 
-    int first_key_inspected = 0;
+    SWINT_T first_key_inspected = 0;
 
     while(1) {
-        int k = i + ((j - i) >> 1);
-        int diff = 0;
-        int common = common_i < common_j ? common_i : common_j; /* smaller */
+        SWINT_T k = i + ((j - i) >> 1);
+        SWINT_T diff = 0;
+        SWINT_T common = common_i < common_j ? common_i : common_j; /* smaller */
         w = v + k;
         {
-            int i2; for (i2 = common; i2 < w->s_size; i2++) {
+            SWINT_T i2; for (i2 = common; i2 < w->s_size; i2++) {
                 if (c + common == l) { diff = -1; break; }
                 diff = q[common] - w->s[i2];
                 if (diff != 0) break;
@@ -257,7 +257,7 @@ extern int find_among(struct SN_env * z, const struct among * v, int v_size) {
             z->c = c + w->s_size;
             if (w->function == 0) return w->result;
             {
-                int res = w->function(z);
+                SWINT_T res = w->function(z);
                 z->c = c + w->s_size;
                 if (res) return w->result;
             }
@@ -269,28 +269,28 @@ extern int find_among(struct SN_env * z, const struct among * v, int v_size) {
 
 /* find_among_b is for backwards processing. Same comments apply */
 
-extern int find_among_b(struct SN_env * z, const struct among * v, int v_size) {
+extern SWINT_T find_among_b(struct SN_env * z, const struct among * v, SWINT_T v_size) {
 
-    int i = 0;
-    int j = v_size;
+    SWINT_T i = 0;
+    SWINT_T j = v_size;
 
-    int c = z->c; int lb = z->lb;
+    SWINT_T c = z->c; SWINT_T lb = z->lb;
     symbol * q = z->p + c - 1;
 
     const struct among * w;
 
-    int common_i = 0;
-    int common_j = 0;
+    SWINT_T common_i = 0;
+    SWINT_T common_j = 0;
 
-    int first_key_inspected = 0;
+    SWINT_T first_key_inspected = 0;
 
     while(1) {
-        int k = i + ((j - i) >> 1);
-        int diff = 0;
-        int common = common_i < common_j ? common_i : common_j;
+        SWINT_T k = i + ((j - i) >> 1);
+        SWINT_T diff = 0;
+        SWINT_T common = common_i < common_j ? common_i : common_j;
         w = v + k;
         {
-            int i2; for (i2 = w->s_size - 1 - common; i2 >= 0; i2--) {
+            SWINT_T i2; for (i2 = w->s_size - 1 - common; i2 >= 0; i2--) {
                 if (c - common == lb) { diff = -1; break; }
                 diff = q[- common] - w->s[i2];
                 if (diff != 0) break;
@@ -312,7 +312,7 @@ extern int find_among_b(struct SN_env * z, const struct among * v, int v_size) {
             z->c = c - w->s_size;
             if (w->function == 0) return w->result;
             {
-                int res = w->function(z);
+                SWINT_T res = w->function(z);
                 z->c = c - w->s_size;
                 if (res) return w->result;
             }
@@ -326,9 +326,9 @@ extern int find_among_b(struct SN_env * z, const struct among * v, int v_size) {
 /* Increase the size of the buffer pointed to by p to at least n symbols.
  * If insufficient memory, returns NULL and frees the old buffer.
  */
-static symbol * increase_size(symbol * p, int n) {
+static symbol * increase_size(symbol * p, SWINT_T n) {
     symbol * q;
-    int new_size = n + 20;
+    SWINT_T new_size = n + 20;
     void * mem = realloc((char *) p - HEAD,
                          HEAD + (new_size + 1) * sizeof(symbol));
     if (mem == NULL) {
@@ -345,10 +345,10 @@ static symbol * increase_size(symbol * p, int n) {
    Returns 0 on success, -1 on error.
    Also, frees z->p (and sets it to NULL) on error.
 */
-extern int replace_s(struct SN_env * z, int c_bra, int c_ket, int s_size, const symbol * s, int * adjptr)
+extern SWINT_T replace_s(struct SN_env * z, SWINT_T c_bra, SWINT_T c_ket, SWINT_T s_size, const symbol * s, SWINT_T * adjptr)
 {
-    int adjustment;
-    int len;
+    SWINT_T adjustment;
+    SWINT_T len;
     if (z->p == NULL) {
         z->p = create_s();
         if (z->p == NULL) return -1;
@@ -377,7 +377,7 @@ extern int replace_s(struct SN_env * z, int c_bra, int c_ket, int s_size, const 
     return 0;
 }
 
-static int slice_check(struct SN_env * z) {
+static SWINT_T slice_check(struct SN_env * z) {
 
     if (z->bra < 0 ||
         z->bra > z->ket ||
@@ -394,21 +394,21 @@ static int slice_check(struct SN_env * z) {
     return 0;
 }
 
-extern int slice_from_s(struct SN_env * z, int s_size, const symbol * s) {
+extern SWINT_T slice_from_s(struct SN_env * z, SWINT_T s_size, const symbol * s) {
     if (slice_check(z)) return -1;
     return replace_s(z, z->bra, z->ket, s_size, s, NULL);
 }
 
-extern int slice_from_v(struct SN_env * z, const symbol * p) {
+extern SWINT_T slice_from_v(struct SN_env * z, const symbol * p) {
     return slice_from_s(z, SIZE(p), p);
 }
 
-extern int slice_del(struct SN_env * z) {
+extern SWINT_T slice_del(struct SN_env * z) {
     return slice_from_s(z, 0, 0);
 }
 
-extern int insert_s(struct SN_env * z, int bra, int ket, int s_size, const symbol * s) {
-    int adjustment;
+extern SWINT_T insert_s(struct SN_env * z, SWINT_T bra, SWINT_T ket, SWINT_T s_size, const symbol * s) {
+    SWINT_T adjustment;
     if (replace_s(z, bra, ket, s_size, s, &adjustment))
         return -1;
     if (bra <= z->bra) z->bra += adjustment;
@@ -416,8 +416,8 @@ extern int insert_s(struct SN_env * z, int bra, int ket, int s_size, const symbo
     return 0;
 }
 
-extern int insert_v(struct SN_env * z, int bra, int ket, const symbol * p) {
-    int adjustment;
+extern SWINT_T insert_v(struct SN_env * z, SWINT_T bra, SWINT_T ket, const symbol * p) {
+    SWINT_T adjustment;
     if (replace_s(z, bra, ket, SIZE(p), p, &adjustment))
         return -1;
     if (bra <= z->bra) z->bra += adjustment;
@@ -431,7 +431,7 @@ extern symbol * slice_to(struct SN_env * z, symbol * p) {
         return NULL;
     }
     {
-        int len = z->ket - z->bra;
+        SWINT_T len = z->ket - z->bra;
         if (CAPACITY(p) < len) {
             p = increase_size(p, len);
             if (p == NULL)
@@ -444,7 +444,7 @@ extern symbol * slice_to(struct SN_env * z, symbol * p) {
 }
 
 extern symbol * assign_to(struct SN_env * z, symbol * p) {
-    int len = z->l;
+    SWINT_T len = z->l;
     if (CAPACITY(p) < len) {
         p = increase_size(p, len);
         if (p == NULL)
@@ -456,11 +456,11 @@ extern symbol * assign_to(struct SN_env * z, symbol * p) {
 }
 
 #if 0
-extern void debug(struct SN_env * z, int number, int line_count) {
-    int i;
-    int limit = SIZE(z->p);
-    /*if (number >= 0) printf("%3d (line %4d): '", number, line_count);*/
-    if (number >= 0) printf("%3d (line %4d): [%d]'", number, line_count,limit);
+extern void debug(struct SN_env * z, SWINT_T number, SWINT_T line_count) {
+    SWINT_T i;
+    SWINT_T limit = SIZE(z->p);
+    /*if (number >= 0) printf("%3lld (line %4lld): '", number, line_count);*/
+    if (number >= 0) printf("%3lld (line %4lld): [%lld]'", number, line_count,limit);
     for (i = 0; i <= limit; i++) {
         if (z->lb == i) printf("{");
         if (z->bra == i) printf("[");
@@ -468,7 +468,7 @@ extern void debug(struct SN_env * z, int number, int line_count) {
         if (z->ket == i) printf("]");
         if (z->l == i) printf("}");
         if (i < limit)
-        {   int ch = z->p[i];
+        {   SWINT_T ch = z->p[i];
             if (ch == 0) ch = '#';
             printf("%c", ch);
         }

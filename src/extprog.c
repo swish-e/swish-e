@@ -45,7 +45,7 @@ $Id$
 #include "parse_conffile.h"
 #include "bash.h" /* for locating a program */
 
-static char *find_command_in_path(const char *name, const char *path_list, int *path_index);
+static char *find_command_in_path(const char *name, const char *path_list, SWINT_T *path_index);
 static char *get_env_path_with_libexecdir( void );
 
 
@@ -87,7 +87,7 @@ void freeModule_Prog (SWISH *sw)
     return;
 }
 
-int configModule_Prog (SWISH *sw, StringList *sl)
+SWINT_T configModule_Prog (SWISH *sw, StringList *sl)
 
 {
     struct MOD_Prog *self = sw->Prog;
@@ -120,7 +120,7 @@ static FILE   *open_external_program(SWISH * sw, char *prog)
     FILE   *fp;
     size_t  total_len;
     struct swline *progparameterslist = sw->Prog->progparameterslist;
-    int    path_index = 0;  /* index into $PATH */
+    SWINT_T    path_index = 0;  /* index into $PATH */
     char  *env_path = get_env_path_with_libexecdir();
 	
     if ( ! strcmp( prog, "stdin") )
@@ -227,12 +227,12 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
     FILE   *fp;
     char   *ln;
     char   *real_path;
-    long    fsize;
+    SWINT_T    fsize;
     time_t  mtime;
-    int     index_no_content;
-    long    truncate_doc_size;
-    int     docType = 0;
-    int     original_update_mode = sw->Index->update_mode;
+    SWINT_T     index_no_content;
+    SWINT_T    truncate_doc_size;
+    SWINT_T     docType = 0;
+    SWINT_T     original_update_mode = sw->Index->update_mode;
 
     mtime = 0;
     fsize = -1;
@@ -254,7 +254,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
     {
         char    *end;
         char    *line;
-        int     has_filter = 0;
+        SWINT_T     has_filter = 0;
 
         line = str_skip_ws(ln); /* skip leading white space */
         end = strrchr(line, '\n'); /* replace \n with null -- better to remove trailing white space */
@@ -262,7 +262,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
         /* trim white space */
         if (end)
         {
-            while ( end > line && isspace( (int)*(end-1) ) )
+            while ( end > line && isspace( (SWINT_T)*(end-1) ) )
                 end--;
 
             *end = '\0';
@@ -490,7 +490,7 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
 
 
 /* Don't use old method of config checking */
-static int     extprog_parseconfline(SWISH * sw, StringList *l)
+static SWINT_T     extprog_parseconfline(SWISH * sw, StringList *l)
 {
     return 0;
 }
@@ -506,11 +506,11 @@ struct _indexing_data_source_def ExternalProgramDataSource = {
 
 
 /* From GNU Which */
-static char *find_command_in_path(const char *name, const char *path_list, int *path_index)
+static char *find_command_in_path(const char *name, const char *path_list, SWINT_T *path_index)
 {
   char *found = NULL, *full_path;
-  int status, name_len;
-  int absolute_path_given = 0;
+  SWINT_T status, name_len;
+  SWINT_T absolute_path_given = 0;
   char *abs_path = NULL;
   name_len = strlen(name);
 

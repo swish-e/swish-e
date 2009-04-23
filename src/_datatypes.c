@@ -52,7 +52,7 @@ $Id$
 */
 
 typedef LongestType   double;     /* longest module internal type needed  */
-                                  /* maybe you can use also "long double" */
+                                  /* maybe you can use also "SWINT_T double" */
 
 
 static LongestType  cast_numeric (SwDataValue v);
@@ -98,13 +98,13 @@ char *datavalue2strfmt (SwDataValue *v, char *altfmt)
 {
  char  *fmt;
  char  wordbuf[65500];              /* should be enough */
- int   n;
+ SWINT_T   n;
 
 
   switch (v->datatype) {		/* data value type */
 					/* use passed or default fmt */
 	case INTEGER:
-		fmt = (altfmt) ? altfmt: "%d";
+		fmt = (altfmt) ? altfmt: "%lld";
 		n = sprintf (wordbuf,fmt,v->value.v_int); 
 		break;
 
@@ -119,10 +119,10 @@ char *datavalue2strfmt (SwDataValue *v, char *altfmt)
 		break;
 
 	case DATE:
-		fmt = (altfmt) ? altfmt: "%Y-%m-%d %H:%M:%S";
-		if (!strcmp (fmt,"%ld")) {
-			/* special: Print date as serial int (for Bill) */
-		   n = sprintf (wordbuf,fmt, (long) v->value.v_date);
+		fmt = (altfmt) ? altfmt: "%Y-%m-%lld %H:%M:%S";
+		if (!strcmp (fmt,"%lld")) {
+			/* special: Print date as serial SWINT_T (for Bill) */
+		   n = sprintf (wordbuf,fmt, (SWINT_T) v->value.v_date);
 		} else {
 			/* fmt is strftime format control! */
 		   n = strftime (wordbuf,sizeof(wordbuf), fmt,
@@ -201,10 +201,10 @@ SwDataValue *str2var (char *s, SwDataType dt)
   -- return: like strcmp
 */
 
-int datavaluecmp (SwDataValue *a, SwDataValue *b)
+SWINT_T datavaluecmp (SwDataValue *a, SwDataValue *b)
 
 {
-   int          cmp = 0;
+   SWINT_T          cmp = 0;
    LongestType  d;
    char         *sa,*sb;
 

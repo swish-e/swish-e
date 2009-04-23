@@ -6,21 +6,21 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-extern int romanian_ISO_8859_2_stem(struct SN_env * z);
+extern SWINT_T romanian_ISO_8859_2_stem(struct SN_env * z);
 #ifdef __cplusplus
 }
 #endif
-static int r_vowel_suffix(struct SN_env * z);
-static int r_verb_suffix(struct SN_env * z);
-static int r_combo_suffix(struct SN_env * z);
-static int r_standard_suffix(struct SN_env * z);
-static int r_step_0(struct SN_env * z);
-static int r_R2(struct SN_env * z);
-static int r_R1(struct SN_env * z);
-static int r_RV(struct SN_env * z);
-static int r_mark_regions(struct SN_env * z);
-static int r_postlude(struct SN_env * z);
-static int r_prelude(struct SN_env * z);
+static SWINT_T r_vowel_suffix(struct SN_env * z);
+static SWINT_T r_verb_suffix(struct SN_env * z);
+static SWINT_T r_combo_suffix(struct SN_env * z);
+static SWINT_T r_standard_suffix(struct SN_env * z);
+static SWINT_T r_step_0(struct SN_env * z);
+static SWINT_T r_R2(struct SN_env * z);
+static SWINT_T r_R1(struct SN_env * z);
+static SWINT_T r_RV(struct SN_env * z);
+static SWINT_T r_mark_regions(struct SN_env * z);
+static SWINT_T r_postlude(struct SN_env * z);
+static SWINT_T r_prelude(struct SN_env * z);
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -540,18 +540,18 @@ static const symbol s_20[] = { 't' };
 static const symbol s_21[] = { 'i', 's', 't' };
 static const symbol s_22[] = { 'u' };
 
-static int r_prelude(struct SN_env * z) {
+static SWINT_T r_prelude(struct SN_env * z) {
     while(1) { /* repeat, line 32 */
-        int c1 = z->c;
+        SWINT_T c1 = z->c;
         while(1) { /* goto, line 32 */
-            int c2 = z->c;
+            SWINT_T c2 = z->c;
             if (in_grouping(z, g_v, 97, 238, 0)) goto lab1;
             z->bra = z->c; /* [, line 33 */
-            {   int c3 = z->c; /* or, line 33 */
+            {   SWINT_T c3 = z->c; /* or, line 33 */
                 if (!(eq_s(z, 1, s_0))) goto lab3;
                 z->ket = z->c; /* ], line 33 */
                 if (in_grouping(z, g_v, 97, 238, 0)) goto lab3;
-                {   int ret = slice_from_s(z, 1, s_1); /* <-, line 33 */
+                {   SWINT_T ret = slice_from_s(z, 1, s_1); /* <-, line 33 */
                     if (ret < 0) return ret;
                 }
                 goto lab2;
@@ -560,7 +560,7 @@ static int r_prelude(struct SN_env * z) {
                 if (!(eq_s(z, 1, s_2))) goto lab1;
                 z->ket = z->c; /* ], line 34 */
                 if (in_grouping(z, g_v, 97, 238, 0)) goto lab1;
-                {   int ret = slice_from_s(z, 1, s_3); /* <-, line 34 */
+                {   SWINT_T ret = slice_from_s(z, 1, s_3); /* <-, line 34 */
                     if (ret < 0) return ret;
                 }
             }
@@ -580,17 +580,17 @@ static int r_prelude(struct SN_env * z) {
     return 1;
 }
 
-static int r_mark_regions(struct SN_env * z) {
+static SWINT_T r_mark_regions(struct SN_env * z) {
     z->I[0] = z->l;
     z->I[1] = z->l;
     z->I[2] = z->l;
-    {   int c1 = z->c; /* do, line 44 */
-        {   int c2 = z->c; /* or, line 46 */
+    {   SWINT_T c1 = z->c; /* do, line 44 */
+        {   SWINT_T c2 = z->c; /* or, line 46 */
             if (in_grouping(z, g_v, 97, 238, 0)) goto lab2;
-            {   int c3 = z->c; /* or, line 45 */
+            {   SWINT_T c3 = z->c; /* or, line 45 */
                 if (out_grouping(z, g_v, 97, 238, 0)) goto lab4;
                 {    /* gopast */ /* grouping v, line 45 */
-                    int ret = out_grouping(z, g_v, 97, 238, 1);
+                    SWINT_T ret = out_grouping(z, g_v, 97, 238, 1);
                     if (ret < 0) goto lab4;
                     z->c += ret;
                 }
@@ -599,7 +599,7 @@ static int r_mark_regions(struct SN_env * z) {
                 z->c = c3;
                 if (in_grouping(z, g_v, 97, 238, 0)) goto lab2;
                 {    /* gopast */ /* non v, line 45 */
-                    int ret = in_grouping(z, g_v, 97, 238, 1);
+                    SWINT_T ret = in_grouping(z, g_v, 97, 238, 1);
                     if (ret < 0) goto lab2;
                     z->c += ret;
                 }
@@ -609,10 +609,10 @@ static int r_mark_regions(struct SN_env * z) {
         lab2:
             z->c = c2;
             if (out_grouping(z, g_v, 97, 238, 0)) goto lab0;
-            {   int c4 = z->c; /* or, line 47 */
+            {   SWINT_T c4 = z->c; /* or, line 47 */
                 if (out_grouping(z, g_v, 97, 238, 0)) goto lab6;
                 {    /* gopast */ /* grouping v, line 47 */
-                    int ret = out_grouping(z, g_v, 97, 238, 1);
+                    SWINT_T ret = out_grouping(z, g_v, 97, 238, 1);
                     if (ret < 0) goto lab6;
                     z->c += ret;
                 }
@@ -631,25 +631,25 @@ static int r_mark_regions(struct SN_env * z) {
     lab0:
         z->c = c1;
     }
-    {   int c5 = z->c; /* do, line 50 */
+    {   SWINT_T c5 = z->c; /* do, line 50 */
         {    /* gopast */ /* grouping v, line 51 */
-            int ret = out_grouping(z, g_v, 97, 238, 1);
+            SWINT_T ret = out_grouping(z, g_v, 97, 238, 1);
             if (ret < 0) goto lab7;
             z->c += ret;
         }
         {    /* gopast */ /* non v, line 51 */
-            int ret = in_grouping(z, g_v, 97, 238, 1);
+            SWINT_T ret = in_grouping(z, g_v, 97, 238, 1);
             if (ret < 0) goto lab7;
             z->c += ret;
         }
         z->I[1] = z->c; /* setmark p1, line 51 */
         {    /* gopast */ /* grouping v, line 52 */
-            int ret = out_grouping(z, g_v, 97, 238, 1);
+            SWINT_T ret = out_grouping(z, g_v, 97, 238, 1);
             if (ret < 0) goto lab7;
             z->c += ret;
         }
         {    /* gopast */ /* non v, line 52 */
-            int ret = in_grouping(z, g_v, 97, 238, 1);
+            SWINT_T ret = in_grouping(z, g_v, 97, 238, 1);
             if (ret < 0) goto lab7;
             z->c += ret;
         }
@@ -660,10 +660,10 @@ static int r_mark_regions(struct SN_env * z) {
     return 1;
 }
 
-static int r_postlude(struct SN_env * z) {
-    int among_var;
+static SWINT_T r_postlude(struct SN_env * z) {
+    SWINT_T among_var;
     while(1) { /* repeat, line 56 */
-        int c1 = z->c;
+        SWINT_T c1 = z->c;
         z->bra = z->c; /* [, line 58 */
         if (z->c >= z->l || (z->p[z->c + 0] != 73 && z->p[z->c + 0] != 85)) among_var = 3; else
         among_var = find_among(z, a_0, 3); /* substring, line 58 */
@@ -672,12 +672,12 @@ static int r_postlude(struct SN_env * z) {
         switch(among_var) {
             case 0: goto lab0;
             case 1:
-                {   int ret = slice_from_s(z, 1, s_4); /* <-, line 59 */
+                {   SWINT_T ret = slice_from_s(z, 1, s_4); /* <-, line 59 */
                     if (ret < 0) return ret;
                 }
                 break;
             case 2:
-                {   int ret = slice_from_s(z, 1, s_5); /* <-, line 60 */
+                {   SWINT_T ret = slice_from_s(z, 1, s_5); /* <-, line 60 */
                     if (ret < 0) return ret;
                 }
                 break;
@@ -694,72 +694,72 @@ static int r_postlude(struct SN_env * z) {
     return 1;
 }
 
-static int r_RV(struct SN_env * z) {
+static SWINT_T r_RV(struct SN_env * z) {
     if (!(z->I[0] <= z->c)) return 0;
     return 1;
 }
 
-static int r_R1(struct SN_env * z) {
+static SWINT_T r_R1(struct SN_env * z) {
     if (!(z->I[1] <= z->c)) return 0;
     return 1;
 }
 
-static int r_R2(struct SN_env * z) {
+static SWINT_T r_R2(struct SN_env * z) {
     if (!(z->I[2] <= z->c)) return 0;
     return 1;
 }
 
-static int r_step_0(struct SN_env * z) {
-    int among_var;
+static SWINT_T r_step_0(struct SN_env * z) {
+    SWINT_T among_var;
     z->ket = z->c; /* [, line 73 */
     if (z->c - 1 <= z->lb || z->p[z->c - 1] >> 5 != 3 || !((266786 >> (z->p[z->c - 1] & 0x1f)) & 1)) return 0;
     among_var = find_among_b(z, a_1, 16); /* substring, line 73 */
     if (!(among_var)) return 0;
     z->bra = z->c; /* ], line 73 */
-    {   int ret = r_R1(z);
+    {   SWINT_T ret = r_R1(z);
         if (ret == 0) return 0; /* call R1, line 73 */
         if (ret < 0) return ret;
     }
     switch(among_var) {
         case 0: return 0;
         case 1:
-            {   int ret = slice_del(z); /* delete, line 75 */
+            {   SWINT_T ret = slice_del(z); /* delete, line 75 */
                 if (ret < 0) return ret;
             }
             break;
         case 2:
-            {   int ret = slice_from_s(z, 1, s_6); /* <-, line 77 */
+            {   SWINT_T ret = slice_from_s(z, 1, s_6); /* <-, line 77 */
                 if (ret < 0) return ret;
             }
             break;
         case 3:
-            {   int ret = slice_from_s(z, 1, s_7); /* <-, line 79 */
+            {   SWINT_T ret = slice_from_s(z, 1, s_7); /* <-, line 79 */
                 if (ret < 0) return ret;
             }
             break;
         case 4:
-            {   int ret = slice_from_s(z, 1, s_8); /* <-, line 81 */
+            {   SWINT_T ret = slice_from_s(z, 1, s_8); /* <-, line 81 */
                 if (ret < 0) return ret;
             }
             break;
         case 5:
-            {   int m1 = z->l - z->c; (void)m1; /* not, line 83 */
+            {   SWINT_T m1 = z->l - z->c; (void)m1; /* not, line 83 */
                 if (!(eq_s_b(z, 2, s_9))) goto lab0;
                 return 0;
             lab0:
                 z->c = z->l - m1;
             }
-            {   int ret = slice_from_s(z, 1, s_10); /* <-, line 83 */
+            {   SWINT_T ret = slice_from_s(z, 1, s_10); /* <-, line 83 */
                 if (ret < 0) return ret;
             }
             break;
         case 6:
-            {   int ret = slice_from_s(z, 2, s_11); /* <-, line 85 */
+            {   SWINT_T ret = slice_from_s(z, 2, s_11); /* <-, line 85 */
                 if (ret < 0) return ret;
             }
             break;
         case 7:
-            {   int ret = slice_from_s(z, 3, s_12); /* <-, line 87 */
+            {   SWINT_T ret = slice_from_s(z, 3, s_12); /* <-, line 87 */
                 if (ret < 0) return ret;
             }
             break;
@@ -767,46 +767,46 @@ static int r_step_0(struct SN_env * z) {
     return 1;
 }
 
-static int r_combo_suffix(struct SN_env * z) {
-    int among_var;
-    {   int m_test = z->l - z->c; /* test, line 91 */
+static SWINT_T r_combo_suffix(struct SN_env * z) {
+    SWINT_T among_var;
+    {   SWINT_T m_test = z->l - z->c; /* test, line 91 */
         z->ket = z->c; /* [, line 92 */
         among_var = find_among_b(z, a_2, 46); /* substring, line 92 */
         if (!(among_var)) return 0;
         z->bra = z->c; /* ], line 92 */
-        {   int ret = r_R1(z);
+        {   SWINT_T ret = r_R1(z);
             if (ret == 0) return 0; /* call R1, line 92 */
             if (ret < 0) return ret;
         }
         switch(among_var) {
             case 0: return 0;
             case 1:
-                {   int ret = slice_from_s(z, 4, s_13); /* <-, line 101 */
+                {   SWINT_T ret = slice_from_s(z, 4, s_13); /* <-, line 101 */
                     if (ret < 0) return ret;
                 }
                 break;
             case 2:
-                {   int ret = slice_from_s(z, 4, s_14); /* <-, line 104 */
+                {   SWINT_T ret = slice_from_s(z, 4, s_14); /* <-, line 104 */
                     if (ret < 0) return ret;
                 }
                 break;
             case 3:
-                {   int ret = slice_from_s(z, 2, s_15); /* <-, line 107 */
+                {   SWINT_T ret = slice_from_s(z, 2, s_15); /* <-, line 107 */
                     if (ret < 0) return ret;
                 }
                 break;
             case 4:
-                {   int ret = slice_from_s(z, 2, s_16); /* <-, line 113 */
+                {   SWINT_T ret = slice_from_s(z, 2, s_16); /* <-, line 113 */
                     if (ret < 0) return ret;
                 }
                 break;
             case 5:
-                {   int ret = slice_from_s(z, 2, s_17); /* <-, line 118 */
+                {   SWINT_T ret = slice_from_s(z, 2, s_17); /* <-, line 118 */
                     if (ret < 0) return ret;
                 }
                 break;
             case 6:
-                {   int ret = slice_from_s(z, 2, s_18); /* <-, line 122 */
+                {   SWINT_T ret = slice_from_s(z, 2, s_18); /* <-, line 122 */
                     if (ret < 0) return ret;
                 }
                 break;
@@ -817,12 +817,12 @@ static int r_combo_suffix(struct SN_env * z) {
     return 1;
 }
 
-static int r_standard_suffix(struct SN_env * z) {
-    int among_var;
+static SWINT_T r_standard_suffix(struct SN_env * z) {
+    SWINT_T among_var;
     z->B[0] = 0; /* unset standard_suffix_removed, line 130 */
     while(1) { /* repeat, line 131 */
-        int m1 = z->l - z->c; (void)m1;
-        {   int ret = r_combo_suffix(z);
+        SWINT_T m1 = z->l - z->c; (void)m1;
+        {   SWINT_T ret = r_combo_suffix(z);
             if (ret == 0) goto lab0; /* call combo_suffix, line 131 */
             if (ret < 0) return ret;
         }
@@ -835,26 +835,26 @@ static int r_standard_suffix(struct SN_env * z) {
     among_var = find_among_b(z, a_3, 62); /* substring, line 132 */
     if (!(among_var)) return 0;
     z->bra = z->c; /* ], line 132 */
-    {   int ret = r_R2(z);
+    {   SWINT_T ret = r_R2(z);
         if (ret == 0) return 0; /* call R2, line 132 */
         if (ret < 0) return ret;
     }
     switch(among_var) {
         case 0: return 0;
         case 1:
-            {   int ret = slice_del(z); /* delete, line 149 */
+            {   SWINT_T ret = slice_del(z); /* delete, line 149 */
                 if (ret < 0) return ret;
             }
             break;
         case 2:
             if (!(eq_s_b(z, 1, s_19))) return 0;
             z->bra = z->c; /* ], line 152 */
-            {   int ret = slice_from_s(z, 1, s_20); /* <-, line 152 */
+            {   SWINT_T ret = slice_from_s(z, 1, s_20); /* <-, line 152 */
                 if (ret < 0) return ret;
             }
             break;
         case 3:
-            {   int ret = slice_from_s(z, 3, s_21); /* <-, line 156 */
+            {   SWINT_T ret = slice_from_s(z, 3, s_21); /* <-, line 156 */
                 if (ret < 0) return ret;
             }
             break;
@@ -863,10 +863,10 @@ static int r_standard_suffix(struct SN_env * z) {
     return 1;
 }
 
-static int r_verb_suffix(struct SN_env * z) {
-    int among_var;
-    {   int mlimit; /* setlimit, line 164 */
-        int m1 = z->l - z->c; (void)m1;
+static SWINT_T r_verb_suffix(struct SN_env * z) {
+    SWINT_T among_var;
+    {   SWINT_T mlimit; /* setlimit, line 164 */
+        SWINT_T m1 = z->l - z->c; (void)m1;
         if (z->c < z->I[0]) return 0;
         z->c = z->I[0]; /* tomark, line 164 */
         mlimit = z->lb; z->lb = z->c;
@@ -878,7 +878,7 @@ static int r_verb_suffix(struct SN_env * z) {
         switch(among_var) {
             case 0: { z->lb = mlimit; return 0; }
             case 1:
-                {   int m2 = z->l - z->c; (void)m2; /* or, line 200 */
+                {   SWINT_T m2 = z->l - z->c; (void)m2; /* or, line 200 */
                     if (out_grouping_b(z, g_v, 97, 238, 0)) goto lab1;
                     goto lab0;
                 lab1:
@@ -886,12 +886,12 @@ static int r_verb_suffix(struct SN_env * z) {
                     if (!(eq_s_b(z, 1, s_22))) { z->lb = mlimit; return 0; }
                 }
             lab0:
-                {   int ret = slice_del(z); /* delete, line 200 */
+                {   SWINT_T ret = slice_del(z); /* delete, line 200 */
                     if (ret < 0) return ret;
                 }
                 break;
             case 2:
-                {   int ret = slice_del(z); /* delete, line 214 */
+                {   SWINT_T ret = slice_del(z); /* delete, line 214 */
                     if (ret < 0) return ret;
                 }
                 break;
@@ -901,20 +901,20 @@ static int r_verb_suffix(struct SN_env * z) {
     return 1;
 }
 
-static int r_vowel_suffix(struct SN_env * z) {
-    int among_var;
+static SWINT_T r_vowel_suffix(struct SN_env * z) {
+    SWINT_T among_var;
     z->ket = z->c; /* [, line 219 */
     among_var = find_among_b(z, a_5, 5); /* substring, line 219 */
     if (!(among_var)) return 0;
     z->bra = z->c; /* ], line 219 */
-    {   int ret = r_RV(z);
+    {   SWINT_T ret = r_RV(z);
         if (ret == 0) return 0; /* call RV, line 219 */
         if (ret < 0) return ret;
     }
     switch(among_var) {
         case 0: return 0;
         case 1:
-            {   int ret = slice_del(z); /* delete, line 220 */
+            {   SWINT_T ret = slice_del(z); /* delete, line 220 */
                 if (ret < 0) return ret;
             }
             break;
@@ -922,17 +922,17 @@ static int r_vowel_suffix(struct SN_env * z) {
     return 1;
 }
 
-extern int romanian_ISO_8859_2_stem(struct SN_env * z) {
-    {   int c1 = z->c; /* do, line 226 */
-        {   int ret = r_prelude(z);
+extern SWINT_T romanian_ISO_8859_2_stem(struct SN_env * z) {
+    {   SWINT_T c1 = z->c; /* do, line 226 */
+        {   SWINT_T ret = r_prelude(z);
             if (ret == 0) goto lab0; /* call prelude, line 226 */
             if (ret < 0) return ret;
         }
     lab0:
         z->c = c1;
     }
-    {   int c2 = z->c; /* do, line 227 */
-        {   int ret = r_mark_regions(z);
+    {   SWINT_T c2 = z->c; /* do, line 227 */
+        {   SWINT_T ret = r_mark_regions(z);
             if (ret == 0) goto lab1; /* call mark_regions, line 227 */
             if (ret < 0) return ret;
         }
@@ -941,29 +941,29 @@ extern int romanian_ISO_8859_2_stem(struct SN_env * z) {
     }
     z->lb = z->c; z->c = z->l; /* backwards, line 228 */
 
-    {   int m3 = z->l - z->c; (void)m3; /* do, line 229 */
-        {   int ret = r_step_0(z);
+    {   SWINT_T m3 = z->l - z->c; (void)m3; /* do, line 229 */
+        {   SWINT_T ret = r_step_0(z);
             if (ret == 0) goto lab2; /* call step_0, line 229 */
             if (ret < 0) return ret;
         }
     lab2:
         z->c = z->l - m3;
     }
-    {   int m4 = z->l - z->c; (void)m4; /* do, line 230 */
-        {   int ret = r_standard_suffix(z);
+    {   SWINT_T m4 = z->l - z->c; (void)m4; /* do, line 230 */
+        {   SWINT_T ret = r_standard_suffix(z);
             if (ret == 0) goto lab3; /* call standard_suffix, line 230 */
             if (ret < 0) return ret;
         }
     lab3:
         z->c = z->l - m4;
     }
-    {   int m5 = z->l - z->c; (void)m5; /* do, line 231 */
-        {   int m6 = z->l - z->c; (void)m6; /* or, line 231 */
+    {   SWINT_T m5 = z->l - z->c; (void)m5; /* do, line 231 */
+        {   SWINT_T m6 = z->l - z->c; (void)m6; /* or, line 231 */
             if (!(z->B[0])) goto lab6; /* Boolean test standard_suffix_removed, line 231 */
             goto lab5;
         lab6:
             z->c = z->l - m6;
-            {   int ret = r_verb_suffix(z);
+            {   SWINT_T ret = r_verb_suffix(z);
                 if (ret == 0) goto lab4; /* call verb_suffix, line 231 */
                 if (ret < 0) return ret;
             }
@@ -972,8 +972,8 @@ extern int romanian_ISO_8859_2_stem(struct SN_env * z) {
     lab4:
         z->c = z->l - m5;
     }
-    {   int m7 = z->l - z->c; (void)m7; /* do, line 232 */
-        {   int ret = r_vowel_suffix(z);
+    {   SWINT_T m7 = z->l - z->c; (void)m7; /* do, line 232 */
+        {   SWINT_T ret = r_vowel_suffix(z);
             if (ret == 0) goto lab7; /* call vowel_suffix, line 232 */
             if (ret < 0) return ret;
         }
@@ -981,8 +981,8 @@ extern int romanian_ISO_8859_2_stem(struct SN_env * z) {
         z->c = z->l - m7;
     }
     z->c = z->lb;
-    {   int c8 = z->c; /* do, line 234 */
-        {   int ret = r_postlude(z);
+    {   SWINT_T c8 = z->c; /* do, line 234 */
+        {   SWINT_T ret = r_postlude(z);
             if (ret == 0) goto lab8; /* call postlude, line 234 */
             if (ret < 0) return ret;
         }

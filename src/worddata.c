@@ -104,16 +104,16 @@ Mon May  9 10:57:22 CDT 2005 -- added GPL notice
 
 #define WORDDATA_PageData(pg) ((pg)->data + WORDDATA_PageHeaderSize)
 
-#define WORDDATA_SetBlocksInUse(pg,num) ( *(int *)((pg)->data + 0 * sizeof(int)) = PACKLONG(num))
-#define WORDDATA_GetBlocksInUse(pg,num) ( (num) = UNPACKLONG(*(int *)((pg)->data + 0 * sizeof(int))))
+#define WORDDATA_SetBlocksInUse(pg,num) ( *(SWINT_T *)((pg)->data + 0 * sizeof(SWINT_T)) = PACKLONG(num))
+#define WORDDATA_GetBlocksInUse(pg,num) ( (num) = UNPACKLONG(*(SWINT_T *)((pg)->data + 0 * sizeof(SWINT_T))))
 
-#define WORDDATA_SetNumRecords(pg,num) ( *(int *)((pg)->data + 1 * sizeof(int)) = PACKLONG(num))
-#define WORDDATA_GetNumRecords(pg,num) ( (num) = UNPACKLONG(*(int *)((pg)->data + 1 * sizeof(int))))
+#define WORDDATA_SetNumRecords(pg,num) ( *(SWINT_T *)((pg)->data + 1 * sizeof(SWINT_T)) = PACKLONG(num))
+#define WORDDATA_GetNumRecords(pg,num) ( (num) = UNPACKLONG(*(SWINT_T *)((pg)->data + 1 * sizeof(SWINT_T))))
 
 
 /* Routine to write the page to disk 
 */
-int WORDDATA_WritePageToDisk(FILE *fp, WORDDATA_Page *pg)
+SWINT_T WORDDATA_WritePageToDisk(FILE *fp, WORDDATA_Page *pg)
 {
     /* Set the page basic data*/
     /* Number of blocks in use */
@@ -127,9 +127,9 @@ int WORDDATA_WritePageToDisk(FILE *fp, WORDDATA_Page *pg)
     return 1;
 }
 
-int WORDDATA_WritePage(WORDDATA *b, WORDDATA_Page *pg)
+SWINT_T WORDDATA_WritePage(WORDDATA *b, WORDDATA_Page *pg)
 {
-int hash = (int)(pg->page_number % (sw_off_t)WORDDATA_CACHE_SIZE);
+SWINT_T hash = (SWINT_T)(pg->page_number % (sw_off_t)WORDDATA_CACHE_SIZE);
 WORDDATA_Page *tmp;
     /* Mark page as modified */
     pg->modified =1;
@@ -150,9 +150,9 @@ WORDDATA_Page *tmp;
     return 0;
 }
 
-int WORDDATA_FlushCache(WORDDATA *b)
+SWINT_T WORDDATA_FlushCache(WORDDATA *b)
 {
-int i;
+SWINT_T i;
 WORDDATA_Page *tmp, *next;
     for(i = 0; i < WORDDATA_CACHE_SIZE; i++)
     {
@@ -180,7 +180,7 @@ WORDDATA_Page *tmp, *next;
 /* Routine to remove the page page_number from the cache */
 void WORDDATA_CleanCachePage(WORDDATA *b,sw_off_t page_number)
 {
-int hash = (int)(page_number % (sw_off_t)WORDDATA_CACHE_SIZE);
+SWINT_T hash = (SWINT_T)(page_number % (sw_off_t)WORDDATA_CACHE_SIZE);
 WORDDATA_Page *tmp,*next,*prev = NULL;
 
     /* Search for page in cache */
@@ -204,9 +204,9 @@ WORDDATA_Page *tmp,*next,*prev = NULL;
     }
 }
 
-int WORDDATA_CleanCache(WORDDATA *b)
+SWINT_T WORDDATA_CleanCache(WORDDATA *b)
 {
-int i;
+SWINT_T i;
 WORDDATA_Page *tmp,*next;
     for(i = 0; i < WORDDATA_CACHE_SIZE; i++)
     {
@@ -248,7 +248,7 @@ WORDDATA_Page *pg = (WORDDATA_Page *)emalloc(sizeof(WORDDATA_Page) + WORDDATA_Pa
 
 WORDDATA_Page *WORDDATA_ReadPage(WORDDATA *b, sw_off_t page_number)
 {
-int hash = (int)(page_number % (sw_off_t)WORDDATA_CACHE_SIZE);
+SWINT_T hash = (SWINT_T)(page_number % (sw_off_t)WORDDATA_CACHE_SIZE);
 WORDDATA_Page *tmp;
 
     /* Search for page in cache */
@@ -283,8 +283,8 @@ WORDDATA_Page *WORDDATA_NewPage(WORDDATA *b)
 WORDDATA_Page *pg;
 sw_off_t offset;
 FILE *fp = b->fp;
-int hash;
-int i;
+SWINT_T hash;
+SWINT_T i;
 sw_off_t page_number = (sw_off_t)0;
 unsigned char empty_buffer[WORDDATA_PageSize];
     /* Let's see if we have a previous available page */
@@ -363,7 +363,7 @@ unsigned char empty_buffer[WORDDATA_PageSize];
     /* add to cache */
     pg->modified = 1;
     pg->in_use = 1;
-    hash = (int)(pg->page_number % (sw_off_t)WORDDATA_CACHE_SIZE);
+    hash = (SWINT_T)(pg->page_number % (sw_off_t)WORDDATA_CACHE_SIZE);
     pg->next_cache = b->cache[hash];
     b->cache[hash] = pg;
     return pg;
@@ -371,7 +371,7 @@ unsigned char empty_buffer[WORDDATA_PageSize];
 
 void WORDDATA_FreePage(WORDDATA *b, WORDDATA_Page *pg)
 {
-int hash = (int)(pg->page_number % (sw_off_t)WORDDATA_CACHE_SIZE);
+SWINT_T hash = (SWINT_T)(pg->page_number % (sw_off_t)WORDDATA_CACHE_SIZE);
 
 WORDDATA_Page *tmp;
 
@@ -412,15 +412,15 @@ void WORDDATA_Close(WORDDATA *bt)
 }
 
 
-sw_off_t WORDDATA_PutBig(WORDDATA *b, unsigned int len, unsigned char *data)
+sw_off_t WORDDATA_PutBig(WORDDATA *b, SWUINT_T len, unsigned char *data)
 {
 sw_off_t offset;
-unsigned long p_len = (unsigned long)PACKLONG((unsigned long)len);
-int size = WORDDATA_RoundPageSize(sizeof(p_len) + len);
+SWUINT_T p_len = (SWUINT_T)PACKLONG((SWUINT_T)len);
+SWINT_T size = WORDDATA_RoundPageSize(sizeof(p_len) + len);
 FILE *fp = b->fp;
 sw_off_t id;
 sw_off_t page_number = (sw_off_t)0;
-int i;
+SWINT_T i;
     /* Let's see if we have a previous available page */
     if(b->num_Reusable_Pages)
     {
@@ -498,12 +498,12 @@ int i;
 }
 
 
-sw_off_t WORDDATA_Put(WORDDATA *b, unsigned int len, unsigned char *data)
+sw_off_t WORDDATA_Put(WORDDATA *b, SWUINT_T len, unsigned char *data)
 {
-int required_length;
-int free_blocks;
-int i, r_id, r_len, tmp;
-int last_id, free_id;
+SWINT_T required_length;
+SWINT_T free_blocks;
+SWINT_T i, r_id, r_len, tmp;
+SWINT_T last_id, free_id;
 unsigned char *p,*q;
 unsigned char buffer[WORDDATA_PageSize];
 WORDDATA_Page *last_page=NULL;
@@ -514,7 +514,7 @@ WORDDATA_Page *last_page=NULL;
     required_length = WORDDATA_RoundBlockSize(required_length);
     if(required_length > WORDDATA_MaxDataSize)
     {
-        /* Store long record in file */
+        /* Store SWINT_T record in file */
         return WORDDATA_PutBig(b,len,data);
     }
 
@@ -569,9 +569,9 @@ WORDDATA_Page *last_page=NULL;
     for(i = 0, free_id = 0, last_id = 0, p = WORDDATA_PageData(last_page); i < last_page->n; i++)
     {
         /* Get the record id */
-        r_id = (int) (p[0]);
+        r_id = (SWINT_T) (p[0]);
         /* Get the record length */
-        r_len = ((((int)(p[1])) << 8) + (int)(p[2]));
+        r_len = ((((SWINT_T)(p[1])) << 8) + (SWINT_T)(p[2]));
         if((r_id - last_id) > 1)   /* find a reusable id */
         {
             free_id = last_id + 1;
@@ -601,7 +601,7 @@ WORDDATA_Page *last_page=NULL;
     for(;i < last_page->n; i++)
     {
         /* Get the record length */
-        r_len = ((((int)(p[1])) << 8) + (int)(p[2]));
+        r_len = ((((SWINT_T)(p[1])) << 8) + (SWINT_T)(p[2]));
         tmp = WORDDATA_RoundBlockSize((3 + r_len));
         memcpy(q,p,tmp);
         p += tmp;
@@ -619,10 +619,10 @@ WORDDATA_Page *last_page=NULL;
     return(b->lastid);
 }
 
-unsigned char *WORDDATA_GetBig(WORDDATA *b, sw_off_t page_number, unsigned int *len)
+unsigned char *WORDDATA_GetBig(WORDDATA *b, sw_off_t page_number, SWUINT_T *len)
 {
 sw_off_t offset = page_number * (sw_off_t)WORDDATA_PageSize;
-unsigned long p_len;
+SWUINT_T p_len;
 unsigned char *data;
     sw_fseek(b->fp, offset, SEEK_SET);
     sw_fread(&p_len,1,sizeof(p_len),b->fp);
@@ -632,13 +632,13 @@ unsigned char *data;
     return data;
 }
 
-unsigned char *WORDDATA_Get(WORDDATA *b, sw_off_t global_id, unsigned int *len)
+unsigned char *WORDDATA_Get(WORDDATA *b, sw_off_t global_id, SWUINT_T *len)
 {
 /* Get the page number and id from the global_id */
 sw_off_t page_number = global_id >> (sw_off_t)8;
-int id = (int)(global_id & (sw_off_t)0xff);
-int r_id=-1,r_len=-1;
-int i;
+SWINT_T id = (SWINT_T)(global_id & (sw_off_t)0xff);
+SWINT_T r_id=-1,r_len=-1;
+SWINT_T i;
 unsigned char *p;
 unsigned char *data;
 
@@ -658,9 +658,9 @@ unsigned char *data;
     for(i = 0, p = WORDDATA_PageData(b->last_get_page); i < b->last_get_page->n; i++)
     {
         /* Get the id */
-        r_id = (int) (p[0]);
+        r_id = (SWINT_T) (p[0]);
         /* Get the record length */
-        r_len = ((((int)(p[1])) << 8) + (int)(p[2]));
+        r_len = ((((SWINT_T)(p[1])) << 8) + (SWINT_T)(p[2]));
         if(r_id == id)   /* find the id */
             break;
         p += WORDDATA_RoundBlockSize((3 + r_len));
@@ -681,10 +681,10 @@ unsigned char *data;
     return data;
 }
 
-void WORDDATA_DelBig(WORDDATA *b, sw_off_t page_number, unsigned int *len)
+void WORDDATA_DelBig(WORDDATA *b, sw_off_t page_number, SWUINT_T *len)
 {
 sw_off_t offset = page_number * (sw_off_t)WORDDATA_PageSize;
-unsigned long p_len;
+SWUINT_T p_len;
     sw_fseek(b->fp, offset, SEEK_SET);
     sw_fread(&p_len,1,sizeof(p_len),b->fp);
     *len = UNPACKLONG(p_len) + sizeof(p_len);
@@ -696,14 +696,14 @@ unsigned long p_len;
     }
 }
 
-void WORDDATA_Del(WORDDATA *b, sw_off_t global_id, unsigned int *len)
+void WORDDATA_Del(WORDDATA *b, sw_off_t global_id, SWUINT_T *len)
 {
 sw_off_t page_number = global_id >> (sw_off_t)8;
-int id = (int)(global_id & (sw_off_t)0xff);
-int r_id=-1,r_len=-1,tmp;
-int i;
+SWINT_T id = (SWINT_T)(global_id & (sw_off_t)0xff);
+SWINT_T r_id=-1,r_len=-1,tmp;
+SWINT_T i;
 unsigned char *p, *q;
-int deleted_length;
+SWINT_T deleted_length;
 
     if(!id)
     {
@@ -718,9 +718,9 @@ int deleted_length;
     for(i = 0, p = WORDDATA_PageData(b->last_del_page); i < b->last_del_page->n; i++)
     {
         /* Get the id */
-        r_id = (int) (p[0]);
+        r_id = (SWINT_T) (p[0]);
         /* Get the record length */
-        r_len = ((((int)(p[1])) << 8) + (int)(p[2]));
+        r_len = ((((SWINT_T)(p[1])) << 8) + (SWINT_T)(p[2]));
         if(r_id == id)   /* id found */
             break;
         p += WORDDATA_RoundBlockSize((3 + r_len));
@@ -737,7 +737,7 @@ int deleted_length;
         for(++i;i < b->last_del_page->n; i++)
         {
            /* Get the record length */
-           r_len = ((((int)(p[1])) << 8) + (int)(p[2]));
+           r_len = ((((SWINT_T)(p[1])) << 8) + (SWINT_T)(p[2]));
            tmp = WORDDATA_RoundBlockSize((3 + r_len));
            memcpy(q,p,tmp);
            p += tmp;
@@ -801,8 +801,8 @@ int main()
 {
 FILE *fp;
 WORDDATA *bt;
-int i,len;
-static unsigned long nums[N_TEST];
+SWINT_T i,len;
+static SWUINT_T nums[N_TEST];
     srand(time(NULL));
 
 
@@ -820,18 +820,18 @@ printf("\n\nIndexing\n\n");
     {
         nums[i] = WORDDATA_Put(bt,16,"1234567890123456");
         if(memcmp(WORDDATA_Get(bt,nums[i],&len),"1234567890123456",16)!=0)
-            printf("\n\nmal %d\n\n",i);
+            printf("\n\nmal %lld\n\n",i);
         if(!(i%1000))
         {
             WORDDATA_FlushCache(bt);
-            printf("%d            \r",i);
+            printf("%lld            \r",i);
         }
     }
 
     WORDDATA_Close(bt);
     sw_fclose(fp);
 
-printf("\n\nUnfreed %d\n\n",num);
+printf("\n\nUnfreed %lld\n\n",num);
 printf("\n\nSearching\n\n");
 
     fp = sw_fopen("kkkkk",FILEMODE_READ);
@@ -840,15 +840,15 @@ printf("\n\nSearching\n\n");
     for(i=0;i<N_TEST;i++)
     {
         if(memcmp(WORDDATA_Get(bt,nums[i],&len),"1234567890123456",16)!=0)
-            printf("\n\nmal %d\n\n",i);
+            printf("\n\nmal %lld\n\n",i);
         if(!(i%1000))
-            printf("%d            \r",i);
+            printf("%lld            \r",i);
     }
 
     WORDDATA_Close(bt);
 
     sw_fclose(fp);
-printf("\n\nUnfreed %d\n\n",num);
+printf("\n\nUnfreed %lld\n\n",num);
 
 }
 

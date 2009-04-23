@@ -49,34 +49,34 @@ void freeProperty( propEntry *prop );
 void freeDocProperties (docProperties *);
 void freefileinfo(FileRec *);
 
-unsigned char *storeDocProperties (docProperties *, int *);
+unsigned char *storeDocProperties (docProperties *, SWINT_T *);
 
-unsigned char *allocatePropIOBuffer(SWISH *sw, unsigned long buf_needed );
+unsigned char *allocatePropIOBuffer(SWISH *sw, SWUINT_T buf_needed );
 
-propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int metaID, int max_size );
-propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue, int propLen, int preEncoded, int *error_flag );
-void addDocProperties( INDEXDATAHEADER *header, docProperties **docProperties, unsigned char *propValue, int propLen, char *filename );
-int addDocProperty (docProperties **, struct metaEntry * , unsigned char* ,int, int );
-int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *p2 );
+propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, SWINT_T metaID, SWINT_T max_size );
+propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue, SWINT_T propLen, SWINT_T preEncoded, SWINT_T *error_flag );
+void addDocProperties( INDEXDATAHEADER *header, docProperties **docProperties, unsigned char *propValue, SWINT_T propLen, char *filename );
+SWINT_T addDocProperty (docProperties **, struct metaEntry * , unsigned char* ,SWINT_T, SWINT_T );
+SWINT_T Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *p2 );
 
 unsigned char *fetchDocProperties ( FileRec *, char * );
 
 
 void swapDocPropertyMetaNames (docProperties **, struct metaMergeEntry *);
 
-char *getResultPropAsString(RESULT *, int);
+char *getResultPropAsString(RESULT *, SWINT_T);
 char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop );
 void getSwishInternalProperties(FileRec *, IndexFILE *);
 
 
-PropValue *getResultPropValue (RESULT *r, char *name, int ID);
+PropValue *getResultPropValue (RESULT *r, char *name, SWINT_T ID);
 void    freeResultPropValue(PropValue *pv);
 
 
 
 void     WritePropertiesToDisk( SWISH *sw , FileRec *fi);
-propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, FileRec *fi, int metaID, int max_size );
-docProperties *ReadAllDocPropertiesFromDisk( IndexFILE *indexf, int filenum );
+propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, FileRec *fi, SWINT_T metaID, SWINT_T max_size );
+docProperties *ReadAllDocPropertiesFromDisk( IndexFILE *indexf, SWINT_T filenum );
 
 
 

@@ -55,9 +55,9 @@ $Id$
 
 typedef struct {
     char   *buffer;     // text for buffer
-    int     cur;        // pointer to end of buffer
-    int     max;        // max size of buffer
-    int     defaultID;  // default ID for no meta names.
+    SWINT_T     cur;        // pointer to end of buffer
+    SWINT_T     max;        // max size of buffer
+    SWINT_T     defaultID;  // default ID for no meta names.
 } CHAR_BUFFER;
 
 
@@ -66,9 +66,9 @@ typedef struct {
 
 typedef struct {
     struct metaEntry    *meta;
-    int                 save_size;   /* save max size */
+    SWINT_T                 save_size;   /* save max size */
     char                *tag;        /* summary tag */
-    int                 active;      /* inside summary */
+    SWINT_T                 active;      /* inside summary */
 } SUMMARY_INFO;
     
 
@@ -80,9 +80,9 @@ typedef struct {
     SUMMARY_INFO    summary;     // argh.
 
     char       *ignore_tag;     // tag that triggered ignore (currently used for both)
-    int         total_words;
-    int         word_pos;
-    int         filenum;
+    SWINT_T         total_words;
+    SWINT_T         word_pos;
+    SWINT_T         filenum;
     XML_Parser *parser;
     INDEXDATAHEADER *header;
     SWISH      *sw;
@@ -96,7 +96,7 @@ typedef struct {
 static void start_hndl(void *data, const char *el, const char **attr);
 static void end_hndl(void *data, const char *el);
 static void char_hndl(void *data, const char *txt, int txtlen);         // no rw64
-static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen );
+static void append_buffer( CHAR_BUFFER *buf, const char *txt, SWINT_T txtlen );
 static void flush_buffer( PARSE_DATA  *parse_data );
 static void comment_hndl(void *data, const char *txt);
 static char *isIgnoreMetaName(SWISH * sw, char *tag);
@@ -117,7 +117,7 @@ static char *isIgnoreMetaName(SWISH * sw, char *tag);
 *
 *********************************************************************/
 
-int countwords_XML (SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer)
+SWINT_T countwords_XML (SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer)
 {
     PARSE_DATA          parse_data;
     XML_Parser          p = XML_ParserCreate(NULL);
@@ -166,7 +166,7 @@ int countwords_XML (SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer)
     //XML_SetProcessingInstructionHandler(p, proc_hndl);
 
     if ( !XML_Parse(p, buffer, fprop->fsize, 1) )
-        progwarn("XML parse error in file '%s' line %d.  Error: %s",
+        progwarn("XML parse error in file '%s' line %lld.  Error: %s",
                      fprop->real_path, XML_GetCurrentLineNumber(p),XML_ErrorString(XML_GetErrorCode(p))); 
 
 
@@ -217,7 +217,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
 
     if(strlen(el) >= MAXSTRLEN)  // easy way out
     {
-        progwarn("Warning: Tag found in %s is too long: '%s'", parse_data->fprop->real_path, el );
+        progwarn("Warning: Tag found in %s is too SWINT_T: '%s'", parse_data->fprop->real_path, el );
         return;
     }
 
@@ -292,7 +292,7 @@ static void end_hndl(void *data, const char *el)
 
     if(strlen(el) > MAXSTRLEN)
     {
-        progwarn("Warning: Tag found in %s is too long: '%s'", parse_data->fprop->real_path, el );
+        progwarn("Warning: Tag found in %s is too SWINT_T: '%s'", parse_data->fprop->real_path, el );
         return;
     }
 
@@ -373,7 +373,7 @@ static void char_hndl(void *data, const char *txt, int txtlen)  // no rw64
 *
 *********************************************************************/
 
-static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen )
+static void append_buffer( CHAR_BUFFER *buf, const char *txt, SWINT_T txtlen )
 {
 
     if ( !txtlen )  // shouldn't happen

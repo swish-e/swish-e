@@ -45,20 +45,20 @@ void SwishErrorsToStderr( void );
 void progerr (char *msgfmt, ...);
 void progerrno (char *msgfmt, ...);
 
-void set_progerr(int errornum, SWISH *sw, char *msgfmt,...);
-void set_progerrno(int errornum, SWISH *sw, char *msgfmt,...);
+void set_progerr(SWINT_T errornum, SWISH *sw, char *msgfmt,...);
+void set_progerrno(SWINT_T errornum, SWISH *sw, char *msgfmt,...);
 
 
 void progwarn (char *msgfmt, ...);
 void progwarnno (char *msgfmt, ...);
 
 
-char *getErrorString(int);
-int  SwishError(SWISH * sw);
+char *getErrorString(SWINT_T);
+SWINT_T  SwishError(SWISH * sw);
 char *SwishErrorString(SWISH *sw);
 char *SwishLastErrorMsg(SWISH *sw);
 void SwishAbortLastError(SWISH *sw);
-int SwishCriticalError(SWISH *sw);
+SWINT_T SwishCriticalError(SWISH *sw);
 void reset_lasterror(SWISH *sw);
 
 

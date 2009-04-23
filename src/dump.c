@@ -48,7 +48,7 @@
 #include "error.h"
 
 
-void dump_index_file_list( SWISH *sw, IndexFILE *indexf, int filenum, int maxhits )
+void dump_index_file_list( SWISH *sw, IndexFILE *indexf, SWINT_T filenum, SWINT_T maxhits )
 {
     /* if maxhits is 0 then show all */
     if ( !maxhits )
@@ -63,7 +63,7 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf, int filenum, int maxhit
     while ( filenum <= indexf->header.totalfiles && maxhits )
     {
         FileRec fi;
-        int     words = 0;
+        SWINT_T     words = 0;
 
 
         /* See if file was deleted */
@@ -82,7 +82,7 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf, int filenum, int maxhit
         fi.filenum = filenum;
 
         fflush(stdout);
-        printf("Dumping File Properties for File Number: %d\n", filenum);
+        printf("Dumping File Properties for File Number: %lld\n", filenum);
 
 
         dump_file_properties( indexf, &fi );
@@ -94,7 +94,7 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf, int filenum, int maxhit
         dump_file_properties( indexf, &fi );
 
         if ( words )
-            printf("Filenum and words in this file: %d %d\n", filenum, words );
+            printf("Filenum and words in this file: %lld %lld\n", filenum, words );
 
         freefileinfo( &fi );
 
@@ -104,16 +104,16 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf, int filenum, int maxhit
         /* dump one at a time */
         {
             propEntry *p;
-            int j;
+            SWINT_T j;
             struct metaEntry *meta_entry;
             INDEXDATAHEADER *header = &indexf->header;
-            int count = header->property_count;
+            SWINT_T count = header->property_count;
 
             printf("ReadSingleDocPropertiesFromDisk:\n");
 
             for (j=0; j< count; j++) // just for testing
             {
-                int metaID = header->propIDX_to_metaID[j];
+                SWINT_T metaID = header->propIDX_to_metaID[j];
 
                 if ( !(p = ReadSingleDocPropertiesFromDisk(indexf, &fi, metaID, 0 )) )
                     continue;
@@ -123,13 +123,13 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf, int filenum, int maxhit
 
                 { // show compression
                     char    *buffer;
-                    int     uncompressed_len;
-                    int     buf_len;
+                    SWINT_T     uncompressed_len;
+                    SWINT_T     buf_len;
 
                     if ( (buffer = DB_ReadProperty( sw, indexf, &fi, meta_entry->metaID, &buf_len, &uncompressed_len, indexf->DB )))
                     {
                         if ( uncompressed_len )
-                            printf("  %20s: %d -> %d (%4.2f%%)\n", "**Compressed**", uncompressed_len , buf_len, (float)buf_len/(float)uncompressed_len * 100.00f );
+                            printf("  %20s: %lld -> %lld (%4.2f%%)\n", "**Compressed**", uncompressed_len , buf_len, (float)buf_len/(float)uncompressed_len * 100.00f );
 
                         efree(buffer);
                     }
@@ -154,7 +154,7 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf, int filenum, int maxhit
 /* prints out the number of words in every file in the index */
 /* This will generate an error if not indexed with totalwords and not btree */
 
-void    dump_word_count( SWISH *sw, IndexFILE *indexf, int filenum, int maxhits )
+void    dump_word_count( SWISH *sw, IndexFILE *indexf, SWINT_T filenum, SWINT_T maxhits )
 {
     /* if maxhits is 0 then show all */
     if ( !maxhits )
@@ -165,10 +165,10 @@ void    dump_word_count( SWISH *sw, IndexFILE *indexf, int filenum, int maxhits 
 
     while ( filenum <= indexf->header.totalfiles && maxhits )
     {
-        int words = getTotalWordsInFile( indexf, filenum );
+        SWINT_T words = getTotalWordsInFile( indexf, filenum );
         if ( words )
         {
-            printf("%d %d\n", filenum, words );
+            printf("%lld %lld\n", filenum, words );
             maxhits++;
         }
 
@@ -177,9 +177,9 @@ void    dump_word_count( SWISH *sw, IndexFILE *indexf, int filenum, int maxhits 
 }
 
 /* Prints out the data in an index DB */
-void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
+void    DB_decompress(SWISH * sw, IndexFILE * indexf, SWINT_T begin, SWINT_T maxhits)
 {
-    int     i,
+    SWINT_T     i,
             j,
             c,
             fieldnum,
@@ -188,12 +188,12 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
             tmpval,
             printedword,
             filenum;
-    unsigned int       *posdata;
-    int     metadata_length;
+    SWUINT_T       *posdata;
+    SWINT_T     metadata_length;
     char    word[2];
     char   *resultword;
     unsigned char   *worddata, *s, *start, flag;
-    int     sz_worddata, saved_bytes;
+    SWINT_T     sz_worddata, saved_bytes;
     sw_off_t    wordID;
 
 
@@ -237,7 +237,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
             word[1] = '\0';
             DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
 
-            while(wordID && (((int)((unsigned char)resultword[0]))== j))
+            while(wordID && (((SWINT_T)((unsigned char)resultword[0]))== j))
             {
               if(indexf->header.removedfiles)
               {
@@ -259,7 +259,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                 {                   /* Read on all items */
                     uncompress_location_values(&s,&flag,&tmpval,&frequency);
                     filenum += tmpval;
-                    posdata = (unsigned int *) emalloc(frequency * sizeof(int));
+                    posdata = (SWUINT_T *) emalloc(frequency * sizeof(SWINT_T));
                     uncompress_location_positions(&s,flag,frequency,posdata);
 
                     /* 2004/09 jmruiz. Need to check for one file not being marked as deleted */
@@ -290,7 +290,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
 
               efree(resultword);
               DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
-              if (wordID && ((int)((unsigned char)resultword[0]))!= j)
+              if (wordID && ((SWINT_T)((unsigned char)resultword[0]))!= j)
                 efree(resultword);
 
             }
@@ -301,8 +301,8 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
 
     else if (DEBUG_MASK & (DEBUG_INDEX_ALL | DEBUG_INDEX_WORDS | DEBUG_INDEX_WORDS_FULL | DEBUG_INDEX_WORDS_META)  )
     {
-        int     *meta_used;
-        int     end_meta = 0;
+        SWINT_T     *meta_used;
+        SWINT_T     end_meta = 0;
 
         printf("\n-----> WORD INFO in index %s <-----\n", indexf->line);
 
@@ -310,7 +310,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
             if ( indexf->header.metaEntryArray[i]->metaID > end_meta )
                 end_meta = indexf->header.metaEntryArray[i]->metaID;
 
-        meta_used = emalloc( sizeof(int) * ( end_meta + 1) );
+        meta_used = emalloc( sizeof(SWINT_T) * ( end_meta + 1) );
 
         /* _META only reports which tags the words are found in */
         for(i = 0; i <= end_meta; i++)
@@ -324,7 +324,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
             word[0] = (unsigned char) j; word[1] = '\0';
             DB_ReadFirstWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
 
-            while(wordID && (((int)((unsigned char)resultword[0]))== j))
+            while(wordID && (((SWINT_T)((unsigned char)resultword[0]))== j))
             {
                 /* Flag to know if we must print a word or not */
                 /* Words with all the files marked as deleted shoud not be
@@ -347,7 +347,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                 {                   /* Read on all items */
                     uncompress_location_values(&s,&flag,&tmpval,&frequency);
                     filenum += tmpval;
-                    posdata = (unsigned int *) emalloc(frequency * sizeof(int));
+                    posdata = (SWUINT_T *) emalloc(frequency * sizeof(SWINT_T));
                     uncompress_location_positions(&s,flag,frequency,posdata);
 
                     /* 2004/09 jmruiz. Need to check for files marked as deleted */
@@ -364,7 +364,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                     {
                         struct metaEntry    *m;
 
-                        printf("\n Meta:%d", metaID);
+                        printf("\n Meta:%lld", metaID);
 
 
                         /* Get path from property list */
@@ -392,16 +392,16 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                             printf(" Failed to lookup meta entry");
 
 
-                        printf(" Freq:%d", frequency);
+                        printf(" Freq:%lld", frequency);
                         printf(" Pos/Struct:");
                     }
                     else if ( DEBUG_MASK & DEBUG_INDEX_WORDS_META)
                         meta_used[ metaID ]++;
                     else
                     {
-                        printf(" [%d", metaID);
-                        printf(" %d", filenum);
-                        printf(" %d (", frequency);
+                        printf(" [%lld", metaID);
+                        printf(" %lld", filenum);
+                        printf(" %lld (", frequency);
                     }
 
                     for (i = 0; i < frequency; i++)
@@ -410,16 +410,16 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                         //if (sw->verbose >= 4)
                         {
                             if (i)
-                                printf(",%d/%x", GET_POSITION(posdata[i]),GET_STRUCTURE(posdata[i]));
+                                printf(",%lld/%llx", GET_POSITION(posdata[i]),GET_STRUCTURE(posdata[i]));
                             else
-                                printf("%d/%x", GET_POSITION(posdata[i]), GET_STRUCTURE(posdata[i]));
+                                printf("%lld/%llx", GET_POSITION(posdata[i]), GET_STRUCTURE(posdata[i]));
                         }
                         else if ( DEBUG_MASK & DEBUG_INDEX_WORDS)
                         {
                             if (i)
-                                 printf(" %d/%x", GET_POSITION(posdata[i]),GET_STRUCTURE(posdata[i]));
+                                 printf(" %lld/%llx", GET_POSITION(posdata[i]),GET_STRUCTURE(posdata[i]));
                             else
-                                 printf("%d/%x", GET_POSITION(posdata[i]),GET_STRUCTURE(posdata[i]));
+                                 printf("%lld/%llx", GET_POSITION(posdata[i]),GET_STRUCTURE(posdata[i]));
                         }
                     }
                     if ( DEBUG_MASK & DEBUG_INDEX_WORDS )
@@ -448,7 +448,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                     for(i = 0; i <= end_meta; i++)
                     {
                         if ( meta_used[i] )
-                            printf( "\t%d", i );
+                            printf( "\t%lld", i );
                         meta_used[i] = 0;
                     }
                 }
@@ -460,7 +460,7 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
                 efree(worddata);
                 efree(resultword);
                 DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
-                if (wordID && ((int)((unsigned char)resultword[0]))!= j)
+                if (wordID && ((SWINT_T)((unsigned char)resultword[0]))!= j)
                   efree(resultword);
             }
         }
@@ -487,10 +487,10 @@ void    DB_decompress(SWISH * sw, IndexFILE * indexf, int begin, int maxhits)
 }
 
 
-int check_sorted_index( SWISH *sw, IndexFILE *indexf, struct metaEntry *m )
+SWINT_T check_sorted_index( SWISH *sw, IndexFILE *indexf, struct metaEntry *m )
 {
     unsigned char *buffer = NULL;
-    int     sz_buffer = 0;
+    SWINT_T     sz_buffer = 0;
 
     DB_InitReadSortedIndex(sw, indexf->DB);
 
@@ -508,20 +508,20 @@ int check_sorted_index( SWISH *sw, IndexFILE *indexf, struct metaEntry *m )
 }
 
 
-void dump_metanames( SWISH *sw, IndexFILE *indexf, int check_presorted )
+void dump_metanames( SWISH *sw, IndexFILE *indexf, SWINT_T check_presorted )
 {
     struct metaEntry *meta_entry;
-    int i;
+    SWINT_T i;
 
     printf("\n\n-----> METANAMES for %s <-----\n", indexf->line );
     for(i = 0; i < indexf->header.metaCounter; i++)
     {
         meta_entry = indexf->header.metaEntryArray[i];
 
-        printf("%20s : id=%2d type=%2d ",meta_entry->metaName, meta_entry->metaID, meta_entry->metaType);
+        printf("%20s : id=%2lld type=%2lld ",meta_entry->metaName, meta_entry->metaID, meta_entry->metaType);
 
         if ( is_meta_index( meta_entry ) )
-            printf(" META_INDEX  Rank Bias=%3d", meta_entry->rank_bias );
+            printf(" META_INDEX  Rank Bias=%3lld", meta_entry->rank_bias );
 
 
 
@@ -541,7 +541,7 @@ void dump_metanames( SWISH *sw, IndexFILE *indexf, int check_presorted )
                         : is_meta_ignore_case(meta_entry)
                             ? "ignore"
                             : "compare");
-                printf("SortKeyLen: %d ", meta_entry->sort_len );
+                printf("SortKeyLen: %lld ", meta_entry->sort_len );
             }
 
             else if ( is_meta_date(meta_entry) )
@@ -566,7 +566,7 @@ void dump_metanames( SWISH *sw, IndexFILE *indexf, int check_presorted )
                                   ? getMetaNameByID( &indexf->header, meta_entry->alias )
                                   : getPropNameByID( &indexf->header, meta_entry->alias );
 
-            printf(" [Alias for %s (%d)]", m->metaName, m->metaID );
+            printf(" [Alias for %s (%lld)]", m->metaName, m->metaID );
         }
 
 
@@ -583,7 +583,7 @@ void dump_metanames( SWISH *sw, IndexFILE *indexf, int check_presorted )
 
 void dump_file_properties(IndexFILE * indexf, FileRec *fi )
 {
-    int j;
+    SWINT_T j;
         propEntry *prop;
     struct metaEntry *meta_entry;
 
@@ -610,7 +610,7 @@ void dump_single_property( propEntry *prop, struct metaEntry *meta_entry )
 {
     char *propstr;
     char proptype = '?';
-    int  i;
+    SWINT_T  i;
 
 
     if  ( is_meta_string(meta_entry) )
@@ -625,7 +625,7 @@ void dump_single_property( propEntry *prop, struct metaEntry *meta_entry )
 
     i = prop ? prop->propLen : 0;
 
-    printf("  %20s:%2d (%3d) %c:", meta_entry->metaName, meta_entry->metaID, i, proptype );
+    printf("  %20s:%2lld (%3lld) %c:", meta_entry->metaName, meta_entry->metaID, i, proptype );
 
 
     if ( !prop )
@@ -638,9 +638,9 @@ void dump_single_property( propEntry *prop, struct metaEntry *meta_entry )
     i = 0;
     printf(" \"");
 
-    while ( i < (int)strlen( propstr ) )
+    while ( i < (SWINT_T)strlen( propstr ) )
     {
-        if ( 1 ) // ( isprint( (int)propstr[i] ))
+        if ( 1 ) // ( isprint( (SWINT_T)propstr[i] ))
             printf("%c", propstr[i] );
 
         else if ( propstr[i] == '\n' )

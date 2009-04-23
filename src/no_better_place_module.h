@@ -54,7 +54,7 @@ $Id$
 /* will be globally included via swish.h   */
 
 /* $$$ to be moved to other module! */
-void	translatecharHeaderOut (SWISH *sw, int v, INDEXDATAHEADER *h );
+void	translatecharHeaderOut (SWISH *sw, SWINT_T v, INDEXDATAHEADER *h );
 
 
 

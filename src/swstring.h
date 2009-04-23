@@ -39,15 +39,15 @@
 
 char *lstrstr (char *, char *);
 char *getconfvalue (char *, char *);
-int isoksuffix (char *filename, struct swline *rulelist);
+SWINT_T isoksuffix (char *filename, struct swline *rulelist);
 char *replace (char *, char *, char *);
 
-char *SafeStrCopy (char *,char *, int *);
+char *SafeStrCopy (char *,char *, SWINT_T *);
 void sortstring (char *);
 char *mergestrings (char *,char *);
 
 
-void makelookuptable (char * ,int *);
+void makelookuptable (char * ,SWINT_T *);
 void makeallstringlookuptables (SWISH *);
 /* 06/00 Jose Ruiz
 ** Macros iswordchar, isvowel
@@ -57,7 +57,7 @@ void makeallstringlookuptables (SWISH *);
 /* #define isindexchar(header,c) header.indexcharslookuptable[c] indexchars stuff removed */
 
 /* Functions for comparing integers for qsort */
-int icomp2 (const void *,const void *);
+SWINT_T icomp2 (const void *,const void *);
 
 /* 06/00 Jose Ruiz 
 ** Function to parse a line into a StringList
@@ -70,11 +70,11 @@ StringList *parse_line (char *);
 void freeStringList (StringList *);
 
 
-int isnumstring (unsigned char*);
+SWINT_T isnumstring (unsigned char*);
 void remove_newlines (char*);
 void remove_tags (char*);
 
-unsigned char *bin2string(unsigned char *,int);
+unsigned char *bin2string(unsigned char *,SWINT_T);
 
 char *strtolower (char *str);
 #define makeItLow(a)    strtolower ((a)) /* map old name to new $$$ */
@@ -88,10 +88,10 @@ char charDecode_C_Escape (char *s, char **se);
 unsigned char char_ISO_normalize (unsigned char c);
 char *str_ISO_normalize (char *s);
 
-unsigned char *StringListToString(StringList *sl,int n);
+unsigned char *StringListToString(StringList *sl,SWINT_T n);
 
-int BuildTranslateChars (int trlookup[], unsigned char *from, unsigned char *to);
-unsigned char *TranslateChars (int trlookup[], unsigned char *s);
+SWINT_T BuildTranslateChars (SWINT_T trlookup[], unsigned char *from, unsigned char *to);
+unsigned char *TranslateChars (SWINT_T trlookup[], unsigned char *s);
 
 char *str_basename (char *path);
 char *cstr_basename (char *path);
@@ -102,7 +102,7 @@ char *estrdup (char *str);
 char *estrndup (char *str, size_t n);
 char *estrredup (char *s1, char *s2);
 
-const char *comma_long( unsigned long u );
+const char *comma_long( SWUINT_T u );
 
 /* Make life easy for now */
 #include "swregex.h"

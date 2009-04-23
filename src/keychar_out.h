@@ -32,5 +32,5 @@ $Id$
 */
 
 
-void OutputKeyChar (SWISH *sw, int keychar);
+void OutputKeyChar (SWISH *sw, SWINT_T keychar);
 

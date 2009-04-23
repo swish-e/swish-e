@@ -30,20 +30,20 @@ $Id$
 
 */
 
-int sizeofcompint(int number);
+SWINT_T sizeofcompint(SWINT_T number);
 void compress1(int num, FILE *fp, int (*f_putc)(int , FILE *));
-/* unsigned char *compress2(int num, unsigned char *buffer);*/
-unsigned char *compress3(int num, unsigned char *buffer);
+/* unsigned char *compress2(SWINT_T num, unsigned char *buffer);*/
+unsigned char *compress3(SWINT_T num, unsigned char *buffer);
 
 int uncompress1(FILE *fp, int (*f_getc)(FILE *fp));
-int uncompress2(unsigned char **buffer);
+SWINT_T uncompress2(unsigned char **buffer);
 
 
-unsigned long PACKLONG(unsigned long num);
-void PACKLONG2(unsigned long num, unsigned char *buffer);
+SWUINT_T PACKLONG(SWUINT_T num);
+void PACKLONG2(SWUINT_T num, unsigned char *buffer);
 
-unsigned long UNPACKLONG(unsigned long num);
-unsigned long UNPACKLONG2(unsigned char *buffer);
+SWUINT_T UNPACKLONG(SWUINT_T num);
+SWUINT_T UNPACKLONG2(unsigned char *buffer);
 
 
 sw_off_t PACKFILEOFFSET(sw_off_t num);
@@ -52,17 +52,17 @@ void PACKFILEOFFSET2(sw_off_t num, unsigned char *buffer);
 sw_off_t UNPACKFILEOFFSET(sw_off_t num);
 sw_off_t UNPACKLONGFILEOFFSET2(unsigned char *buffer);
 
-void compress_location_values(unsigned char **buf,unsigned char **flagp,int filenum,int frequency, unsigned int *posdata);
-void compress_location_positions(unsigned char **buf,unsigned char *flag,int frequency, unsigned int *posdata);
+void compress_location_values(unsigned char **buf,unsigned char **flagp,SWINT_T filenum,SWINT_T frequency, SWUINT_T *posdata);
+void compress_location_positions(unsigned char **buf,unsigned char *flag,SWINT_T frequency, SWUINT_T *posdata);
 
-void uncompress_location_values(unsigned char **buf,unsigned char *flag, int *filenum,int *frequency);
-void uncompress_location_positions(unsigned char **buf, unsigned char flag, int frequency, unsigned int *posdata);
+void uncompress_location_values(unsigned char **buf,unsigned char *flag, SWINT_T *filenum,SWINT_T *frequency);
+void uncompress_location_positions(unsigned char **buf, unsigned char flag, SWINT_T frequency, SWUINT_T *posdata);
 
 void CompressCurrentLocEntry(SWISH *, ENTRY *);
 
-int compress_worddata(unsigned char *, int, int );
-void uncompress_worddata(unsigned char **,int *, int);
-void    remove_worddata_longs(unsigned char *,int *);
+SWINT_T compress_worddata(unsigned char *, SWINT_T, SWINT_T );
+void uncompress_worddata(unsigned char **,SWINT_T *, SWINT_T);
+void    remove_worddata_longs(unsigned char *,SWINT_T *);
 
 /* Here is the worst case size for a compressed number 
 ** MAXINTCOMPSIZE stands for MAXimum INTeger COMPressed SIZE
@@ -89,5 +89,5 @@ void    remove_worddata_longs(unsigned char *,int *);
 ** So, to compress a 32 bit number we need 5 bytes and for
 ** a 64 bit number we will use 10 bytes for the worst case
 */
-#define MAXINTCOMPSIZE (((sizeof(int) * 8) / 7) + (((sizeof(int) * 8) % 7) ? 1 : 0))
+#define MAXINTCOMPSIZE (((sizeof(SWINT_T) * 8) / 7) + (((sizeof(SWINT_T) * 8) % 7) ? 1 : 0))
 

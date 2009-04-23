@@ -30,7 +30,7 @@
 
 
 **
-** fixed non-int subscripting pointed out by "gcc -Wall"
+** fixed non-SWINT_T subscripting pointed out by "gcc -Wall"
 ** SRE 2/22/00
 **
 ** 2001-03-08 rasc   rewritten and enhanced suffix routines
@@ -53,12 +53,12 @@
 ** please let me know...
 */
 
-int     isokword(sw, word, indexf)
+SWINT_T     isokword(sw, word, indexf)
      SWISH  *sw;
      char   *word;
      IndexFILE *indexf;
 {
-    int     i,
+    SWINT_T     i,
             same,
             hasnumber,
             hasvowel,
@@ -97,7 +97,7 @@ int     isokword(sw, word, indexf)
             same = 0;
 
         /* Max number of consecutive digits */
-        if (isdigit((int) ( (unsigned char) word[i])))
+        if (isdigit((SWINT_T) ( (unsigned char) word[i])))
         {
             hasnumber = 1;
             numberrow++;
@@ -119,7 +119,7 @@ int     isokword(sw, word, indexf)
         }
 
         /* maximum number of consecutive consonants a word can have */
-        else if (!ispunct((int) ( (unsigned char) word[i])))
+        else if (!ispunct((SWINT_T) ( (unsigned char) word[i])))
         {
             hascons = 1;
             consrow++;
@@ -158,7 +158,7 @@ int     isokword(sw, word, indexf)
   --                   e.g. ".htm", ".htm.de" or ".html.gz")
 */
 
-int     getdoctype(char *filename, struct IndexContents *indexcontents)
+SWINT_T     getdoctype(char *filename, struct IndexContents *indexcontents)
 {
     struct swline *swl;
     char   *s,
@@ -197,7 +197,7 @@ int     getdoctype(char *filename, struct IndexContents *indexcontents)
 
 
 
-struct StoreDescription *hasdescription(int doctype, struct StoreDescription *sd)
+struct StoreDescription *hasdescription(SWINT_T doctype, struct StoreDescription *sd)
 {
     while (sd)
     {

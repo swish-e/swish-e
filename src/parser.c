@@ -106,9 +106,9 @@ $Id$
 
 typedef struct {
     char   *buffer;     // text for buffer
-    int     cur;        // length
-    int     max;        // max size of buffer
-    int     defaultID;  // default ID for no meta names.
+    SWINT_T     cur;        // length
+    SWINT_T     max;        // max size of buffer
+    SWINT_T     defaultID;  // default ID for no meta names.
 } CHAR_BUFFER;
 
 
@@ -118,9 +118,9 @@ typedef struct {
 
 typedef struct {
     struct metaEntry    *meta;
-    int                 save_size;   /* save max size */
+    SWINT_T                 save_size;   /* save max size */
     char                *tag;        /* summary tag */
-    int                 active;      /* inside summary */
+    SWINT_T                 active;      /* inside summary */
 } SUMMARY_INFO;
 
 #define STACK_SIZE 255  // stack size, but can grow.
@@ -128,16 +128,16 @@ typedef struct {
 typedef struct MetaStackElement {
     struct MetaStackElement *next;      // pointer to *siblings*, if any
     struct metaEntry        *meta;      // pointer to meta that's inuse
-    int                      ignore;    // flag that this meta turned on ignore
+    SWINT_T                      ignore;    // flag that this meta turned on ignore
     char                     tag[1];    // tag to look for
 } MetaStackElement, *MetaStackElementPtr;
 
 typedef struct {
-    int                 pointer;        // next empty slot in stack
-    int                 maxsize;        // size of stack
-    int                 ignore_flag;    // count of ignores
+    SWINT_T                 pointer;        // next empty slot in stack
+    SWINT_T                 maxsize;        // size of stack
+    SWINT_T                 ignore_flag;    // count of ignores
     MetaStackElementPtr *stack;         // pointer to an array of stack data
-    int                 is_meta;        // is this a metaname or property stack?
+    SWINT_T                 is_meta;        // is this a metaname or property stack?
 } MetaStack;
 
 
@@ -153,65 +153,65 @@ typedef struct {
     SUMMARY_INFO        summary;        // argh.
     MetaStack           meta_stack;     // stacks for tracking the nested metas
     MetaStack           prop_stack;
-    int                 total_words;
-    int                 word_pos;
-    int                 filenum;
+    SWINT_T                 total_words;
+    SWINT_T                 word_pos;
+    SWINT_T                 filenum;
     INDEXDATAHEADER    *header;
     SWISH              *sw;
     FileProp           *fprop;
     FileRec            *thisFileEntry;
-    int                 structure[STRUCTURE_END+1];
-    int                 parsing_html;
+    SWINT_T                 structure[STRUCTURE_END+1];
+    SWINT_T                 parsing_html;
     struct metaEntry   *titleProp;
     struct metaEntry   *titleMeta;
     struct metaEntry   *swishdefaultMeta;
-    int                 flush_word;         // flag to flush buffer next time there's a white space.
+    SWINT_T                 flush_word;         // flag to flush buffer next time there's a white space.
     xmlSAXHandlerPtr    SAXHandler;         // for aborting, I guess.
     xmlParserCtxtPtr    ctxt;
     CHAR_BUFFER         ISO_Latin1;         // buffer to hold UTF-8 -> ISO Latin-1 converted text
-    int                 abort;              // flag to stop parsing
+    SWINT_T                 abort;              // flag to stop parsing
     char               *baseURL;            // for fixing up relative links
-    int                 swish_noindex;      // swishindex swishnoindex -- for hiding blocks with comments
+    SWINT_T                 swish_noindex;      // swishindex swishnoindex -- for hiding blocks with comments
 } PARSE_DATA;
 
 
 /* Prototypes */
 static void start_hndl(void *data, const char *el, const char **attr);
 static void end_hndl(void *data, const char *el);
-static void char_hndl(void *data, const char *txt, int txtlen);
-static void Whitespace(void *data, const xmlChar *txt, int txtlen);
-static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen );
-static void flush_buffer( PARSE_DATA  *parse_data, int clear );
+static void char_hndl(void *data, const char *txt, SWINT_T txtlen);
+static void Whitespace(void *data, const xmlChar *txt, SWINT_T txtlen);
+static void append_buffer( CHAR_BUFFER *buf, const char *txt, SWINT_T txtlen );
+static void flush_buffer( PARSE_DATA  *parse_data, SWINT_T clear );
 static void comment_hndl(void *data, const char *txt);
 static char *isIgnoreMetaName(SWISH * sw, char *tag);
 static void error(void *data, const char *msg, ...);
 static void warning(void *data, const char *msg, ...);
 static void process_htmlmeta( PARSE_DATA *parse_data, const char ** attr );
-static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start );
-static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int *meta_append, int *prop_append , int is_html_tag );
-static void end_metaTag( PARSE_DATA *parse_data, char * tag, int is_html_tag );
+static SWINT_T check_html_tag( PARSE_DATA *parse_data, char * tag, SWINT_T start );
+static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, SWINT_T *meta_append, SWINT_T *prop_append , SWINT_T is_html_tag );
+static void end_metaTag( PARSE_DATA *parse_data, char * tag, SWINT_T is_html_tag );
 static void init_sax_handler( xmlSAXHandlerPtr SAXHandler, SWISH * sw );
 static void init_parse_data( PARSE_DATA *parse_data, SWISH * sw, FileProp * fprop, FileRec *fi, xmlSAXHandlerPtr SAXHandler  );
 static void free_parse_data( PARSE_DATA *parse_data );
-static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, int txtlen );
-static int parse_chunks( PARSE_DATA *parse_data );
+static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, SWINT_T txtlen );
+static SWINT_T parse_chunks( PARSE_DATA *parse_data );
 
 static void index_alt_tab( PARSE_DATA *parse_data, const char **attr );
 static char *extract_html_links( PARSE_DATA *parse_data, const char **attr, struct metaEntry *meta_entry, char *tag );
-static int read_next_chunk( FileProp *fprop, char *buf, int buf_size, int max_size );
-static void abort_parsing( PARSE_DATA *parse_data, int abort_code );
-static int get_structure( PARSE_DATA *parse_data );
+static SWINT_T read_next_chunk( FileProp *fprop, char *buf, SWINT_T buf_size, SWINT_T max_size );
+static void abort_parsing( PARSE_DATA *parse_data, SWINT_T abort_code );
+static SWINT_T get_structure( PARSE_DATA *parse_data );
 
-static void push_stack( MetaStack *stack, char *tag, struct metaEntry *meta, int *append, int ignore );
-static int pop_stack_ifMatch( PARSE_DATA *parse_data, MetaStack *stack, char *tag );
-static int pop_stack( MetaStack *stack );
+static void push_stack( MetaStack *stack, char *tag, struct metaEntry *meta, SWINT_T *append, SWINT_T ignore );
+static SWINT_T pop_stack_ifMatch( PARSE_DATA *parse_data, MetaStack *stack, char *tag );
+static SWINT_T pop_stack( MetaStack *stack );
 
 static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char **attr );
-static int  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, const char **attr, int *meta_append, int *prop_append );
+static SWINT_T  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, const char **attr, SWINT_T *meta_append, SWINT_T *prop_append );
 static char *isXMLClassAttribute(SWISH * sw, char *tag);
 
-static void debug_show_tag( char *tag, PARSE_DATA *parse_data, int start, char *message );
-static void debug_show_parsed_text( PARSE_DATA *parse_data, char *txt, int len );
+static void debug_show_tag( char *tag, PARSE_DATA *parse_data, SWINT_T start, char *message );
+static void debug_show_parsed_text( PARSE_DATA *parse_data, char *txt, SWINT_T len );
 
 
 
@@ -224,7 +224,7 @@ static void debug_show_parsed_text( PARSE_DATA *parse_data, char *txt, int len )
 *
 *********************************************************************/
 
-int parse_XML(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer)
+SWINT_T parse_XML(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer)
 
 {
     xmlSAXHandler       SAXHandlerStruct;
@@ -249,7 +249,7 @@ int parse_XML(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer)
 *
 *********************************************************************/
 
-int parse_HTML(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer)
+SWINT_T parse_HTML(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer)
 {
     htmlSAXHandler       SAXHandlerStruct;
     htmlSAXHandlerPtr    SAXHandler = &SAXHandlerStruct;
@@ -277,10 +277,10 @@ int parse_HTML(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer)
 *
 *********************************************************************/
 
-int parse_TXT(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer)
+SWINT_T parse_TXT(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer)
 {
     PARSE_DATA          parse_data;
-    int                 res;
+    SWINT_T                 res;
     char       chars[READ_CHUNK_SIZE];
 
 
@@ -318,12 +318,12 @@ int parse_TXT(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer)
 *
 *
 *********************************************************************/
-static int parse_chunks( PARSE_DATA *parse_data )
+static SWINT_T parse_chunks( PARSE_DATA *parse_data )
 {
     SWISH              *sw = parse_data->sw;
     FileProp           *fprop = parse_data->fprop;
     xmlSAXHandlerPtr    SAXHandler = parse_data->SAXHandler;
-    int                 res;
+    SWINT_T                 res;
     char       chars[READ_CHUNK_SIZE];
     xmlParserCtxtPtr    ctxt;
 
@@ -421,10 +421,10 @@ static int parse_chunks( PARSE_DATA *parse_data )
 *
 *
 *********************************************************************/
-static int read_next_chunk( FileProp *fprop, char *buf, int buf_size, int max_size )
+static SWINT_T read_next_chunk( FileProp *fprop, char *buf, SWINT_T buf_size, SWINT_T max_size )
 {
-    int size;
-    int res;
+    SWINT_T size;
+    SWINT_T res;
 
     if ( fprop->done )
         return 0;
@@ -605,9 +605,9 @@ static void start_hndl(void *data, const char *el, const char **attr)
 {
     PARSE_DATA *parse_data = (PARSE_DATA *)data;
     char        tag[MAXSTRLEN + 1];
-    int         is_html_tag = 0;   // to allow <foo> type of meta tags in HTML
-    int         meta_append = 0;   // used to allow siblings metanames
-    int         prop_append = 0;
+    SWINT_T         is_html_tag = 0;   // to allow <foo> type of meta tags in HTML
+    SWINT_T         meta_append = 0;   // used to allow siblings metanames
+    SWINT_T         prop_append = 0;
 
 
     /* disabeld by a comment? */
@@ -616,7 +616,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
 
     if(strlen(el) >= MAXSTRLEN)  // easy way out
     {
-        warning( (void *)data, "Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, el );
+        warning( (void *)data, "Warning: Tag found in %s is too SWINT_T: '%s'\n", parse_data->fprop->real_path, el );
         return;
     }
 
@@ -673,7 +673,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
 
     if ( !parse_data->parsing_html && attr )
     {
-        int class_found = 0;
+        SWINT_T class_found = 0;
 
         /* Allow <foo class="bar"> to look like <foo.bar> */
 
@@ -707,7 +707,7 @@ static void end_hndl(void *data, const char *el)
 {
     PARSE_DATA *parse_data = (PARSE_DATA *)data;
     char        tag[MAXSTRLEN + 1];
-    int         is_html_tag = 0;  // to allow <foo> type of metatags in html.
+    SWINT_T         is_html_tag = 0;  // to allow <foo> type of metatags in html.
 
 
     /* disabeld by a comment? */
@@ -716,7 +716,7 @@ static void end_hndl(void *data, const char *el)
 
     if(strlen(el) > MAXSTRLEN)
     {
-        warning( (void *)data, "Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, el );
+        warning( (void *)data, "Warning: Tag found in %s is too SWINT_T: '%s'\n", parse_data->fprop->real_path, el );
         return;
     }
 
@@ -754,7 +754,7 @@ static void end_hndl(void *data, const char *el)
 *
 *********************************************************************/
 
-static void char_hndl(void *data, const char *txt, int txtlen)
+static void char_hndl(void *data, const char *txt, SWINT_T txtlen)
 {
     PARSE_DATA         *parse_data = (PARSE_DATA *)data;
 
@@ -794,9 +794,9 @@ static void char_hndl(void *data, const char *txt, int txtlen)
     {
         /* look for whitespace */
         char *c = parse_data->ISO_Latin1.buffer;
-        int   i;
+        SWINT_T   i;
         for ( i=0; i < parse_data->ISO_Latin1.cur; i++ )
-            if ( isspace( (int)c[i] ) )
+            if ( isspace( (SWINT_T)c[i] ) )
             {
                 append_buffer( &parse_data->text_buffer, parse_data->ISO_Latin1.buffer, i );
                 flush_buffer( parse_data, 1 );  // Flush the entire buffer
@@ -831,7 +831,7 @@ static void char_hndl(void *data, const char *txt, int txtlen)
 *
 *********************************************************************/
 
-static void Whitespace(void *data, const xmlChar *txt, int txtlen)
+static void Whitespace(void *data, const xmlChar *txt, SWINT_T txtlen)
 {
     PARSE_DATA         *parse_data = (PARSE_DATA *)data;
 
@@ -848,11 +848,11 @@ static void Whitespace(void *data, const xmlChar *txt, int txtlen)
 *
 *********************************************************************/
 
-static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, int txtlen )
+static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, SWINT_T txtlen )
 {
     CHAR_BUFFER     *buf = &parse_data->ISO_Latin1;
     int             inlen = txtlen; // no rw64, passed to UTF8Toisolat1 by pointer
-    int             ret;
+    SWINT_T             ret;
     char  *start_buf;
     char  *end_buf = txt + txtlen - 1;
     int             used;           // no rw64, passed to UTF8Toisolat1 by pointer
@@ -942,8 +942,8 @@ static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, int txtlen )
             }
 
             /* Calculate the remaining length of the input string */
-            /* inlen = (unsigned long)end_buf - (unsigned long)txt + 1; */
-            inlen = ((unsigned long)(end_buf - txt)) + 1;
+            /* inlen = (SWUINT_T)end_buf - (SWUINT_T)txt + 1; */
+            inlen = ((SWUINT_T)(end_buf - txt)) + 1;
 
             if ( inlen <= 0 )
                 return;
@@ -952,7 +952,7 @@ static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, int txtlen )
         }
         else
         {
-            xmlParserWarning(parse_data->ctxt, "Error '%d' converting internal UTF-8 to Latin-1.\n", ret );
+            xmlParserWarning(parse_data->ctxt, "Error '%lld' converting internal UTF-8 to Latin-1.\n", ret );
             return;
         }
     }
@@ -978,7 +978,7 @@ static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, int txtlen )
 *
 *
 *********************************************************************/
-static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int *meta_append, int *prop_append, int is_html_tag )
+static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, SWINT_T *meta_append, SWINT_T *prop_append, SWINT_T is_html_tag )
 {
     SWISH              *sw = parse_data->sw;
     struct metaEntry   *m = NULL;
@@ -1102,7 +1102,7 @@ static void start_metaTag( PARSE_DATA *parse_data, char * tag, char *endtag, int
 *   All XML tags are metatags, but for HTML there's special handling.
 *
 *********************************************************************/
-static void end_metaTag( PARSE_DATA *parse_data, char * tag, int is_html_tag )
+static void end_metaTag( PARSE_DATA *parse_data, char * tag, SWINT_T is_html_tag )
 {
 
     if ( pop_stack_ifMatch( parse_data, &parse_data->meta_stack, tag ) )
@@ -1150,10 +1150,10 @@ static void end_metaTag( PARSE_DATA *parse_data, char * tag, int is_html_tag )
 *
 *********************************************************************/
 
-static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
+static SWINT_T check_html_tag( PARSE_DATA *parse_data, char * tag, SWINT_T start )
 {
-    int     is_html_tag = 1;
-    int     bump = start ? +1 : -1;
+    SWINT_T     is_html_tag = 1;
+    SWINT_T     bump = start ? +1 : -1;
 
     /* Check for structure bits */
 
@@ -1246,7 +1246,7 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
     /** H1 HEADINGS **/
 
     /* This should be split so know different level for ranking */
-    else if ( tag[0] == 'h' && isdigit((int) tag[1]))
+    else if ( tag[0] == 'h' && isdigit((SWINT_T) tag[1]))
     {
         flush_buffer( parse_data, 13 );
         parse_data->structure[IN_HEADER_BIT] += bump;
@@ -1322,18 +1322,18 @@ static int check_html_tag( PARSE_DATA *parse_data, char * tag, int start )
 *   Returns true if any found
 *
 *********************************************************************/
-static int  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, const char **attr, int *meta_append, int *prop_append )
+static SWINT_T  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, const char **attr, SWINT_T *meta_append, SWINT_T *prop_append )
 {
     char tagbuf[MAXSTRLEN + 1];
     char *t;
-    int   i;
-    int  taglen = strlen( tag );
+    SWINT_T   i;
+    SWINT_T  taglen = strlen( tag );
     SWISH *sw = parse_data->sw;
-    int   found = 0;
+    SWINT_T   found = 0;
 
     if(strlen(tag) >= MAXSTRLEN)  // easy way out
     {
-        warning( (void *)parse_data, "Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, tag );
+        warning( (void *)parse_data, "Warning: Tag found in %s is too SWINT_T: '%s'\n", parse_data->fprop->real_path, tag );
         return 0;
     }
 
@@ -1350,10 +1350,10 @@ static int  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, const
             continue;
 
 
-        /* Is the tag going to be too long? */
+        /* Is the tag going to be too SWINT_T? */
         if ( strlen( (char *)attr[i+1] ) + taglen + 2 > 256 )
         {
-            warning( (void *)parse_data, "ClassAttribute on tag '%s' too long\n", tag );
+            warning( (void *)parse_data, "ClassAttribute on tag '%s' too SWINT_T\n", tag );
             continue;
         }
 
@@ -1415,10 +1415,10 @@ static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char 
     char tagbuf[MAXSTRLEN+1];
     char *content;
     char *t;
-    int   i;
-    int  meta_append;
-    int  prop_append;
-    int  taglen = strlen( tag );
+    SWINT_T   i;
+    SWINT_T  meta_append;
+    SWINT_T  prop_append;
+    SWINT_T  taglen = strlen( tag );
     SWISH *sw = parse_data->sw;
     UndefMetaFlag  tmp_undef = sw->UndefinedMetaTags;  // save
 
@@ -1426,7 +1426,7 @@ static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char 
 
     if(strlen(tag) >= MAXSTRLEN)  // easy way out
     {
-        warning( (void *)parse_data, "Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, tag );
+        warning( (void *)parse_data, "Warning: Tag found in %s is too SWINT_T: '%s'\n", parse_data->fprop->real_path, tag );
         return;
     }
 
@@ -1448,7 +1448,7 @@ static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char 
 
         if ( strlen( (char *)attr[i] ) + taglen + 2 > 256 )
         {
-            warning(" (void *)parse_data, Attribute '%s' on tag '%s' too long to build metaname\n", (char *)attr[i], tag );
+            warning(" (void *)parse_data, Attribute '%s' on tag '%s' too SWINT_T to build metaname\n", (char *)attr[i], tag );
             continue;
         }
 
@@ -1483,10 +1483,10 @@ static void process_htmlmeta( PARSE_DATA *parse_data, const char **attr )
 {
     char *metatag = NULL;
     char *content = NULL;
-    int  meta_append = 0;
-    int  prop_append = 0;
+    SWINT_T  meta_append = 0;
+    SWINT_T  prop_append = 0;
 
-    int  i;
+    SWINT_T  i;
 
     /* Don't add any meta data while looking for just the title */
     if ( parse_data->fprop->index_no_content )
@@ -1537,7 +1537,7 @@ static void process_htmlmeta( PARSE_DATA *parse_data, const char **attr )
 *
 *********************************************************************/
 
-static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen )
+static void append_buffer( CHAR_BUFFER *buf, const char *txt, SWINT_T txtlen )
 {
 
 
@@ -1570,15 +1570,15 @@ static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen )
 *   Otherwise, every thing up to the last *partial* word is flushed.
 *   It's partial if there is not white-space at the very end of the buffer.
 *
-*   This prevents some<b>long</b>word from being flushed into part words.
+*   This prevents some<b>SWINT_T</b>word from being flushed into part words.
 *
 *********************************************************************/
-static void flush_buffer( PARSE_DATA  *parse_data, int clear )
+static void flush_buffer( PARSE_DATA  *parse_data, SWINT_T clear )
 {
     CHAR_BUFFER *buf = &parse_data->text_buffer;
     SWISH       *sw = parse_data->sw;
-    int         structure = get_structure( parse_data );
-    int         orig_end  = buf->cur;
+    SWINT_T         structure = get_structure( parse_data );
+    SWINT_T         orig_end  = buf->cur;
     char        save_char = '?';
     char        *c;
 
@@ -1588,9 +1588,9 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
 
     /* look back for word boundry when "clear" is not set */
 
-    if ( !clear && !isspace( (int)buf->buffer[buf->cur-1] ) )  // flush up to current word
+    if ( !clear && !isspace( (SWINT_T)buf->buffer[buf->cur-1] ) )  // flush up to current word
     {
-        while ( buf->cur > 0 && !isspace( (int)buf->buffer[buf->cur-1] ) )
+        while ( buf->cur > 0 && !isspace( (SWINT_T)buf->buffer[buf->cur-1] ) )
             buf->cur--;
 
         if ( !buf->cur )  // then there's only a single word in the buffer
@@ -1612,7 +1612,7 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
     /* Make sure there some non-whitespace chars to print */
 
     c = buf->buffer;
-    while ( *c && isspace( (int)*c ) )
+    while ( *c && isspace( (SWINT_T)*c ) )
         c++;
 
 
@@ -1672,10 +1672,10 @@ static void comment_hndl(void *data, const char *txt)
 {
     PARSE_DATA  *parse_data = (PARSE_DATA *)data;
     SWISH       *sw = parse_data->sw;
-    int         structure = get_structure( parse_data );
+    SWINT_T         structure = get_structure( parse_data );
     char        *swishcmd;
     char        *comment_text = str_skip_ws( (char *)txt );
-    int         found = 0;
+    SWINT_T         found = 0;
 
 
     str_trim_ws( comment_text );
@@ -1785,8 +1785,8 @@ static void warning(void *data, const char *msg, ...)
 *********************************************************************/
 static void index_alt_tab( PARSE_DATA *parse_data, const char **attr )
 {
-    int  meta_append = 0;
-    int  prop_append = 0;
+    SWINT_T  meta_append = 0;
+    SWINT_T  prop_append = 0;
     char *tagbuf     = parse_data->sw->IndexAltTagMeta;
     char *alt_text   = extract_html_links( parse_data, attr, NULL, "alt");
 
@@ -1820,8 +1820,8 @@ static void index_alt_tab( PARSE_DATA *parse_data, const char **attr )
 static char *extract_html_links( PARSE_DATA *parse_data, const char **attr, struct metaEntry *meta_entry, char *tag )
 {
     char *href = NULL;
-    int  i;
-    int         structure = get_structure( parse_data );
+    SWINT_T  i;
+    SWINT_T         structure = get_structure( parse_data );
     char       *absoluteURL;
     SWISH      *sw = parse_data->sw;
 
@@ -1869,7 +1869,7 @@ static char *extract_html_links( PARSE_DATA *parse_data, const char **attr, stru
 
 /* This doesn't look like the best method */
 
-static void abort_parsing( PARSE_DATA *parse_data, int abort_code )
+static void abort_parsing( PARSE_DATA *parse_data, SWINT_T abort_code )
 {
     parse_data->abort = abort_code;  /* Flag that the we are all done */
     /* Disable parser */
@@ -1881,14 +1881,14 @@ static void abort_parsing( PARSE_DATA *parse_data, int abort_code )
 
 /* This sets the current structure context (IN_HEAD, IN_BODY, etc) */
 
-static int get_structure( PARSE_DATA *parse_data )
+static SWINT_T get_structure( PARSE_DATA *parse_data )
 {
-    int structure = IN_FILE;
+    SWINT_T structure = IN_FILE;
 
     /* Set structure bits */
     if ( parse_data->parsing_html )
     {
-        int i;
+        SWINT_T i;
         for ( i = 0; i <= STRUCTURE_END; i++ )
             if ( parse_data->structure[i] )
                 structure |= ( 1 << i );
@@ -1915,14 +1915,14 @@ static int get_structure( PARSE_DATA *parse_data )
 *
 *********************************************************************/
 
-static void push_stack( MetaStack *stack, char *tag, struct metaEntry *meta, int *append, int ignore )
+static void push_stack( MetaStack *stack, char *tag, struct metaEntry *meta, SWINT_T *append, SWINT_T ignore )
 {
     MetaStackElementPtr    node;
 
 
     if ( DEBUG_MASK & DEBUG_PARSED_TAGS )
     {
-        int i;
+        SWINT_T i;
         for (i=0; i<stack->pointer; i++)
             printf("    ");
 
@@ -1952,7 +1952,7 @@ static void push_stack( MetaStack *stack, char *tag, struct metaEntry *meta, int
         /* reallocate stack buffer if needed */
         if ( stack->pointer >= stack->maxsize )
         {
-            progwarn("swish parser adding more stack space for tag %s. from %d to %d", tag, stack->maxsize, stack->maxsize+STACK_SIZE );
+            progwarn("swish parser adding more stack space for tag %s. from %lld to %lld", tag, stack->maxsize, stack->maxsize+STACK_SIZE );
 
             stack->maxsize += STACK_SIZE;
             stack->stack = (MetaStackElementPtr *)erealloc( stack->stack, sizeof( MetaStackElementPtr ) * stack->maxsize );
@@ -1984,7 +1984,7 @@ static void push_stack( MetaStack *stack, char *tag, struct metaEntry *meta, int
 *
 *********************************************************************/
 
-static int pop_stack_ifMatch( PARSE_DATA *parse_data, MetaStack *stack, char *tag )
+static SWINT_T pop_stack_ifMatch( PARSE_DATA *parse_data, MetaStack *stack, char *tag )
 {
 
     /* return if stack is empty */
@@ -2017,7 +2017,7 @@ static int pop_stack_ifMatch( PARSE_DATA *parse_data, MetaStack *stack, char *ta
 *
 *********************************************************************/
 
-static int pop_stack( MetaStack *stack )
+static SWINT_T pop_stack( MetaStack *stack )
 {
     MetaStackElementPtr    node, this;
 
@@ -2046,7 +2046,7 @@ static int pop_stack( MetaStack *stack )
 
         if ( DEBUG_MASK & DEBUG_PARSED_TAGS )
         {
-            int i;
+            SWINT_T i;
             for (i=0; i<stack->pointer; i++)
                 printf("    ");
 
@@ -2061,10 +2061,10 @@ static int pop_stack( MetaStack *stack )
     return stack->pointer;
 }
 
-static int debug_get_indent( INDEXDATAHEADER *header )
+static SWINT_T debug_get_indent( INDEXDATAHEADER *header )
 {
-    int i;
-    int indent = 0;
+    SWINT_T i;
+    SWINT_T indent = 0;
 
     for (i = 0; i < header->metaCounter; i++)
         if ( is_meta_index(header->metaEntryArray[i]) )
@@ -2075,10 +2075,10 @@ static int debug_get_indent( INDEXDATAHEADER *header )
 
 
 
-static void debug_show_tag( char *tag, PARSE_DATA *parse_data, int start, char *message )
+static void debug_show_tag( char *tag, PARSE_DATA *parse_data, SWINT_T start, char *message )
 {
-    int  indent = debug_get_indent( &parse_data->sw->indexlist->header);
-    int  i;
+    SWINT_T  indent = debug_get_indent( &parse_data->sw->indexlist->header);
+    SWINT_T  i;
 
     for (i=0; i<indent; i++)
         printf("    ");
@@ -2086,13 +2086,13 @@ static void debug_show_tag( char *tag, PARSE_DATA *parse_data, int start, char *
     printf("<%s%s> %s\n", start ? "" : "/", tag, message );
 }
 
-static void debug_show_parsed_text( PARSE_DATA *parse_data, char *txt, int len )
+static void debug_show_parsed_text( PARSE_DATA *parse_data, char *txt, SWINT_T len )
 {
-    int indent = debug_get_indent( &parse_data->sw->indexlist->header);
-    int i;
+    SWINT_T indent = debug_get_indent( &parse_data->sw->indexlist->header);
+    SWINT_T i;
     char indent_buf[1000];
-    int  last_newline = 0;
-    int  col = 0;
+    SWINT_T  last_newline = 0;
+    SWINT_T  col = 0;
 
 
     indent_buf[0] = '\0';
@@ -2109,7 +2109,7 @@ static void debug_show_parsed_text( PARSE_DATA *parse_data, char *txt, int len )
         last_newline = 0;
 
         /* skip leading space */
-        while ( i < len && isspace((int)txt[i] ) )
+        while ( i < len && isspace((SWINT_T)txt[i] ) )
             i++;
 
         /* print text */
@@ -2120,11 +2120,11 @@ static void debug_show_parsed_text( PARSE_DATA *parse_data, char *txt, int len )
 
             if ( txt[i] == '\n' )
             {
-                while ( i < len && isspace((int)txt[i] ))
+                while ( i < len && isspace((SWINT_T)txt[i] ))
                     i++;
             }
 
-            if ( !isprint((int)txt[i] ))
+            if ( !isprint((SWINT_T)txt[i] ))
             {
                 i++;
                 continue;
@@ -2133,7 +2133,7 @@ static void debug_show_parsed_text( PARSE_DATA *parse_data, char *txt, int len )
             printf("%c", txt[i] );
             i++;
 
-            if ( (col + strlen( indent_buf ) > 60 && isspace((int)txt[i])) || col + strlen( indent_buf ) > 78 )
+            if ( (col + strlen( indent_buf ) > 60 && isspace((SWINT_T)txt[i])) || col + strlen( indent_buf ) > 78 )
             {
                 printf("\n");
                 last_newline=1;

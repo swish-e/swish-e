@@ -172,7 +172,7 @@ void    freeModule_ResultOutput(SWISH * sw)
     /* First the common part to all the index files */
     if (md->propNameToDisplay)
     {
-        int i;
+        SWINT_T i;
 
         for( i=0; i < md->numPropertiesToDisplay; i++ )
             efree(md->propNameToDisplay[i]);
@@ -183,7 +183,7 @@ void    freeModule_ResultOutput(SWISH * sw)
 
     if (md->propIDToDisplay)
     {
-        int i;
+        SWINT_T i;
         IndexFILE *indexf;
         for( i = 0, indexf = sw->indexlist; indexf; i++, indexf = indexf->next)
         {
@@ -220,11 +220,11 @@ void    freeModule_ResultOutput(SWISH * sw)
  -- return: 0/1 = none/config applied
 */
 
-int     configModule_ResultOutput(SWISH * sw, StringList * sl)
+SWINT_T     configModule_ResultOutput(SWISH * sw, StringList * sl)
 {
     struct MOD_ResultOutput *md = sw->ResultOutput;
     char   *w0 = sl->word[0];
-    int     retval = 1;
+    SWINT_T     retval = 1;
 
 
 
@@ -333,7 +333,7 @@ void    initPrintExtResult(SWISH * sw, char *fmt)
   This frees memory as it goes along, so this can't be called from the library.
 */
 
-void    printSortedResults(RESULTS_OBJECT *results, int begin, int maxhits)
+void    printSortedResults(RESULTS_OBJECT *results, SWINT_T begin, SWINT_T maxhits)
 {
     SWISH  *sw = results->sw;
     struct MOD_ResultOutput *md = sw->ResultOutput;
@@ -577,7 +577,7 @@ static char *parsePropertyResultControl(char *s, char **propertyname, char **sub
 {
     char   *s1;
     char    c;
-    int     len;
+    SWINT_T     len;
 
 
     *propertyname = NULL;
@@ -661,7 +661,7 @@ static void printPropertyResultControl(FILE * f, char *propname, char *subfmt, R
     char   *fmt;
     PropValue *pv;
     char   *s;
-    int     n;
+    SWINT_T     n;
 
 
     pv = getResultPropValue(r, propname, 0);
@@ -706,14 +706,14 @@ static void printPropertyResultControl(FILE * f, char *propname, char *subfmt, R
         /* use passed or default fmt */
 
     case PROP_INTEGER:
-        fmt = (subfmt) ? subfmt : "%d";
+        fmt = (subfmt) ? subfmt : "%lld";
         if (f)
             fprintf(f, fmt, pv->value.v_int);
         break;
 
 
     case PROP_ULONG:
-        fmt = (subfmt) ? subfmt : "%lu";
+        fmt = (subfmt) ? subfmt : "%llu";
         if (f)
             fprintf(f, fmt, pv->value.v_ulong);
         break;
@@ -740,11 +740,11 @@ static void printPropertyResultControl(FILE * f, char *propname, char *subfmt, R
 
     case PROP_DATE:
         fmt = (subfmt) ? subfmt : DATE_FORMAT_STRING;
-        if (!strcmp(fmt, "%ld"))
+        if (!strcmp(fmt, "%lld"))
         {
-            /* special: Print date as serial int (for Bill) */
+            /* special: Print date as serial SWINT_T (for Bill) */
             if (f)
-                fprintf(f, fmt, (long) pv->value.v_date);
+                fprintf(f, fmt, (SWINT_T) pv->value.v_date);
         }
         else
         {
@@ -871,7 +871,7 @@ char   *hasResultExtFmtStr(SWISH * sw, char *name)
   -- 2001-03-13  rasc
 */
 
-int     resultHeaderOut(SWISH * sw, int min_verbose, char *printfmt, ...)
+SWINT_T     resultHeaderOut(SWISH * sw, SWINT_T min_verbose, char *printfmt, ...)
 {
     va_list args;
 
@@ -907,13 +907,13 @@ xxxx
 ********************************************************************/
 static void printStandardResultProperties(FILE *f, RESULT *r)
 {
-    int     i;
+    SWINT_T     i;
     IndexFILE *tmp, *indexf = r->db_results->indexf;
     SWISH  *sw = indexf->sw;
     struct  MOD_ResultOutput *md = sw->ResultOutput;
     char   *s;
     char   *propValue;
-    int    *metaIDs = NULL;
+    SWINT_T    *metaIDs = NULL;
 
 
     if (md->numPropertiesToDisplay == 0)
@@ -989,10 +989,10 @@ void addSearchResultDisplayProperty(SWISH *sw, char *propName)
 
 
 /* For faster proccess, get de ID of the properties to sort */
-int initSearchResultProperties(SWISH *sw)
+SWINT_T initSearchResultProperties(SWISH *sw)
 {
     IndexFILE *indexf;
-    int i, j, index_count;
+    SWINT_T i, j, index_count;
     struct MOD_ResultOutput *md = sw->ResultOutput;
     struct metaEntry *meta_entry;
 
@@ -1005,10 +1005,10 @@ int initSearchResultProperties(SWISH *sw)
 	/* get number of index files */
 	for( index_count = 0, indexf = sw->indexlist; indexf; index_count++, indexf = indexf->next );
 
-	md->propIDToDisplay = (int **) emalloc(index_count * sizeof(int *));
+	md->propIDToDisplay = (SWINT_T **) emalloc(index_count * sizeof(SWINT_T *));
 
 	for( i = 0 ,indexf = sw->indexlist; i < index_count; i++, indexf = indexf->next )
-		md->propIDToDisplay[i]=(int *) emalloc(md->numPropertiesToDisplay*sizeof(int));
+		md->propIDToDisplay[i]=(SWINT_T *) emalloc(md->numPropertiesToDisplay*sizeof(SWINT_T));
 
 	for (i = 0; i < md->numPropertiesToDisplay; i++)
 	{

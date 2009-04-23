@@ -66,7 +66,7 @@ $Id$
 *
 ********************************************************************/
 
-static propEntry *GetPropertyByFile( IndexFILE *indexf, int filenum, struct metaEntry *m )
+static propEntry *GetPropertyByFile( IndexFILE *indexf, SWINT_T filenum, struct metaEntry *m )
 {
     propEntry *d;
     FileRec fi;
@@ -84,24 +84,24 @@ static propEntry *GetPropertyByFile( IndexFILE *indexf, int filenum, struct meta
 static void printdocprop( propEntry *d )
 {
     char str[1000];
-    int  j;
+    SWINT_T  j;
 
     for (j=0; j < d->propLen; j++)
         str[j] = (d->propValue)[j];
 
     str[ d->propLen ] = '\0';
 
-    printf("%s (%d)", str, d->propLen );
+    printf("%s (%lld)", str, d->propLen );
 }
 
-static void printfileprop( SWISH *sw, IndexFILE *indexf, int filenum, struct metaEntry *m )
+static void printfileprop( SWISH *sw, IndexFILE *indexf, SWINT_T filenum, struct metaEntry *m )
 {
     propEntry *d;
 
     if ( (d = GetPropertyByFile( indexf, filenum, m )))
         printdocprop( d );
     else
-        printf("File %d does not have a property for metaID %d", filenum, metaID );
+        printf("File %lld does not have a property for metaID %lld", filenum, metaID );
 
     freeProperty( d );
 }
@@ -117,8 +117,8 @@ static void printfileprop( SWISH *sw, IndexFILE *indexf, int filenum, struct met
 /* This is used to for inverting the metaEntry->sorted_data array */
 typedef struct LOOKUP_TABLE
 {
-    int filenum;
-    unsigned long   sort;
+    SWINT_T filenum;
+    SWUINT_T   sort;
 } LOOKUP_TABLE;
 
 
@@ -148,8 +148,8 @@ typedef struct LOOKUP_TABLE
 void SwishResetSearchLimit( SEARCH_OBJECT *srch )
 {
     IndexFILE  *indexf = srch->sw->indexlist;
-    int         index_count = 0;
-    int         metaID;
+    SWINT_T         index_count = 0;
+    SWINT_T         metaID;
     
 
 
@@ -237,7 +237,7 @@ void ClearLimitParams( LIMIT_PARAMS *params )
 *       Error checking, and maybe pass in a StringList
 *
 ********************************************************************/
-int SwishSetSearchLimit(SEARCH_OBJECT *srch, char *propertyname, char *low, char *hi)
+SWINT_T SwishSetSearchLimit(SEARCH_OBJECT *srch, char *propertyname, char *low, char *hi)
 {
     LIMIT_PARAMS *params;
     reset_lasterror( srch->sw );
@@ -311,10 +311,10 @@ LIMIT_PARAMS *setlimit_params( SWISH *sw, LIMIT_PARAMS *params, char *propertyna
 *   Returns:
 *
 ********************************************************************/
-static int test_prop( IndexFILE *indexf, struct metaEntry *meta_entry, propEntry *key, LOOKUP_TABLE *sort_array)
+static SWINT_T test_prop( IndexFILE *indexf, struct metaEntry *meta_entry, propEntry *key, LOOKUP_TABLE *sort_array)
 {
     propEntry *fileprop;
-    int        cmp_value;
+    SWINT_T        cmp_value;
 
 #ifdef DEBUGLIMIT
     {
@@ -329,7 +329,7 @@ static int test_prop( IndexFILE *indexf, struct metaEntry *meta_entry, propEntry
     if ( !(fileprop = GetPropertyByFile( indexf, sort_array->filenum, meta_entry )) )
     {
 #ifdef DEBUGLIMIT
-        printf("(no prop found for filenum %d) - return +1\n", sort_array->filenum );
+        printf("(no prop found for filenum %lld) - return +1\n", sort_array->filenum );
 #endif        
 
         /* No property found, assume it's very, very, small */
@@ -339,8 +339,8 @@ static int test_prop( IndexFILE *indexf, struct metaEntry *meta_entry, propEntry
 #ifdef DEBUGLIMIT
     {
         char *p = DecodeDocProperty( meta_entry, fileprop );
-        int i = Compare_Properties( meta_entry, key, fileprop  );
-        printf("'%s' returning %d\n", p, i );
+        SWINT_T i = Compare_Properties( meta_entry, key, fileprop  );
+        printf("'%s' returning %lld\n", p, i );
         efree( p );
     }
 #endif    
@@ -372,22 +372,22 @@ static int test_prop( IndexFILE *indexf, struct metaEntry *meta_entry, propEntry
 *
 ***************************************************************************/
 
-static int binary_search(
+static SWINT_T binary_search(
     IndexFILE *indexf,              // 
     LOOKUP_TABLE *sort_array,       // table to search through
-    int numelements,                // size of table
+    SWINT_T numelements,                // size of table
     propEntry *key,                 // property to compare against
     struct metaEntry *meta_entry,   // associated meta entry (for metaType)
-    int *result,                    // result is stored here
-    int direction,                  // looking up (positive) looking down (negative)
-    int *exact_match)               // last exact match found
+    SWINT_T *result,                    // result is stored here
+    SWINT_T direction,                  // looking up (positive) looking down (negative)
+    SWINT_T *exact_match)               // last exact match found
 {
-    int low = 0;
-    int high = numelements - 1;
-    int num  = numelements;
-    int mid;
-    int cmp;
-    unsigned int half;
+    SWINT_T low = 0;
+    SWINT_T high = numelements - 1;
+    SWINT_T num  = numelements;
+    SWINT_T mid;
+    SWINT_T cmp;
+    SWUINT_T half;
 
     *exact_match = -1;
 
@@ -470,12 +470,12 @@ static int binary_search(
 *       true if any in range, otherwise false
 *
 ********************************************************************/
-static int find_prop(IndexFILE *indexf,  LOOKUP_TABLE *sort_array, int num, PROP_LIMITS *prop_limits, struct metaEntry *meta_entry )
+static SWINT_T find_prop(IndexFILE *indexf,  LOOKUP_TABLE *sort_array, SWINT_T num, PROP_LIMITS *prop_limits, struct metaEntry *meta_entry )
 {
-    int low, high, j;
-    int foundLo, foundHi;
-    int some_selected = 0;
-    int exact_match;
+    SWINT_T low, high, j;
+    SWINT_T foundLo, foundHi;
+    SWINT_T some_selected = 0;
+    SWINT_T exact_match;
     
 
     if ( !prop_limits->loPropRange )
@@ -513,7 +513,7 @@ static int find_prop(IndexFILE *indexf,  LOOKUP_TABLE *sort_array, int num, PROP
     }
 
 #ifdef DEBUGLIMIT
-    printf("Returned range %d - %d (exact: %d %d) cnt: %u\n", low, high, foundLo, foundHi, num );
+    printf("Returned range %lld - %lld (exact: %lld %lld) cnt: %u\n", low, high, foundLo, foundHi, num );
 #endif    
 
     /* both inbetween two adjacent entries */
@@ -551,7 +551,7 @@ static int find_prop(IndexFILE *indexf,  LOOKUP_TABLE *sort_array, int num, PROP
 }
 
 /* These sort the LOOKUP_TABLE */
-int sortbysort(const void *s1, const void *s2)
+SWINT_T sortbysort(const void *s1, const void *s2)
 {
     LOOKUP_TABLE *a = (LOOKUP_TABLE *)s1;
     LOOKUP_TABLE *b = (LOOKUP_TABLE *)s2;
@@ -559,7 +559,7 @@ int sortbysort(const void *s1, const void *s2)
     return a->sort - b->sort;
 }
 
-int sortbyfile(const void *s1, const void *s2)
+SWINT_T sortbyfile(const void *s1, const void *s2)
 {
     LOOKUP_TABLE *a = (LOOKUP_TABLE *)s1;
     LOOKUP_TABLE *b = (LOOKUP_TABLE *)s2;
@@ -584,12 +584,12 @@ int sortbyfile(const void *s1, const void *s2)
 *
 ********************************************************************/
 
-static int create_lookup_array( IndexFILE *indexf, PROP_LIMITS *prop_limits, struct metaEntry *meta_entry )
+static SWINT_T create_lookup_array( IndexFILE *indexf, PROP_LIMITS *prop_limits, struct metaEntry *meta_entry )
 {
     LOOKUP_TABLE *sort_array;
-    int      i;
-    int     size = indexf->header.totalfiles;
-    int     some_found;
+    SWINT_T      i;
+    SWINT_T     size = indexf->header.totalfiles;
+    SWINT_T     some_found;
 
     /* Now do the work of creating the lookup table */
 
@@ -614,7 +614,7 @@ static int create_lookup_array( IndexFILE *indexf, PROP_LIMITS *prop_limits, str
 #ifdef DEBUGLIMIT
     for (i = 0; i < size; i++)
     {
-        printf("%d File: %d Sort: %lu : ", i, sort_array[i].filenum, sort_array[i].sort );
+        printf("%lld File: %lld Sort: %llu : ", i, sort_array[i].filenum, sort_array[i].sort );
         printfileprop( sw, indexf, sort_array[i].filenum, meta_entry );
         printf("\n");
     }
@@ -661,9 +661,9 @@ static int create_lookup_array( IndexFILE *indexf, PROP_LIMITS *prop_limits, str
 *
 *
 ********************************************************************/
-static int params_to_props( IndexFILE *indexf, PROP_LIMITS *prop_limits, struct metaEntry *meta_entry, LIMIT_PARAMS *param )
+static SWINT_T params_to_props( IndexFILE *indexf, PROP_LIMITS *prop_limits, struct metaEntry *meta_entry, LIMIT_PARAMS *param )
 {
-    int error_flag;
+    SWINT_T error_flag;
     unsigned char *lowrange  = param->lowrange;
     unsigned char *highrange = param->highrange;
     SWISH *sw = indexf->sw;
@@ -730,12 +730,12 @@ static int params_to_props( IndexFILE *indexf, PROP_LIMITS *prop_limits, struct 
 *       that you can't OR limits.  Will need fixing at some point
 *
 ********************************************************************/
-static int load_index( IndexFILE *indexf, PROP_LIMITS *prop_limits, LIMIT_PARAMS *params )
+static SWINT_T load_index( IndexFILE *indexf, PROP_LIMITS *prop_limits, LIMIT_PARAMS *params )
 {
     struct metaEntry *meta_entry;
     LIMIT_PARAMS     *curp;
     PROP_LIMITS       *cur_prop_limits;
-    int               found;
+    SWINT_T               found;
     SWISH            *sw = indexf->sw;
     
     
@@ -826,10 +826,10 @@ static int load_index( IndexFILE *indexf, PROP_LIMITS *prop_limits, LIMIT_PARAMS
 *
 ********************************************************************/
 
-int Prepare_PropLookup(SEARCH_OBJECT *srch )
+SWINT_T Prepare_PropLookup(SEARCH_OBJECT *srch )
 {
-    int             total_indexes = 0;
-    int             total_no_docs = 0;
+    SWINT_T             total_indexes = 0;
+    SWINT_T             total_no_docs = 0;
     LIMIT_PARAMS   *params = srch->limit_params;
     SWISH          *sw = srch->sw;
     IndexFILE      *indexf = sw->indexlist;
@@ -878,9 +878,9 @@ int Prepare_PropLookup(SEARCH_OBJECT *srch )
 *
 *
 ********************************************************************/
-int LimitByProperty( IndexFILE *indexf, PROP_LIMITS *prop_limits, int filenum )
+SWINT_T LimitByProperty( IndexFILE *indexf, PROP_LIMITS *prop_limits, SWINT_T filenum )
 {
-    int j;
+    SWINT_T j;
     struct metaEntry  *meta_entry;
     for ( j = 0; j < indexf->header.metaCounter; j++)
     {
@@ -916,7 +916,7 @@ int LimitByProperty( IndexFILE *indexf, PROP_LIMITS *prop_limits, int filenum )
         /* Otherwise, if either range is set, then use a manual lookup of the property */
         
         {
-            int limit = 0;
+            SWINT_T limit = 0;
             propEntry *prop = GetPropertyByFile( indexf, filenum, meta_entry );
 
             /* Return true (i.e. limit) if the file's prop is less than the low range */

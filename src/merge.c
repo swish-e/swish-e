@@ -61,9 +61,9 @@ static void make_meta_map( IndexFILE *in_index, SWISH *sw_output);
 static void load_filename_sort( SWISH *sw, IndexFILE *cur_index );
 static IndexFILE *get_next_file_in_order( SWISH *sw_input );
 static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_output );
-static int *get_map( FILE *filenum_map, IndexFILE *cur_index );
+static SWINT_T *get_map( FILE *filenum_map, IndexFILE *cur_index );
 static void dump_index_words(SWISH * sw, IndexFILE * indexf, SWISH *sw_output );
-static void write_word_pos( IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, ENTRY *e, int metaID, unsigned int posdata );
+static void write_word_pos( IndexFILE *indexf, SWISH *sw_output, SWINT_T *file_num_map, SWINT_T filenum, ENTRY *e, SWINT_T metaID, SWUINT_T posdata );
 
 
 // #define DEBUG_MERGE
@@ -81,7 +81,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
     char        *tmpfilename;
     struct MOD_Index *idx_output = sw_output->Index;
     ENTRY       *e, *prev;
-    int          hash,
+    SWINT_T          hash,
                  sz_worddata,
                  saved_bytes,
                  tmpval,
@@ -91,13 +91,13 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                  loc_count = 0,
                  word_count = 0;
     sw_off_t     wordID;
-    int          metadata_length = 0;
+    SWINT_T          metadata_length = 0;
     unsigned char   *worddata;
     unsigned char   *s, *start;
     unsigned char   flag;
-    unsigned int          local_posdata[MAX_STACK_POSITIONS];
-    unsigned int         *posdata;
-    int          i;
+    SWUINT_T          local_posdata[MAX_STACK_POSITIONS];
+    SWUINT_T         *posdata;
+    SWINT_T          i;
 
     /*******************************************************************************
     * Get ready to merge the indexes.  For each index:
@@ -110,7 +110,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
     cur_index = sw_input->indexlist;
     while( cur_index  )
     {
-        printf("Input index '%s' has %d files and %d words\n", cur_index->line, cur_index->header.totalfiles, cur_index->header.totalwords);
+        printf("Input index '%s' has %lld files and %lld words\n", cur_index->line, cur_index->header.totalfiles, cur_index->header.totalwords);
 
         if ( cur_index == sw_input->indexlist )
             /* Duplicate the first index's header into the output index */
@@ -196,7 +196,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
     * and merge it
     */
     word_count = 0;
-    printf("Processing words in index '%s': %6d words\r", sw_output->indexlist->line, word_count);
+    printf("Processing words in index '%s': %6lld words\r", sw_output->indexlist->line, word_count);
     fflush(stdout);
     /* walk the hash list to merge worddata */
     for (hash = 0; hash < VERYBIGHASHSIZE; hash++)
@@ -238,7 +238,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                             filenum += tmpval;
                             /* Use stack array when possible to avoid malloc/free overhead */
                             if(frequency > MAX_STACK_POSITIONS)
-                                posdata = (unsigned int *) emalloc(frequency * sizeof(int));
+                                posdata = (SWUINT_T *) emalloc(frequency * sizeof(SWINT_T));
                             else
                                 posdata = local_posdata;
 
@@ -299,13 +299,13 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
                     /* Make zone available for reuse and save memory */
                     Mem_ZoneReset(sw_output->Index->currentChunkLocZone);
                     sw_output->Index->freeLocMemChain = NULL;
-                    printf("Processing words in index '%s': %6d words\r", sw_output->indexlist->line, word_count);
+                    printf("Processing words in index '%s': %6lld words\r", sw_output->indexlist->line, word_count);
                 }
             }
         }
     }
 
-    printf("Processing words in index '%s': %6d words\n", sw_output->indexlist->line, word_count);
+    printf("Processing words in index '%s': %6lld words\n", sw_output->indexlist->line, word_count);
     fflush(stdout);
 
     cur_index = sw_input->indexlist;
@@ -356,7 +356,7 @@ void merge_indexes( SWISH *sw_input, SWISH *sw_output )
             }
         }
     }
-    printf("Removed %6d words no longer present in docs for index '%s'\n",
+    printf("Removed %6lld words no longer present in docs for index '%s'\n",
        word_count, sw_output->indexlist->line);
 
     /* 2002/09 MERGE FIX end */
@@ -409,7 +409,7 @@ static void dup_header( SWISH *sw_input, SWISH *sw_output )
 // This assumes that the size will always preceed the content.
 typedef struct
 {
-    int     len;
+    SWINT_T     len;
     char    *str;
 } *HEAD_CMP;
 
@@ -457,7 +457,7 @@ static void check_header_match( IndexFILE *in_index, SWISH *sw_output )
     if ( in_header->ignoreTotalWordCountWhenRanking != out_header->ignoreTotalWordCountWhenRanking )
         progerr("ignoreTotalWordCountWhenRanking Rules doesn't match for index %s", in_index->line );
 
-    if ( memcmp( &in_header->translatecharslookuptable, &out_header->translatecharslookuptable, sizeof(in_header->translatecharslookuptable) / sizeof( int ) ) )
+    if ( memcmp( &in_header->translatecharslookuptable, &out_header->translatecharslookuptable, sizeof(in_header->translatecharslookuptable) / sizeof( SWINT_T ) ) )
         progerr("TranslateChars header doesn't match for index %s", in_index->line );
 
 
@@ -477,13 +477,13 @@ static void make_meta_map( IndexFILE *in_index, SWISH *sw_output)
 {
     INDEXDATAHEADER *out_header = &sw_output->indexlist->header;
     INDEXDATAHEADER *in_header = &in_index->header;
-    int             i;
+    SWINT_T             i;
     struct metaEntry *in_meta;
     struct metaEntry *out_meta;
-    int             *meta_map;
+    SWINT_T             *meta_map;
 
-    meta_map = emalloc( sizeof( int ) * (in_header->metaCounter + 1) );
-    memset( meta_map, 0, sizeof( int ) * (in_header->metaCounter + 1) );
+    meta_map = emalloc( sizeof( SWINT_T ) * (in_header->metaCounter + 1) );
+    memset( meta_map, 0, sizeof( SWINT_T ) * (in_header->metaCounter + 1) );
 
     for( i = 0; i < in_header->metaCounter; i++ )
     {
@@ -568,7 +568,7 @@ static void make_meta_map( IndexFILE *in_index, SWISH *sw_output)
 
             /* else, if it is already an alias, but points someplace else, we have a problem */
             else if ( out_meta->alias != out_alias->metaID )
-                progerr("In index %s metaname '%s' is an alias for '%s'(%d).  But another input index already mapped '%s' to '%s'(%d)", 
+                progerr("In index %s metaname '%s' is an alias for '%s'(%lld).  But another input index already mapped '%s' to '%s'(%lld)", 
                         in_index->line, in_meta->metaName, in_alias->metaName, in_alias->metaID,
                         out_meta->metaName,
                         is_meta_index( out_meta )
@@ -585,7 +585,7 @@ static void make_meta_map( IndexFILE *in_index, SWISH *sw_output)
 #ifdef DEBUG_MERGE
     printf(" %s   ->   %s  ** Meta Map **\n", in_index->line, sw_output->indexlist->line );
     for ( i=0; i<in_header->metaCounter + 1;i++)
-        printf("%4d  ->  %3d\n", i, meta_map[i] );
+        printf("%4lld  ->  %3lld\n", i, meta_map[i] );
 #endif
 
 }
@@ -596,14 +596,14 @@ static void make_meta_map( IndexFILE *in_index, SWISH *sw_output)
 *
 *****************************************************************************/
 
-static int  *sorted_data;  /* Static array to make the qsort function a bit quicker */
+static SWINT_T  *sorted_data;  /* Static array to make the qsort function a bit quicker */
 
-static int     compnums(const void *s1, const void *s2)
+static SWINT_T     compnums(const void *s1, const void *s2)
 {
-    int         a = *(int *)s1; // filenumber passed from qsort
-    int         b = *(int *)s2;
-    int         v1 = sorted_data[ a-1 ];
-    int         v2 = sorted_data[ b-1 ];
+    SWINT_T         a = *(SWINT_T *)s1; // filenumber passed from qsort
+    SWINT_T         b = *(SWINT_T *)s2;
+    SWINT_T         v1 = sorted_data[ a-1 ];
+    SWINT_T         v2 = sorted_data[ b-1 ];
 
     // return v1 <=> v2;
 
@@ -626,9 +626,9 @@ static int     compnums(const void *s1, const void *s2)
 static void load_filename_sort( SWISH *sw, IndexFILE *cur_index )
 {
     struct metaEntry *path_meta = getPropNameByName( &cur_index->header, AUTOPROPERTY_DOCPATH );
-    int         i;
-    int         *sort_array;
-    int         totalfiles = cur_index->header.totalfiles;
+    SWINT_T         i;
+    SWINT_T         *sort_array;
+    SWINT_T         totalfiles = cur_index->header.totalfiles;
 
     if ( !path_meta )
         progerr("Can't merge index %s.  It doesn't contain the property %s", cur_index->line, AUTOPROPERTY_DOCPATH );
@@ -648,7 +648,7 @@ static void load_filename_sort( SWISH *sw, IndexFILE *cur_index )
     /*
      * Since USE_PRESORT_ARRAY has a different internal format that what is generated
      * by CreatePropeSortArray() we must ALWAYS create an actual integer
-     * array total_files long.
+     * array total_files SWINT_T.
      * 
      * $$$ The problem is that with USE_PRESORT_ARRAY the format is different
      *     before and after saving the array to disk
@@ -675,8 +675,8 @@ static void load_filename_sort( SWISH *sw, IndexFILE *cur_index )
         progerr("failed to load or create sorted properties for index %s", cur_index->line );
 
 
-    sort_array = emalloc(  totalfiles * sizeof( int ) );
-    memset( sort_array, 0, totalfiles * sizeof( int ) );
+    sort_array = emalloc(  totalfiles * sizeof( SWINT_T ) );
+    memset( sort_array, 0, totalfiles * sizeof( SWINT_T ) );
 
 
     /* build an array with file numbers and sort into filename order */
@@ -684,7 +684,7 @@ static void load_filename_sort( SWISH *sw, IndexFILE *cur_index )
         sort_array[i] = i+1;  // filenumber starts a one
 
 
-    swish_qsort( sort_array, totalfiles, sizeof( int ), &compnums);
+    swish_qsort( sort_array, totalfiles, sizeof( SWINT_T ), &compnums);
 
     cur_index->path_order = sort_array;
 
@@ -734,7 +734,7 @@ static IndexFILE *get_next_file_in_order( SWISH *sw_input )
     IndexFILE   *winner = NULL;
     IndexFILE   *cur_index = sw_input->indexlist;
     FileRec     fi;
-    int         ret;
+    SWINT_T         ret;
     propEntry   *wp, *cp;
 
     memset(&fi, 0, sizeof( FileRec ));
@@ -834,7 +834,7 @@ static IndexFILE *get_next_file_in_order( SWISH *sw_input )
     winner->filenum = winner->path_order[winner->current_file++];
 
 #ifdef DEBUG_MERGE
-printf("   Files in order: index %s file# %d winner\n", winner->line, winner->filenum );
+printf("   Files in order: index %s file# %lld winner\n", winner->line, winner->filenum );
 #endif
 
     /* free prop, as it's not needed anymore */
@@ -864,7 +864,7 @@ static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_output 
     IndexFILE           *indexf = sw_output->indexlist;
     struct MOD_Index    *idx = sw_output->Index;
     docProperties       *d;
-    int                 i;
+    SWINT_T                 i;
     propEntry           *tmp;
     docProperties       *docProperties=NULL;
     struct metaEntry    meta_entry;
@@ -877,7 +877,7 @@ static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_output 
 
 
 #ifdef DEBUG_MERGE
-    printf("Reading Properties from input index '%s' file %d\n", cur_index->line, cur_index->filenum);
+    printf("Reading Properties from input index '%s' file %lld\n", cur_index->line, cur_index->filenum);
 #endif
 
     /* read the properties and map them as needed */
@@ -929,7 +929,7 @@ static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_output 
     /* now write out the data to be used for mapping file for a given index. */
     //    compress1( cur_index->filenum, filenum_map, fputc );   // what file number this came from
 
-    if ( fwrite( &cur_index->filenum, sizeof(int), 1, filenum_map) != 1 )
+    if ( fwrite( &cur_index->filenum, sizeof(SWINT_T), 1, filenum_map) != 1 )
         progerrno("Failed to write mapping data: ");
 
     if ( fwrite( &cur_index, sizeof(IndexFILE *), 1, filenum_map) != 1 )        // what index
@@ -940,12 +940,12 @@ static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_output 
     if ( !indexf->header.ignoreTotalWordCountWhenRanking )
     {
         INDEXDATAHEADER *header = &indexf->header;
-        int idx1 = fi.filenum - 1;
+        SWINT_T idx1 = fi.filenum - 1;
 
         if ( !header->TotalWordsPerFile || idx1 >= header->TotalWordsPerFileMax )
         {
             header->TotalWordsPerFileMax += 20000;  /* random guess -- could be a config setting */
-            header->TotalWordsPerFile = erealloc( header->TotalWordsPerFile, header->TotalWordsPerFileMax * sizeof(int) );
+            header->TotalWordsPerFile = erealloc( header->TotalWordsPerFile, header->TotalWordsPerFileMax * sizeof(SWINT_T) );
         }
 
         header->TotalWordsPerFile[idx1] = cur_index->header.TotalWordsPerFile[cur_index->filenum-1];
@@ -959,16 +959,16 @@ static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_output 
 *
 ****************************************************************************/
 
-static int *get_map( FILE *filenum_map, IndexFILE *cur_index )
+static SWINT_T *get_map( FILE *filenum_map, IndexFILE *cur_index )
 {
-    int         *array = emalloc( (cur_index->header.totalfiles+1) * sizeof( int ) );
+    SWINT_T         *array = emalloc( (cur_index->header.totalfiles+1) * sizeof( SWINT_T ) );
     IndexFILE   *idf;
-    int         filenum;
-    int         new_filenum = 0;
+    SWINT_T         filenum;
+    SWINT_T         new_filenum = 0;
 
 
 
-    memset( array, 0, (cur_index->header.totalfiles+1) * sizeof( int ) );
+    memset( array, 0, (cur_index->header.totalfiles+1) * sizeof( SWINT_T ) );
 
 
     clearerr( filenum_map );
@@ -978,7 +978,7 @@ static int *get_map( FILE *filenum_map, IndexFILE *cur_index )
     {
         new_filenum++;
 
-        if (!fread( &filenum, sizeof(int), 1, filenum_map))
+        if (!fread( &filenum, sizeof(SWINT_T), 1, filenum_map))
             break;
 
 
@@ -999,8 +999,8 @@ static int *get_map( FILE *filenum_map, IndexFILE *cur_index )
 
 static void dump_index_words(SWISH * sw, IndexFILE * indexf, SWISH *sw_output)
 {
-    int         j;
-    int         word_count = 0;
+    SWINT_T         j;
+    SWINT_T         word_count = 0;
     char        word[2];
     char       *resultword;
     sw_off_t    wordID;
@@ -1008,7 +1008,7 @@ static void dump_index_words(SWISH * sw, IndexFILE * indexf, SWISH *sw_output)
     DB_InitReadWords(sw, indexf->DB);
 
 
-    printf("Getting words in index '%s': %3d words\r", indexf->line, word_count);
+    printf("Getting words in index '%s': %3lld words\r", indexf->line, word_count);
     fflush(stdout);
 
     for(j=0;j<256;j++)
@@ -1025,10 +1025,10 @@ static void dump_index_words(SWISH * sw, IndexFILE * indexf, SWISH *sw_output)
             DB_ReadNextWordInvertedIndex(sw, word,&resultword,&wordID,indexf->DB);
             word_count++;
             if(!word_count % 10000)
-                printf("Getting words in index '%s': %3d words\r", indexf->line, word_count);
+                printf("Getting words in index '%s': %3lld words\r", indexf->line, word_count);
         }
     }
-    printf("Getting words in index '%s': %6d words\n", indexf->line, word_count);
+    printf("Getting words in index '%s': %6lld words\n", indexf->line, word_count);
 
     DB_EndReadWords(sw, indexf->DB);
 
@@ -1040,29 +1040,29 @@ static void dump_index_words(SWISH * sw, IndexFILE * indexf, SWISH *sw_output)
 *
 ****************************************************************************/
 
-static void write_word_pos( IndexFILE *indexf, SWISH *sw_output, int *file_num_map, int filenum, ENTRY *e, int metaID, unsigned int posdata )
+static void write_word_pos( IndexFILE *indexf, SWISH *sw_output, SWINT_T *file_num_map, SWINT_T filenum, ENTRY *e, SWINT_T metaID, SWUINT_T posdata )
 {
-    int         new_file;
-    int         new_meta;
+    SWINT_T         new_file;
+    SWINT_T         new_meta;
 
 #ifdef DEBUG_MERGE
-    printf("\nindex %s '%s' Struct: %d Pos: %d",
+    printf("\nindex %s '%s' Struct: %lld Pos: %lld",
     indexf->line, e->word, GET_STRUCTURE(posdata), GET_POSITION(posdata) );
 
 
     if ( !(new_file = file_num_map[ filenum ]) )
     {
-        printf("  file: %d **File deleted!**\n", filenum);
+        printf("  file: %lld **File deleted!**\n", filenum);
         return;
     }
 
     if ( !(new_meta = indexf->meta_map[ metaID ] ))
     {
-        printf("  file: %d **Failed to map meta ID **\n", filenum);
+        printf("  file: %lld **Failed to map meta ID **\n", filenum);
         return;
     }
 
-    printf("  File: %d -> %d  Meta: %d -> %d\n", filenum, new_file, metaID, new_meta );
+    printf("  File: %lld -> %lld  Meta: %lld -> %lld\n", filenum, new_file, metaID, new_meta );
 
     addentry( sw_output, e, new_file, GET_STRUCTURE(posdata), new_meta, GET_POSITION(posdata) );
 

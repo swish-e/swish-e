@@ -39,7 +39,7 @@ $Id$
 **
 ** 04/00 Jose ruiz
 ** storeDocProperties and readNextDocPropEntry modified to store
-** the int numbers compressed. This makes integers "portable"
+** the SWINT_T numbers compressed. This makes integers "portable"
 **
 ** 04/00 Jose Ruiz
 ** Added sorting results by property
@@ -178,17 +178,17 @@ $Id$
 #endif
 
 /*******************************************************************
-*   Convert a propValue to a unsigned long
+*   Convert a propValue to a SWUINT_T
 *
 ********************************************************************/
 union _conv_ {
-      char            c[sizeof(unsigned long)];
-      unsigned long   l;
+      char            c[sizeof(SWUINT_T)];
+      SWUINT_T   l;
 };
-unsigned long convPropValue2ULong(unsigned char *propValue)
+SWUINT_T convPropValue2ULong(unsigned char *propValue)
 {
       union _conv_ u;
-      memcpy(u.c, propValue, sizeof(unsigned long));
+      memcpy(u.c, propValue, sizeof(SWUINT_T));
       return u.l;
 }
 
@@ -215,7 +215,7 @@ void freeProperty( propEntry *prop )
 
 void freeDocProperties(docProperties *docProperties)
 {
-    int i;
+    SWINT_T i;
 
     for( i = 0; i < docProperties->n; i++ )
     {
@@ -272,7 +272,7 @@ void freefileinfo(FileRec *fi)
 char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
 {
     char *s;
-    unsigned long i;
+    SWUINT_T i;
 
     if ( !meta_entry )
         progerr("DecodeDocProperty passed NULL meta_entry");
@@ -289,7 +289,7 @@ char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
     if ( is_meta_date(meta_entry) )
     {
         s=emalloc(30);
-        /* i = *(unsigned long *) prop->propValue; */  /* read binary */ 
+        /* i = *(SWUINT_T *) prop->propValue; */  /* read binary */ 
         i = convPropValue2ULong(prop->propValue); /* read binary */
         i = UNPACKLONG(i);     /* Convert the portable number */
         strftime(s,30, DATE_FORMAT_STRING, (struct tm *)localtime((time_t *)&i));
@@ -301,10 +301,10 @@ char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
     if ( is_meta_number(meta_entry) )
     {
         s=emalloc(14);
-        /* i=*(unsigned long *)prop->propValue; */ /* read binary */
+        /* i=*(SWUINT_T *)prop->propValue; */ /* read binary */
         i = convPropValue2ULong(prop->propValue); /* read binary */
         i = UNPACKLONG(i);     /* Convert the portable number */
-        sprintf(s,"%lu",i);
+        sprintf(s,"%llu",i);
         return s;
     }
 
@@ -334,11 +334,11 @@ char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
 *
 ********************************************************************/
 
-propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int metaID, int max_size )
+propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, SWINT_T metaID, SWINT_T max_size )
 {
     IndexFILE *indexf = result->db_results->indexf;
-    int     error_flag;
-    unsigned long num;
+    SWINT_T     error_flag;
+    SWUINT_T num;
 
 
     /* Grab the meta structure for this ID, unless one was passed in */
@@ -364,15 +364,15 @@ propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int me
                 return CreateProperty( *meta_entry, (unsigned char *)&num, sizeof( num ), 1, &error_flag );
             }
 
-            int scale_factor = result->db_results->results->rank_scale_factor;
-            unsigned long rank_num;
+            SWINT_T scale_factor = result->db_results->results->rank_scale_factor;
+            SWUINT_T rank_num;
 
             /* scale_factor is zero while sorting, so use the raw rank */
             /* otherwise, scale for display */
 
             if ( scale_factor )
             {
-                rank_num = (unsigned long) (result->rank * scale_factor)/10000;
+                rank_num = (SWUINT_T) (result->rank * scale_factor)/10000;
 
                 if ( rank_num >= 999)
                     rank_num = 1000;
@@ -388,13 +388,13 @@ propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int me
 
         if ( is_meta_entry( *meta_entry, AUTOPROPERTY_REC_COUNT ) )
         {
-            num = PACKLONG( (unsigned long)result->db_results->results->cur_rec_number );
+            num = PACKLONG( (SWUINT_T)result->db_results->results->cur_rec_number );
             return CreateProperty( *meta_entry, (unsigned char *)&num, sizeof( num ), 1, &error_flag );
         }
 
         if ( is_meta_entry( *meta_entry, AUTOPROPERTY_FILENUM ) )
         {
-            num = PACKLONG( (unsigned long)result->filenum );
+            num = PACKLONG( (SWUINT_T)result->filenum );
             return CreateProperty( *meta_entry, (unsigned char *)&num, sizeof( num ), 1, &error_flag );
         }
 
@@ -426,7 +426,7 @@ propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int me
 *
 ********************************************************************/
 
-char *getResultPropAsString(RESULT *result, int ID)
+char *getResultPropAsString(RESULT *result, SWINT_T ID)
 {
     char *s = NULL;
     propEntry *prop;
@@ -531,7 +531,7 @@ char *SwishResultPropertyStr(RESULT *result, char *pname)
 
 
 /*******************************************************************
-*   SwishResultPropertyULong - Returns an unsigned long for the property *name* supplied
+*   SwishResultPropertyULong - Returns an SWUINT_T for the property *name* supplied
 *
 *   ** Library interface call **
 *
@@ -540,16 +540,16 @@ char *SwishResultPropertyStr(RESULT *result, char *pname)
 *       char * property name
 *
 *   Returns:
-*       unsigned long
+*       SWUINT_T
 *       ULONG_MAX on error
 *
 *
 ********************************************************************/
 
-unsigned long SwishResultPropertyULong(RESULT *result, char *pname)
+SWUINT_T SwishResultPropertyULong(RESULT *result, char *pname)
 {
     PropValue           *pv;
-    unsigned long       value = ULONG_MAX;
+    SWUINT_T       value = ULONG_MAX;
 
 
     /* Fetch the property */
@@ -607,7 +607,7 @@ unsigned long SwishResultPropertyULong(RESULT *result, char *pname)
 *
 ********************************************************************/
 
-PropValue *getResultPropValue (RESULT *r, char *pname, int ID )
+PropValue *getResultPropValue (RESULT *r, char *pname, SWINT_T ID )
 {
     PropValue *pv;
     struct metaEntry *meta_entry = NULL;
@@ -656,8 +656,8 @@ PropValue *getResultPropValue (RESULT *r, char *pname, int ID )
 
     if ( is_meta_number(meta_entry) )
     {
-        unsigned long i;
-        /* i = *(unsigned long *) prop->propValue;*/  /* read binary */
+        SWUINT_T i;
+        /* i = *(SWUINT_T *) prop->propValue;*/  /* read binary */
         i = convPropValue2ULong(prop->propValue); /* read binary */
         i = UNPACKLONG(i);     /* Convert the portable number */
         pv->datatype = PROP_ULONG;
@@ -669,8 +669,8 @@ PropValue *getResultPropValue (RESULT *r, char *pname, int ID )
 
     if ( is_meta_date(meta_entry) )
     {
-        unsigned long i;
-        /* i = *(unsigned long *) prop->propValue; */ /* read binary */
+        SWUINT_T i;
+        /* i = *(SWUINT_T *) prop->propValue; */ /* read binary */
         i = convPropValue2ULong(prop->propValue); /* read binary */
         i = UNPACKLONG(i);     /* Convert the portable number */
         pv->datatype = PROP_DATE;
@@ -682,7 +682,7 @@ PropValue *getResultPropValue (RESULT *r, char *pname, int ID )
 
 
     /* If here, then it's an unknown property type and abort! */
-    progerr("Swish-e database error.  Unknown property type '%d'", meta_entry->metaType );
+    progerr("Swish-e database error.  Unknown property type '%lld'", meta_entry->metaType );
     return NULL;  /* make compier happy */
 
 }
@@ -705,7 +705,7 @@ void    freeResultPropValue(PropValue *pv)
 /*******************************************************************
 *   Converts a string into a string for saving as a property
 *   Which means will either return a duplicated string,
-*   or a packed unsigned long.
+*   or a packed SWUINT_T.
 *
 *   Call with:
 *       *metaEntry
@@ -727,9 +727,9 @@ void    freeResultPropValue(PropValue *pv)
 *       What about convert entities here?
 *
 ********************************************************************/
-static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *propstring, int *error_flag )
+static SWINT_T EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *propstring, SWINT_T *error_flag )
 {
-    unsigned long int num;
+    SWUINT_T num;
     char     *newstr;
     char     *badchar;
     char     *tmpnum;
@@ -741,7 +741,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
     *error_flag = 0;
 
     /* skip leading white space */
-    while ( isspace( (int)*string ))
+    while ( isspace( (SWINT_T)*string ))
         string++;
 
     if ( !string || !*string )
@@ -760,16 +760,16 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
 
     /* remove trailing white space  */
     {
-        int i = strlen( string );
+        SWINT_T i = strlen( string );
 
-        while ( i  && isspace( (int)string[i-1]) )
+        while ( i  && isspace( (SWINT_T)string[i-1]) )
             string[--i] = '\0';
     }
 
 
     if (is_meta_number( meta_entry ) || is_meta_date( meta_entry ))
     {
-        int j;
+        SWINT_T j;
 
         newstr = emalloc( sizeof( num ) + 1 );
         num = strtoul( string, &badchar, 10 ); // would base zero be more flexible?
@@ -793,7 +793,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
         num = PACKLONG(num);
         tmpnum = (char *)&num;
 
-        for ( j=0; j <= (int)sizeof(num)-1; j++ )
+        for ( j=0; j <= (SWINT_T)sizeof(num)-1; j++ )
             newstr[j] = (unsigned char)tmpnum[j];
 
         newstr[ sizeof(num) ] = '\0';
@@ -802,7 +802,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
 
         efree(string);
 
-        return (int)sizeof(num);
+        return (SWINT_T)sizeof(num);
     }
 
 
@@ -818,7 +818,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
             for( source = string; *source; source++ )
             {
                 /* Used to replace (<=' ') even spaces with a single space */
-                if ( (int)((unsigned char)*source) < (int)' ' )
+                if ( (SWINT_T)((unsigned char)*source) < (SWINT_T)' ' )
                 {
                     if ( dest > string && *(dest - 1) != ' ' )
                     {
@@ -835,7 +835,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
         }
 
         *encodedStr = string;
-        return (int)strlen( string );
+        return (SWINT_T)strlen( string );
     }
 
 
@@ -861,7 +861,7 @@ static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char
 *
 ********************************************************************/
 
-propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue, int propLen, int preEncoded, int *error_flag )
+propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue, SWINT_T propLen, SWINT_T preEncoded, SWINT_T *error_flag )
 {
     propEntry *docProp;
 
@@ -892,7 +892,7 @@ propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue
 
     /* sizeof(propEntry) already contains space for part of the propLen, so throw a null in */
     /* This *hack* should all compare of the properites using strcoll, which expects a null */
-    /* most places expect propValue to be exactly propLen long.  The null is not written to disk */
+    /* most places expect propValue to be exactly propLen SWINT_T.  The null is not written to disk */
     docProp->propValue[propLen] = '\0';
 
 
@@ -915,12 +915,12 @@ propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue
 *   Will limit property length, if needed.
 *
 *******************************************************************/
-propEntry *append_property( struct metaEntry *meta_entry, propEntry *p, char *txt, int length )
+propEntry *append_property( struct metaEntry *meta_entry, propEntry *p, char *txt, SWINT_T length )
 {
-    int     newlen;
-    int     add_a_space = 0;
+    SWINT_T     newlen;
+    SWINT_T     add_a_space = 0;
     char   *str = NULL;
-    int     error_flag = 0;
+    SWINT_T     error_flag = 0;
 
     length = EncodeProperty( meta_entry, &str, txt, &error_flag );
 
@@ -928,12 +928,12 @@ propEntry *append_property( struct metaEntry *meta_entry, propEntry *p, char *tx
         return p;
 
     /* When appending, we separate by a space -- could be a config setting */
-    if ( !isspace( (int)*str ) && !isspace( (int)p->propValue[p->propLen-1] ) )
+    if ( !isspace( (SWINT_T)*str ) && !isspace( (SWINT_T)p->propValue[p->propLen-1] ) )
         add_a_space++;
 
 
     /* Any room to add the property? */
-    if ( meta_entry->max_len &&  (int)p->propLen + add_a_space >=  meta_entry->max_len )
+    if ( meta_entry->max_len &&  (SWINT_T)p->propLen + add_a_space >=  meta_entry->max_len )
     {
         if ( str )
             efree( str );
@@ -984,10 +984,10 @@ propEntry *append_property( struct metaEntry *meta_entry, propEntry *p, char *tx
 *
 *
 ********************************************************************/
-void addDocProperties( INDEXDATAHEADER *header, docProperties **docProperties, unsigned char *propValue, int propLen, char *filename )
+void addDocProperties( INDEXDATAHEADER *header, docProperties **docProperties, unsigned char *propValue, SWINT_T propLen, char *filename )
 {
     struct metaEntry *m;
-    int     i;
+    SWINT_T     i;
 
     for ( i = 0; i < header->metaCounter; i++)
     {
@@ -1021,12 +1021,12 @@ void addDocProperties( INDEXDATAHEADER *header, docProperties **docProperties, u
 *
 ********************************************************************/
 
-int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry, unsigned char *propValue, int propLen, int preEncoded )
+SWINT_T addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry, unsigned char *propValue, SWINT_T propLen, SWINT_T preEncoded )
 {
     struct docProperties *dp = *docProperties;
     propEntry *docProp;
-    int i;
-    int error_flag;
+    SWINT_T i;
+    SWINT_T error_flag;
 
 
     /* Allocate or extend the property array, if needed */
@@ -1087,7 +1087,7 @@ int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry,
 /* #define DEBUGPROP 1 */
 
 #ifdef DEBUGPROP
-static int insidecompare = 0;
+static SWINT_T insidecompare = 0;
 #endif
 
 /*******************************************************************
@@ -1105,14 +1105,14 @@ static int insidecompare = 0;
 *
 *
 ********************************************************************/
-int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *p2 )
+SWINT_T Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *p2 )
 {
 
 
 #ifdef DEBUGPROP
     if ( !insidecompare++ )
     {
-        printf("comparing properties for meta %s: returning: %d\n", meta_entry->metaName, Compare_Properties( meta_entry, p1, p2) );
+        printf("comparing properties for meta %s: returning: %lld\n", meta_entry->metaName, Compare_Properties( meta_entry, p1, p2) );
         dump_single_property( p1, meta_entry );
         dump_single_property( p2, meta_entry );
         insidecompare = 0;
@@ -1137,15 +1137,15 @@ int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *
 
     if ( is_meta_string(meta_entry) )
     {
-        int rc;
-        int len = Min( p1->propLen, p2->propLen );
+        SWINT_T rc;
+        SWINT_T len = Min( p1->propLen, p2->propLen );
 
 #ifdef HAVE_STRCOLL
         /* note that the propValue should be null terminated.  See CreateProperty()  */
         /* could use a strncoll() and one for case ignore */
 #ifdef DEBUGPROP
         if ( is_meta_use_strcoll(meta_entry) )
-            printf("using strcol %s <=> %s = %d\n",  (const char *)p1->propValue, (const char *)p2->propValue,strcoll( (const char *)p1->propValue, (const char *)p2->propValue ));
+            printf("using strcol %s <=> %s = %lld\n",  (const char *)p1->propValue, (const char *)p2->propValue,strcoll( (const char *)p1->propValue, (const char *)p2->propValue ));
 #endif
         if ( is_meta_use_strcoll(meta_entry) )
             return strcoll( (const char *)p1->propValue, (const char *)p2->propValue );
@@ -1156,7 +1156,7 @@ int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *
              : strncmp( (char *)p1->propValue, (char *)p2->propValue, len );
 
 #ifdef DEBUGPROP
-        printf("using %s  %s <=> %s = %d\n", (is_meta_ignore_case( meta_entry) ? "strncasecmp" : "strncmp"),  (const char *)p1->propValue, (const char *)p2->propValue, rc );
+        printf("using %s  %s <=> %s = %lld\n", (is_meta_ignore_case( meta_entry) ? "strncasecmp" : "strncmp"),  (const char *)p1->propValue, (const char *)p2->propValue, rc );
 #endif
 
 
@@ -1177,12 +1177,12 @@ int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *
 *
 *********************************************************************/
 
-static propEntry *duplicate_in_mem_property( docProperties *props, int metaID, int max_size )
+static propEntry *duplicate_in_mem_property( docProperties *props, SWINT_T metaID, SWINT_T max_size )
 {
     propEntry      *docProp;
     struct          metaEntry meta_entry;
-    int             propLen;
-    int             error_flag;
+    SWINT_T             propLen;
+    SWINT_T             error_flag;
 
     if ( metaID >= props->n )
         return NULL;
@@ -1218,9 +1218,9 @@ static propEntry *duplicate_in_mem_property( docProperties *props, int metaID, i
 *
 *********************************************************************/
 
-unsigned char *allocatePropIOBuffer(SWISH *sw, unsigned long buf_needed )
+unsigned char *allocatePropIOBuffer(SWISH *sw, SWUINT_T buf_needed )
 {
-    unsigned long total_size;
+    SWUINT_T total_size;
 
     if ( !buf_needed )
         progerr("Asked for too small of a buffer size!");
@@ -1264,7 +1264,7 @@ unsigned char *allocatePropIOBuffer(SWISH *sw, unsigned long buf_needed )
 *
 *********************************************************************/
 
-static unsigned char *uncompress_property( SWISH *sw, unsigned char *input_buf, int buf_len, int *uncompressed_size )
+static unsigned char *uncompress_property( SWISH *sw, unsigned char *input_buf, SWINT_T buf_len, SWINT_T *uncompressed_size )
 {
 
 #ifndef HAVE_ZLIB
@@ -1277,7 +1277,7 @@ static unsigned char *uncompress_property( SWISH *sw, unsigned char *input_buf, 
 
 #else
     unsigned char   *PropBuf;
-    int             zlib_status = 0;
+    SWINT_T             zlib_status = 0;
     uLongf          buf_size = (uLongf)*uncompressed_size;
 
 
@@ -1299,13 +1299,13 @@ static unsigned char *uncompress_property( SWISH *sw, unsigned char *input_buf, 
     if ( zlib_status != Z_OK )
     {
         // $$$ make sure this works ok if returning null $$$
-        progwarn("Failed to uncompress Property. zlib uncompress returned: %d.  uncompressed size: %d buf_len: %d\n",
+        progwarn("Failed to uncompress Property. zlib uncompress returned: %lld.  uncompressed size: %lld buf_len: %lld\n",
             zlib_status, buf_size, buf_len );
         return NULL;
     }
 
 
-    *uncompressed_size = (int)buf_size;
+    *uncompressed_size = (SWINT_T)buf_size;
 
 
     return PropBuf;
@@ -1334,20 +1334,20 @@ static unsigned char *uncompress_property( SWISH *sw, unsigned char *input_buf, 
 *
 *
 *********************************************************************/
-propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, FileRec *fi, int metaID, int max_size )
+propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, FileRec *fi, SWINT_T metaID, SWINT_T max_size )
 {
     SWISH           *sw = indexf->sw;
-    int             propLen;
-    int             error_flag;
+    SWINT_T             propLen;
+    SWINT_T             error_flag;
     struct          metaEntry meta_entry;
     unsigned char  *buf;
-    int             buf_len;            /* size on disk */
-    int             uncompressed_len;   /* size uncompressed */
+    SWINT_T             buf_len;            /* size on disk */
+    SWINT_T             uncompressed_len;   /* size uncompressed */
     propEntry      *docProp;
     unsigned char  *propbuf;
     INDEXDATAHEADER *header = &indexf->header;
-    int             count;
-    int             propIDX;
+    SWINT_T             count;
+    SWINT_T             propIDX;
 
 
     /* initialize the first time called */
@@ -1362,7 +1362,7 @@ propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, FileRec *fi, int 
     propIDX = header->metaID_to_PropIDX[metaID];
 
     if ( propIDX < 0 )
-        progerr("Mapped propID %d to invalid property index", metaID );
+        progerr("Mapped propID %lld to invalid property index", metaID );
 
 
     /* limit size if requested and is a string property - hope this isn't too slow */
@@ -1432,15 +1432,15 @@ propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, FileRec *fi, int 
 *   2001-09 jmruiz Modified to be used by merge.c
 *********************************************************************/
 
-docProperties *ReadAllDocPropertiesFromDisk( IndexFILE *indexf, int filenum )
+docProperties *ReadAllDocPropertiesFromDisk( IndexFILE *indexf, SWINT_T filenum )
 {
     FileRec         fi;
     propEntry      *new_prop;
-    int             count;
+    SWINT_T             count;
     struct          metaEntry meta_entry;
     docProperties   *docProperties=NULL;
     INDEXDATAHEADER *header = &indexf->header;
-    int             propIDX;
+    SWINT_T             propIDX;
 
 
 

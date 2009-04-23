@@ -40,10 +40,10 @@ typedef struct FHASH
 FHASH *FHASH_Create(FILE *fp);
 FHASH *FHASH_Open(FILE *fp, sw_off_t start);
 sw_off_t FHASH_Close(FHASH *f);
-int FHASH_Insert(FHASH *f, unsigned char *key, int key_len, unsigned char *data, int data_len);
-int FHASH_Search(FHASH *f, unsigned char *key, int key_len, unsigned char *data, int data_len);
-int FHASH_Update(FHASH *f, unsigned char *key, int key_len, unsigned char *data, int data_len);
-int FHASH_Delete(FHASH *f, unsigned char *key, int key_len);
+SWINT_T FHASH_Insert(FHASH *f, unsigned char *key, SWINT_T key_len, unsigned char *data, SWINT_T data_len);
+SWINT_T FHASH_Search(FHASH *f, unsigned char *key, SWINT_T key_len, unsigned char *data, SWINT_T data_len);
+SWINT_T FHASH_Update(FHASH *f, unsigned char *key, SWINT_T key_len, unsigned char *data, SWINT_T data_len);
+SWINT_T FHASH_Delete(FHASH *f, unsigned char *key, SWINT_T key_len);
 
 
 

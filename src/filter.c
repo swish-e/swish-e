@@ -141,7 +141,7 @@ void    freeModule_Filter(SWISH * sw)
  -- return: 0/1 = none/config applied
 */
 
-int     configModule_Filter(SWISH * sw, StringList * sl)
+SWINT_T     configModule_Filter(SWISH * sw, StringList * sl)
  {
     struct MOD_Filter *md = sw->Filter;
     char   *w0 = sl->word[0];
@@ -316,13 +316,13 @@ FILE *FilterOpen(FileProp * fprop)
 {
     FilterList      *fi         = fprop->hasfilter;
     char            **options   = fi->options->word;
-    int             num_options = fi->options->n;
+    SWINT_T             num_options = fi->options->n;
     char            **arg;      /* where to store expanded arguments */
-    int             arg_size;
+    SWINT_T             arg_size;
 #ifndef HAVE_WORKING_FORK
     char            *command;   /* command string used with popen */
 #endif
-    int             n;
+    SWINT_T             n;
 
     fprop->fp = NULL;
 
@@ -381,7 +381,7 @@ FILE *FilterOpen(FileProp * fprop)
 
 static char *expand_options( FileProp * fprop, char * template )
 {
-    int     cur_size    = strlen( template );
+    SWINT_T     cur_size    = strlen( template );
     char    *outstr     = (char *) emalloc( cur_size + 1 );
     char    *cur_char   = outstr;
     char    *tmpstr;
@@ -479,7 +479,7 @@ static char *expand_percent(  FileProp * fprop, char escape_code )
   -- return: errcode
 */
 
-int     FilterClose(FileProp *fprop)
+SWINT_T     FilterClose(FileProp *fprop)
 {
 #ifdef HAVE_WORKING_FORK
     FilterList  *fl = fprop->hasfilter;
@@ -495,7 +495,7 @@ int     FilterClose(FileProp *fprop)
     if ( 0 == pid )
     {
         if ( -1 == kill( fprop->filter_pid, 9 ) )
-            progerrno("Failed to kill filter program with pid %d", fprop->filter_pid );
+            progerrno("Failed to kill filter program with pid %lld", fprop->filter_pid );
 
         /* Now reap killed filter */
         pid = waitpid( fprop->filter_pid, &status, 0 );
@@ -510,10 +510,10 @@ int     FilterClose(FileProp *fprop)
         progwarn("filter '%s' did not terminate normally", prog );
 
     else if ( WEXITSTATUS(status) )
-        progwarn("filter '%s' exited with non-zero status: [%d]", prog, WEXITSTATUS(status));
+        progwarn("filter '%s' exited with non-zero status: [%lld]", prog, WEXITSTATUS(status));
 
     else if ( WIFSIGNALED(status) )
-        progwarn("filter '%s' killed by signal: [%d]", prog, WTERMSIG(status) );
+        progwarn("filter '%s' killed by signal: [%lld]", prog, WTERMSIG(status) );
 #endif /* HAVE_SYS_WAIT_H */
 
     if ( fclose( fprop->fp ) != 0 )
@@ -592,10 +592,10 @@ static void fork_program( FileProp * fprop, char **arg )
 
 static char *join_string( char **string_list )
 {
-    int     len = 0;  /* total size of strings */
+    SWINT_T     len = 0;  /* total size of strings */
     char    **cur_string = string_list;
     char    *outstr;
-    int     first = 1;
+    SWINT_T     first = 1;
     char    *quote_char = "\"";
 
     while ( *cur_string ) {

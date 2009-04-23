@@ -41,13 +41,13 @@
  
  */
 
-#include <stdlib.h>
+#include "swish.h"
 
 #define inline
 
-typedef int		 cmp_t (const void *, const void *);
+typedef SWINT_T		 cmp_t (const void *, const void *);
 static inline char	*med3 (char *, char *, char *, cmp_t *);
-static inline void	 swapfunc (char *, char *, int, int);
+static inline void	 swapfunc (char *, char *, SWINT_T, SWINT_T);
 
 #ifndef min
 #define min(a, b)	(a) < (b) ? a : b
@@ -57,7 +57,7 @@ static inline void	 swapfunc (char *, char *, int, int);
  * Qsort routine from Bentley & McIlroy's "Engineering a Sort Function".
  */
 #define swapcode(TYPE, parmi, parmj, n) { 		\
-	long i = (n) / sizeof (TYPE); 			\
+	SWINT_T i = (n) / sizeof (TYPE); 			\
 	register TYPE *pi = (TYPE *) (parmi); 		\
 	register TYPE *pj = (TYPE *) (parmj); 		\
 	do { 						\
@@ -67,25 +67,25 @@ static inline void	 swapfunc (char *, char *, int, int);
         } while (--i > 0);				\
 }
 
-#define SWAPINIT(a, es) swaptype = ((char *)a - (char *)0) % sizeof(long) || \
-	es % sizeof(long) ? 2 : es == sizeof(long)? 0 : 1;
+#define SWAPINIT(a, es) swaptype = ((char *)a - (char *)0) % sizeof(SWINT_T) || \
+	es % sizeof(SWINT_T) ? 2 : es == sizeof(SWINT_T)? 0 : 1;
 
 static inline void
 swapfunc(a, b, n, swaptype)
 	char *a, *b;
-	int n, swaptype;
+	SWINT_T n, swaptype;
 {
 	if(swaptype <= 1)
-		swapcode(long, a, b, n)
+		swapcode(SWINT_T, a, b, n)
 	else
 		swapcode(char, a, b, n)
 }
 
 #define swap(a, b)					\
 	if (swaptype == 0) {				\
-		long t = *(long *)(a);			\
-		*(long *)(a) = *(long *)(b);		\
-		*(long *)(b) = t;			\
+		SWINT_T t = *(SWINT_T *)(a);			\
+		*(SWINT_T *)(a) = *(SWINT_T *)(b);		\
+		*(SWINT_T *)(b) = t;			\
 	} else						\
 		swapfunc(a, b, es, swaptype)
 
@@ -105,7 +105,7 @@ void
 swish_qsort(void *a, size_t n, size_t es, cmp_t *cmp)
 {
 	char *pa, *pb, *pc, *pd, *pl, *pm, *pn;
-	int d, r, swaptype, swap_cnt;
+	SWINT_T d, r, swaptype, swap_cnt;
 
 loop:	SWAPINIT(a, es);
 	swap_cnt = 0;

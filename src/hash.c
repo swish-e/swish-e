@@ -50,12 +50,12 @@
 /* Hashes a string. Common routine
 */
 
-unsigned string_hash(char *s, int hash_size)
+unsigned string_hash(char *s, SWINT_T hash_size)
 {
     unsigned hashval;
 
     for (hashval = 0; *s != '\0'; s++)
-        hashval = (int) ((unsigned char) *s) + 31 * hashval;
+        hashval = (SWINT_T) ((unsigned char) *s) + 31 * hashval;
     return hashval % hash_size;
 }
 
@@ -73,23 +73,23 @@ unsigned bighash(char *s)
     return string_hash(s,BIGHASHSIZE);
 }
 
-/* Hashes a int. Common routine
+/* Hashes a SWINT_T. Common routine
 */
-unsigned int_hash(int i, int hash_size)
+unsigned int_hash(SWINT_T i, SWINT_T hash_size)
 {
     return i % hash_size;
 }
 
-/* Hashes a int.
+/* Hashes a SWINT_T.
 */
-unsigned numhash(int i)
+unsigned numhash(SWINT_T i)
 {
     return int_hash(i, HASHSIZE);
 }
 
-/* Hashes a int for a larger hash table.
+/* Hashes a SWINT_T for a larger hash table.
 */
-unsigned bignumhash(int i)
+unsigned bignumhash(SWINT_T i)
 {
     return int_hash(i, BIGHASHSIZE);
 }
@@ -112,17 +112,17 @@ unsigned verybighash(char *s)
 *       swline that was added
 *******************************************************************/
 
-struct swline *add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word, int hash_size)
+struct swline *add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word, SWINT_T hash_size)
 {
     struct swline **hash_array = table_ptr->hash_array;
     unsigned hashval;
     struct swline *sp;
-    int len;
+    SWINT_T len;
 
     /* Create the array if it doesn't exist */
     if ( !hash_array )
     {
-        int ttl_bytes = sizeof(struct swline *) * (hash_size = (hash_size ? hash_size : HASHSIZE));
+        SWINT_T ttl_bytes = sizeof(struct swline *) * (hash_size = (hash_size ? hash_size : HASHSIZE));
        
         table_ptr->mem_zone = (void *) Mem_ZoneCreate("Word Hash Zone", 0, 0); 
         //hash_array = (struct swline  **)emalloc( ttl_bytes );

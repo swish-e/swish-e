@@ -75,11 +75,11 @@ struct MOD_Filter {
 
 void initModule_Filter   (SWISH *sw);
 void freeModule_Filter   (SWISH *sw);
-int  configModule_Filter (SWISH *sw, StringList *sl);
+SWINT_T  configModule_Filter (SWISH *sw, StringList *sl);
 
 struct FilterList *hasfilter (SWISH *sw, char *filename);
 FILE *FilterOpen (FileProp *fprop);
-int FilterClose (FileProp *fprop);
+SWINT_T FilterClose (FileProp *fprop);
 
 
 #endif

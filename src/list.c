@@ -43,7 +43,7 @@
 #include "hash.h"
 
 
-struct swline *newswline_n(char *line, int size)
+struct swline *newswline_n(char *line, SWINT_T size)
 {
 struct swline *newnode;
 
@@ -57,7 +57,7 @@ struct swline *newnode;
 struct swline *newswline(char *line)
 {
 struct swline *newnode;
-int size = strlen(line);  /* Compute strlen only once */
+SWINT_T size = strlen(line);  /* Compute strlen only once */
 
     newnode = (struct swline *)emalloc(sizeof(struct swline) + size);
     memcpy(newnode->line,line,size + 1);

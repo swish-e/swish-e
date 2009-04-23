@@ -64,15 +64,15 @@ $Id$
 *
 *
 *****************************************************************************/
-static int compare_results_single_index(const void *s1, const void *s2)
+static SWINT_T compare_results_single_index(const void *s1, const void *s2)
 {
     RESULT    *r1 = *(RESULT * const *) s1;
     RESULT    *r2 = *(RESULT * const *) s2;
-    int       i;
-    int       rc;
-    int       num_fields      = r1->db_results->num_sort_props;
+    SWINT_T       i;
+    SWINT_T       rc;
+    SWINT_T       num_fields      = r1->db_results->num_sort_props;
     SortData  *sort_data;
-    int       *presorted;
+    SWINT_T       *presorted;
 
     for (i = 0; i < num_fields; i++)
     {
@@ -143,13 +143,13 @@ static int compare_results_single_index(const void *s1, const void *s2)
 *
 *
 *****************************************************************************/
-int compare_results(const void *s1, const void *s2)
+SWINT_T compare_results(const void *s1, const void *s2)
 {
     RESULT    *r1 = *(RESULT * const *) s1;
     RESULT    *r2 = *(RESULT * const *) s2;
-    int       i;
-    int       rc;
-    int       num_fields      = r1->db_results->num_sort_props;
+    SWINT_T       i;
+    SWINT_T       rc;
+    SWINT_T       num_fields      = r1->db_results->num_sort_props;
     SortData  *sort_data1;
     SortData  *sort_data2;
 
@@ -216,17 +216,17 @@ int compare_results(const void *s1, const void *s2)
 *       *metaEntry - meta entry in question
 *
 *   Returns:
-*       pointer to an array of int (metaentry->sorted_data)
+*       pointer to an array of SWINT_T (metaentry->sorted_data)
 *
 *   Notes:
 *       This is also called by proplimit and merge code
 *       And it's name sucks.
 *
 ********************************************************************/
-int    *LoadSortedProps(IndexFILE * indexf, struct metaEntry *m)
+SWINT_T    *LoadSortedProps(IndexFILE * indexf, struct metaEntry *m)
 {
     unsigned char *buffer;
-    int     sz_buffer;
+    SWINT_T     sz_buffer;
 
     if ( m->sorted_loaded )
         return m->sorted_data;
@@ -241,7 +241,7 @@ int    *LoadSortedProps(IndexFILE * indexf, struct metaEntry *m)
     DB_ReadSortedIndex(indexf->sw, m->metaID, &buffer, &sz_buffer, indexf->DB);
 
 #ifdef USE_PRESORT_ARRAY
-    m->sorted_data = (int *)buffer;
+    m->sorted_data = (SWINT_T *)buffer;
     DB_EndReadSortedIndex(indexf->sw, indexf->DB);
     return m->sorted_data;
 
@@ -254,9 +254,9 @@ int    *LoadSortedProps(IndexFILE * indexf, struct metaEntry *m)
     if (sz_buffer)
     {
         unsigned char *s = buffer;
-        int j;
+        SWINT_T j;
 
-        m->sorted_data = (int *) emalloc(indexf->header.totalfiles * sizeof(int));
+        m->sorted_data = (SWINT_T *) emalloc(indexf->header.totalfiles * sizeof(SWINT_T));
 
         /* Unpack / decompress the numbers */
         for (j = 0; j < indexf->header.totalfiles; j++)
@@ -290,10 +290,10 @@ int    *LoadSortedProps(IndexFILE * indexf, struct metaEntry *m)
 *       This runs through the list results a number of times (plus qsort)
 *
 ****************************************************************************************/
-static int sort_single_index_results( DB_RESULTS *db_results )
+static SWINT_T sort_single_index_results( DB_RESULTS *db_results )
 {
-    int lookup_props = 0;  /* flag if we need to load props initially */
-    int results_in_index = 0;
+    SWINT_T lookup_props = 0;  /* flag if we need to load props initially */
+    SWINT_T results_in_index = 0;
     RESULT  *cur_result;
     RESULT **sort_array;
     SortData *sort_data;
@@ -393,7 +393,7 @@ static int sort_single_index_results( DB_RESULTS *db_results )
     /* Build the list -- the list is in reverse order, so build the list backwards */
     {
         RESULT *head = NULL;
-        int j;
+        SWINT_T j;
 
         for (j = 0; j < db_results->result_count; j++)
         {
@@ -451,9 +451,9 @@ static int sort_single_index_results( DB_RESULTS *db_results )
 *
 ****************************************************************************************/
 
-int  sortresults(RESULTS_OBJECT *results)
+SWINT_T  sortresults(RESULTS_OBJECT *results)
 {
-    int         TotalResults = 0;
+    SWINT_T         TotalResults = 0;
     DB_RESULTS *db_results = results->db_results;
 
     while ( db_results )
@@ -467,7 +467,7 @@ int  sortresults(RESULTS_OBJECT *results)
     if (results->bigrank)
     {
         if ( DEBUG_RANK ) {
-            fprintf(stderr, "bigrank found: %d\n", results->bigrank );
+            fprintf(stderr, "bigrank found: %lld\n", results->bigrank );
         }
         results->rank_scale_factor = 10000000 / results->bigrank;
     }

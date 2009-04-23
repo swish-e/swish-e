@@ -60,10 +60,10 @@ $Id$
 */
 
 
-void OutputKeyChar (SWISH *sw, int keychar)
+void OutputKeyChar (SWISH *sw, SWINT_T keychar)
 {
  IndexFILE *tmpindexlist;
- int       keychar2;
+ SWINT_T       keychar2;
  char      *keywords;
 
 	if ( !SwishAttach(sw) )

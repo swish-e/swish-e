@@ -49,15 +49,15 @@ struct MOD_ResultSort
 
 	    /* sorted index flag */
 	    /* TRUE - Use sorted index */
-	int isPreSorted;
+	SWINT_T isPreSorted;
 	    /* structure for presorted properties - used by index proccess */
     struct swline *presortedindexlist;
 
         /* Sortorder Translation table arrays */
               /* case sensitive translation table */
-    int iSortTranslationTable[256];
+    SWINT_T iSortTranslationTable[256];
               /* Ignore Case translarion table */
-    int iSortCaseTranslationTable[256];
+    SWINT_T iSortCaseTranslationTable[256];
     
 };
 
@@ -67,27 +67,27 @@ struct MOD_ResultSort
 
 void initModule_ResultSort (SWISH *);
 void freeModule_ResultSort (SWISH *);
-int configModule_ResultSort (SWISH *sw, StringList *sl);
+SWINT_T configModule_ResultSort (SWISH *sw, StringList *sl);
 
 
-int compare_results(const void *s1, const void *s2);
+SWINT_T compare_results(const void *s1, const void *s2);
 
 
-int     sortresults(RESULTS_OBJECT *results);
+SWINT_T     sortresults(RESULTS_OBJECT *results);
 
 
 
-int *CreatePropSortArray(IndexFILE *indexf, struct metaEntry *m, FileRec *fi, int free_cache );
+SWINT_T *CreatePropSortArray(IndexFILE *indexf, struct metaEntry *m, FileRec *fi, SWINT_T free_cache );
 void sortFileProperties(SWISH *sw, IndexFILE *indexf);
 
 
-void initStrCmpTranslationTable(int *);
-void initStrCaseCmpTranslationTable(int *);
+void initStrCmpTranslationTable(SWINT_T *);
+void initStrCaseCmpTranslationTable(SWINT_T *);
 
-int sw_strcasecmp(unsigned char *,unsigned char *, int *);
-int sw_strcmp(unsigned char *,unsigned char *, int *);
+SWINT_T sw_strcasecmp(unsigned char *,unsigned char *, SWINT_T *);
+SWINT_T sw_strcmp(unsigned char *,unsigned char *, SWINT_T *);
 
-int *LoadSortedProps( IndexFILE *indexf, struct metaEntry *m );
+SWINT_T *LoadSortedProps( IndexFILE *indexf, struct metaEntry *m );
 
 #ifdef __cplusplus
 }

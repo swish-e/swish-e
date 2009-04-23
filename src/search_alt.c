@@ -117,12 +117,12 @@ void freeModule_SearchAlt (SWISH *sw)
  -- return: 0/1 = none/config applied
 */
 
-static int configModule_SearchAlt  (SWISH *sw, StringList *sl)
+static SWINT_T configModule_SearchAlt  (SWISH *sw, StringList *sl)
 
 {
   struct MOD_SearchAlt *msa = sw->SearchAlt;
   char *w0    = sl->word[0];
-  int  retval = 1;
+  SWINT_T  retval = 1;
 
                 /* $$$ this will not work unless swish is reading the config file also for search ... */
 
@@ -167,7 +167,7 @@ static int configModule_SearchAlt  (SWISH *sw, StringList *sl)
   -- defined via current Swish Search Boolean OP Settings for user.  
 */
 
-int     u_SelectDefaultRulenum(SWISH * sw, char *word)
+SWINT_T     u_SelectDefaultRulenum(SWISH * sw, char *word)
 {
     if (!strcasecmp(word, sw->SearchAlt->srch_op.and))
         return AND_RULE;
@@ -205,8 +205,8 @@ static char *convAltSearch2SwishStr (char *str)
   char   *sr_new, *p, *tmp;
   char   *sr_or,*sr_and,*sr_not;
   char   **s_or, **s_and, **s_not;  
-  int    n_or, n_and, n_not;
-  int    i;
+  SWINT_T    n_or, n_and, n_not;
+  SWINT_T    i;
 
 
   sr_new = (char *)emalloc (2 * MAXSTRLEN);

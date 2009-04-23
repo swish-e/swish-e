@@ -65,10 +65,10 @@ struct MOD_ResultOutput {
     /* ResultExtendedFormat predefined List see: -x */
     struct ResultExtFmtStrList *resultextfmtlist;
 
-    int     numPropertiesToDisplay;
-    int     currentMaxPropertiesToDisplay;
+    SWINT_T     numPropertiesToDisplay;
+    SWINT_T     currentMaxPropertiesToDisplay;
     char  **propNameToDisplay;
-    int   **propIDToDisplay;
+    SWINT_T   **propIDToDisplay;
 };
 
 
@@ -78,21 +78,21 @@ void addSearchResultDisplayProperty (SWISH *, char* );
 
 void initModule_ResultOutput (SWISH *sw);
 void freeModule_ResultOutput (SWISH *sw);
-int configModule_ResultOutput (SWISH *sw, StringList *sl);
+SWINT_T configModule_ResultOutput (SWISH *sw, StringList *sl);
 
 
 void initPrintExtResult (SWISH *sw, char *fmt);
 
-void printSortedResults(RESULTS_OBJECT *results, int begin, int maxhits);
+void printSortedResults(RESULTS_OBJECT *results, SWINT_T begin, SWINT_T maxhits);
 
-int initSearchResultProperties(SWISH *sw);
+SWINT_T initSearchResultProperties(SWISH *sw);
 
 char *hasResultExtFmtStr (SWISH *sw, char *name);
 
 
-int resultHeaderOut (SWISH *sw, int min_verbose, char *prtfmt, ...);
-void resultPrintHeader (SWISH *sw, int min_verbose, INDEXDATAHEADER *h, 
-				char *pathname, int merged);
+SWINT_T resultHeaderOut (SWISH *sw, SWINT_T min_verbose, char *prtfmt, ...);
+void resultPrintHeader (SWISH *sw, SWINT_T min_verbose, INDEXDATAHEADER *h, 
+				char *pathname, SWINT_T merged);
 
 
 #endif

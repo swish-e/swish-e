@@ -139,11 +139,11 @@ void    freeModule_DB_db(SWISH * sw)
  -- return: 0/1 = none/config applied
 */
 
-int     configModule_DB_db(SWISH * sw, StringList * sl)
+SWINT_T     configModule_DB_db(SWISH * sw, StringList * sl)
 {
     // struct MOD_DB_db *md = sw->DB_db;
     // char *w0    = sl->word[0];
-    int     retval = 1;
+    SWINT_T     retval = 1;
 
 
     retval = 0;                 // tmp due to empty routine
@@ -158,7 +158,7 @@ struct Handle_DB_db *open_db_files(char *dbname, u_int32_t flags)
     char   *tmp;
     DB     *dbp;
     struct Handle_DB_db *DB;
-    int     ret;
+    SWINT_T     ret;
 
     /* Allocate structure */
     DB = (struct Handle_DB_db *) emalloc(sizeof(struct Handle_DB_db));
@@ -305,7 +305,7 @@ void    DB_Close_db(void *db)
 {
     DB     *dbp;
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
-    int     ret;
+    SWINT_T     ret;
 
     dbp = DB->dbf_header;
     if ((ret = dbp->close(dbp, 0)) != 0)
@@ -377,30 +377,30 @@ void    DB_Remove_db(void *db)
 /*--------------------------------------------*/
 /*--------------------------------------------*/
 
-int     DB_InitWriteHeader_db(void *db)
+SWINT_T     DB_InitWriteHeader_db(void *db)
 {
     return 0;
 }
 
 
-int     DB_EndWriteHeader_db(void *db)
+SWINT_T     DB_EndWriteHeader_db(void *db)
 {
     return 0;
 }
 
-int     DB_WriteHeaderData_db(int id, unsigned char *s, int len, void *db)
+SWINT_T     DB_WriteHeaderData_db(SWINT_T id, unsigned char *s, SWINT_T len, void *db)
 {
     DB     *dbp;
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
     DBT     key,
             content;
-    int     ret;
+    SWINT_T     ret;
 
     memset(&key, 0, sizeof(key));
     memset(&content, 0, sizeof(content));
 
-    key.size = sizeof(int);
+    key.size = sizeof(SWINT_T);
 
     key.data = (char *) &id;
 
@@ -417,12 +417,12 @@ int     DB_WriteHeaderData_db(int id, unsigned char *s, int len, void *db)
 }
 
 
-int     DB_InitReadHeader_db(void *db)
+SWINT_T     DB_InitReadHeader_db(void *db)
 {
     DB     *dbp;
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
-    int     ret;
+    SWINT_T     ret;
 
     dbp = DB->dbf_header;
 
@@ -435,14 +435,14 @@ int     DB_InitReadHeader_db(void *db)
     return 0;
 }
 
-int     DB_ReadHeaderData_db(int *id, unsigned char **s, int *len, void *db)
+SWINT_T     DB_ReadHeaderData_db(SWINT_T *id, unsigned char **s, SWINT_T *len, void *db)
 {
     DB     *dbp;
     DBC    *dbcp;
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
     DBT     key,
             content;
-    int     ret;
+    SWINT_T     ret;
 
     dbp = DB->dbf_header;
     dbcp = DB->cursor_header;
@@ -463,7 +463,7 @@ int     DB_ReadHeaderData_db(int *id, unsigned char **s, int *len, void *db)
         ret = dbcp->c_get(dbcp, &key, &content, DB_NEXT);
         if (!ret)
         {
-            *id = *(int *) key.data;
+            *id = *(SWINT_T *) key.data;
             *len = content.size;
             *s = emalloc(content.size);
             memcpy(*s, content.data, content.size);
@@ -480,7 +480,7 @@ int     DB_ReadHeaderData_db(int *id, unsigned char **s, int *len, void *db)
 }
 
 
-int     DB_EndReadHeader_db(void *db)
+SWINT_T     DB_EndReadHeader_db(void *db)
 {
     DB     *dbp;
     DBC    *dbcp;
@@ -501,32 +501,32 @@ int     DB_EndReadHeader_db(void *db)
 /*--------------------------------------------*/
 /*--------------------------------------------*/
 
-int     DB_InitWriteWords_db(void *db)
+SWINT_T     DB_InitWriteWords_db(void *db)
 {
     return 0;
 }
 
 
-int     DB_EndWriteWords_db(void *db)
+SWINT_T     DB_EndWriteWords_db(void *db)
 {
     return 0;
 }
 
-long    DB_GetWordID_db(void *db)
+SWINT_T    DB_GetWordID_db(void *db)
 {
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
-    return (long) ++(DB->wordcounter);
+    return (SWINT_T) ++(DB->wordcounter);
 }
 
-int     DB_WriteWord_db(char *word, long wordID, void *db)
+SWINT_T     DB_WriteWord_db(char *word, SWINT_T wordID, void *db)
 {
     DB     *dbp;
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
     DBT     key,
             content;
-    int     ret;
+    SWINT_T     ret;
 
     dbp = DB->dbf_invertedindex;
 
@@ -536,7 +536,7 @@ int     DB_WriteWord_db(char *word, long wordID, void *db)
     key.size = strlen(word) + 1;
     key.data = (char *) word;
 
-    content.size = sizeof(int);
+    content.size = sizeof(SWINT_T);
 
     content.data = (char *) &wordID;
 
@@ -549,21 +549,21 @@ int     DB_WriteWord_db(char *word, long wordID, void *db)
 }
 
 
-long    DB_WriteWordData_db(long wordID, unsigned char *worddata, int lendata, void *db)
+SWINT_T    DB_WriteWordData_db(SWINT_T wordID, unsigned char *worddata, SWINT_T lendata, void *db)
 {
     DB     *dbp;
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
     DBT     key,
             content;
-    int     ret;
+    SWINT_T     ret;
 
     dbp = DB->dbf_worddata;
 
     memset(&key, 0, sizeof(key));
     memset(&content, 0, sizeof(content));
 
-    key.size = sizeof(long);
+    key.size = sizeof(SWINT_T);
 
     key.data = (char *) &wordID;
 
@@ -580,14 +580,14 @@ long    DB_WriteWordData_db(long wordID, unsigned char *worddata, int lendata, v
 
 
 
-int     DB_WriteWordHash_db(char *word, long wordID, void *db)
+SWINT_T     DB_WriteWordHash_db(char *word, SWINT_T wordID, void *db)
 {
     DB     *dbp;
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
     DBT     key,
             content;
-    int     ret;
+    SWINT_T     ret;
 
     dbp = DB->dbf_words;
 
@@ -597,7 +597,7 @@ int     DB_WriteWordHash_db(char *word, long wordID, void *db)
     key.size = strlen(word) + 1;
     key.data = (char *) word;
 
-    content.size = sizeof(int);
+    content.size = sizeof(SWINT_T);
 
     content.data = (char *) &wordID;
 
@@ -609,25 +609,25 @@ int     DB_WriteWordHash_db(char *word, long wordID, void *db)
     return 0;
 }
 
-int     DB_InitReadWords_db(void *db)
+SWINT_T     DB_InitReadWords_db(void *db)
 {
     return 0;
 }
 
-int     DB_EndReadWords_db(void *db)
+SWINT_T     DB_EndReadWords_db(void *db)
 {
     return 0;
 }
 
 
-int     DB_ReadWordHash_db(char *word, long *wordID, void *db)
+SWINT_T     DB_ReadWordHash_db(char *word, SWINT_T *wordID, void *db)
 {
     DB     *dbp;
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
     DBT     key,
             content;
-    int     ret;
+    SWINT_T     ret;
 
     dbp = DB->dbf_words;
 
@@ -645,7 +645,7 @@ int     DB_ReadWordHash_db(char *word, long *wordID, void *db)
     }
     else
     {
-        *wordID = (long) *(int *) content.data;
+        *wordID = (SWINT_T) *(SWINT_T *) content.data;
     }
 
     return 0;
@@ -653,15 +653,15 @@ int     DB_ReadWordHash_db(char *word, long *wordID, void *db)
 
 
 
-int     DB_ReadFirstWordInvertedIndex_db(char *word, char **resultword, long *wordID, void *db)
+SWINT_T     DB_ReadFirstWordInvertedIndex_db(char *word, char **resultword, SWINT_T *wordID, void *db)
 {
     DB     *dbp;
     DBC    *dbcp;
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
     DBT     key,
             content;
-    int     ret;
-    int     len;
+    SWINT_T     ret;
+    SWINT_T     len;
 
     len = strlen(word);
 
@@ -692,7 +692,7 @@ int     DB_ReadFirstWordInvertedIndex_db(char *word, char **resultword, long *wo
             *resultword = emalloc(key.size + 1);
             memcpy(*resultword, key.data, key.size);
             (*resultword)[key.size] = '\0';
-            *wordID = *(long *) content.data;
+            *wordID = *(SWINT_T *) content.data;
             return 0;
         }
     }
@@ -704,15 +704,15 @@ int     DB_ReadFirstWordInvertedIndex_db(char *word, char **resultword, long *wo
     return 0;
 }
 
-int     DB_ReadNextWordInvertedIndex_db(char *word, char **resultword, long *wordID, void *db)
+SWINT_T     DB_ReadNextWordInvertedIndex_db(char *word, char **resultword, SWINT_T *wordID, void *db)
 {
     DB     *dbp;
     DBC    *dbcp;
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
     DBT     key,
             content;
-    int     ret;
-    int     len;
+    SWINT_T     ret;
+    SWINT_T     len;
 
     len = strlen(word);
 
@@ -740,7 +740,7 @@ int     DB_ReadNextWordInvertedIndex_db(char *word, char **resultword, long *wor
                 *resultword = emalloc(key.size + 1);
                 memcpy(*resultword, key.data, key.size);
                 (*resultword)[key.size] = '\0';
-                *wordID = *(long *) content.data;
+                *wordID = *(SWINT_T *) content.data;
                 return 0;
             }
         }
@@ -753,21 +753,21 @@ int     DB_ReadNextWordInvertedIndex_db(char *word, char **resultword, long *wor
 }
 
 
-long    DB_ReadWordData_db(long wordID, unsigned char **worddata, int *lendata, void *db)
+SWINT_T    DB_ReadWordData_db(SWINT_T wordID, unsigned char **worddata, SWINT_T *lendata, void *db)
 {
     DB     *dbp;
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
     DBT     key,
             content;
-    int     ret;
+    SWINT_T     ret;
 
     dbp = DB->dbf_worddata;
 
     memset(&key, 0, sizeof(key));
     memset(&content, 0, sizeof(content));
 
-    key.size = sizeof(long);
+    key.size = sizeof(SWINT_T);
 
     key.data = (char *) &wordID;
 
@@ -795,32 +795,32 @@ long    DB_ReadWordData_db(long wordID, unsigned char **worddata, int *lendata, 
 /*--------------------------------------------*/
 /*--------------------------------------------*/
 
-int     DB_InitWriteFiles_db(void *db)
+SWINT_T     DB_InitWriteFiles_db(void *db)
 {
     return 0;
 }
 
 
-int     DB_EndWriteFiles_db(void *db)
+SWINT_T     DB_EndWriteFiles_db(void *db)
 {
     return 0;
 }
 
-int     DB_WriteFile_db(int filenum, unsigned char *filedata, int sz_filedata, void *db)
+SWINT_T     DB_WriteFile_db(SWINT_T filenum, unsigned char *filedata, SWINT_T sz_filedata, void *db)
 {
     DB     *dbp;
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
     DBT     key,
             content;
-    int     ret;
+    SWINT_T     ret;
 
     dbp = DB->dbf_docs;
 
     memset(&key, 0, sizeof(key));
     memset(&content, 0, sizeof(content));
 
-    key.size = sizeof(int);
+    key.size = sizeof(SWINT_T);
 
     key.data = (char *) &filenum;
 
@@ -835,19 +835,19 @@ int     DB_WriteFile_db(int filenum, unsigned char *filedata, int sz_filedata, v
     return 0;
 }
 
-int     DB_InitReadFiles_db(void *db)
+SWINT_T     DB_InitReadFiles_db(void *db)
 {
     return 0;
 }
 
-int     DB_ReadFile_db(int filenum, unsigned char **filedata, int *sz_filedata, void *db)
+SWINT_T     DB_ReadFile_db(SWINT_T filenum, unsigned char **filedata, SWINT_T *sz_filedata, void *db)
 {
     DB     *dbp;
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
     DBT     key,
             content;
-    int     ret;
+    SWINT_T     ret;
 
     dbp = DB->dbf_docs;
 
@@ -857,7 +857,7 @@ int     DB_ReadFile_db(int filenum, unsigned char **filedata, int *sz_filedata, 
     // This needs to be fixed --> The old compress problem with zeroes
     filenum--;
 
-    key.size = sizeof(int);
+    key.size = sizeof(SWINT_T);
 
     key.data = (char *) &filenum;
 
@@ -879,7 +879,7 @@ int     DB_ReadFile_db(int filenum, unsigned char **filedata, int *sz_filedata, 
 }
 
 
-int     DB_EndReadFiles_db(void *db)
+SWINT_T     DB_EndReadFiles_db(void *db)
 {
     return 0;
 }
@@ -895,26 +895,26 @@ int     DB_EndReadFiles_db(void *db)
 
 
 
-int     DB_InitWriteSortedIndex_db(void *db)
+SWINT_T     DB_InitWriteSortedIndex_db(void *db)
 {
     return 0;
 }
 
-int     DB_WriteSortedIndex_db(int propID, unsigned char *data, int sz_data, void *db)
+SWINT_T     DB_WriteSortedIndex_db(SWINT_T propID, unsigned char *data, SWINT_T sz_data, void *db)
 {
     DB     *dbp;
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
     DBT     key,
             content;
-    int     ret;
+    SWINT_T     ret;
 
     dbp = DB->dbf_sorted_indexes;
 
     memset(&key, 0, sizeof(key));
     memset(&content, 0, sizeof(content));
 
-    key.size = sizeof(int);
+    key.size = sizeof(SWINT_T);
 
     key.data = (char *) &propID;
 
@@ -929,32 +929,32 @@ int     DB_WriteSortedIndex_db(int propID, unsigned char *data, int sz_data, voi
     return 0;
 }
 
-int     DB_EndWriteSortedIndex_db(void *db)
+SWINT_T     DB_EndWriteSortedIndex_db(void *db)
 {
     return 0;
 }
 
 
-int     DB_InitReadSortedIndex_db(void *db)
+SWINT_T     DB_InitReadSortedIndex_db(void *db)
 {
     return 0;
 }
 
-int     DB_ReadSortedIndex_db(int propID, unsigned char **data, int *sz_data, void *db)
+SWINT_T     DB_ReadSortedIndex_db(SWINT_T propID, unsigned char **data, SWINT_T *sz_data, void *db)
 {
     DB     *dbp;
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
     DBT     key,
             content;
-    int     ret;
+    SWINT_T     ret;
 
     dbp = DB->dbf_sorted_indexes;
 
     memset(&key, 0, sizeof(key));
     memset(&content, 0, sizeof(content));
 
-    key.size = sizeof(int);
+    key.size = sizeof(SWINT_T);
 
     key.data = (char *) &propID;
 
@@ -976,7 +976,7 @@ int     DB_ReadSortedIndex_db(int propID, unsigned char **data, int *sz_data, vo
     return 0;
 }
 
-int     DB_EndReadSortedIndex_db(void *db)
+SWINT_T     DB_EndReadSortedIndex_db(void *db)
 {
     return 0;
 }
@@ -994,20 +994,20 @@ typedef union
 {
     char   skey;
     struct {
-        int     filenum;
-        int     propID;
+        SWINT_T     filenum;
+        SWINT_T     propID;
     } key;
 } PropKEY;
 
 
-void    DB_WriteProperty_db( FileRec *fi, int propID, char *buffer, int datalen, void *db )
+void    DB_WriteProperty_db( FileRec *fi, SWINT_T propID, char *buffer, SWINT_T datalen, void *db )
 {
     DB     *dbp;
     struct  Handle_DB_db *DB = (struct Handle_DB_db *) db;
     DBT     key,
             content;
     PropKEY propkey;
-    int     ret;
+    SWINT_T     ret;
 
 
     /*** Just until I can get a flag to see if this data is needed ***/
@@ -1016,11 +1016,11 @@ void    DB_WriteProperty_db( FileRec *fi, int propID, char *buffer, int datalen,
     /* Create places to store the seek positions and lengths if first time */
     if ( !fi->propSize )
     {
-        int i;
+        SWINT_T i;
 
         fi->propLocationsCount = fi->docProperties->n;
-        fi->propLocations = (long *) emalloc( fi->propLocationsCount * sizeof( int *) );
-        fi->propSize = (long *) emalloc( fi->propLocationsCount * sizeof( int *) );
+        fi->propLocations = (SWINT_T *) emalloc( fi->propLocationsCount * sizeof( SWINT_T *) );
+        fi->propSize = (SWINT_T *) emalloc( fi->propLocationsCount * sizeof( SWINT_T *) );
 
         /* Zero array */
         for( i = 0; i < fi->propLocationsCount; i++ )
@@ -1049,11 +1049,11 @@ void    DB_WriteProperty_db( FileRec *fi, int propID, char *buffer, int datalen,
 
     /* error message? */
     if (ret)
-        progerr("DB error writing properties filenum: %d property %d", fi->filenum, propID);
+        progerr("DB error writing properties filenum: %lld property %lld", fi->filenum, propID);
 }
 
 
-char  * DB_ReadProperty_db( FileRec *fi, int propID, void *db )
+char  * DB_ReadProperty_db( FileRec *fi, SWINT_T propID, void *db )
 {
     DB     *dbp;
     struct  Handle_DB_db *DB = (struct Handle_DB_db *) db;
@@ -1061,7 +1061,7 @@ char  * DB_ReadProperty_db( FileRec *fi, int propID, void *db )
             content;
     PropKEY propkey;
     char   *buffer;
-    int     ret;
+    SWINT_T     ret;
 
 
     dbp = DB->dbf_properties;

@@ -41,14 +41,14 @@ char *get_libexec(void);
 
 void normalize_path(char *path);
 
-int isdirectory(char *);
-int isfile(char *);
-int islink(char *);
-int getsize(char *);
+SWINT_T isdirectory(char *);
+SWINT_T isfile(char *);
+SWINT_T islink(char *);
+SWINT_T getsize(char *);
 
 void indexpath(SWISH *, char *);
 
-char *read_stream(SWISH *, FileProp *fprop, int is_text);
+char *read_stream(SWISH *, FileProp *fprop, SWINT_T is_text);
 void flush_stream( FileProp *fprop );
 
 
@@ -63,7 +63,7 @@ void     free_file_properties (FileProp *fprop);
  * Some handy routines for parsing the Configuration File
  */
 
-int grabCmdOptionsIndexFILE(char* line, char* commandTag, IndexFILE **listOfWords, int* gotAny, int dontToIt);
+SWINT_T grabCmdOptionsIndexFILE(char* line, char* commandTag, IndexFILE **listOfWords, SWINT_T* gotAny, SWINT_T dontToIt);
 
-FILE *create_tempfile(SWISH *sw, const char *mode, char *prefix, char **file_name_buffer, int remove_file_name );
+FILE *create_tempfile(SWISH *sw, const char *mode, char *prefix, char **file_name_buffer, SWINT_T remove_file_name );
 

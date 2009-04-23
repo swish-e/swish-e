@@ -33,16 +33,16 @@ $Id$
 typedef struct WORDDATA_Reusable_Page
 {
     sw_off_t           page_number;
-    int                page_size;
+    SWINT_T                page_size;
 } WORDDATA_Reusable_Page;
 
 typedef struct WORDDATA_Page
 {
     sw_off_t           page_number;
-    int                used_blocks;
-    int                n;
-    int                modified;
-    int                in_use;
+    SWINT_T                used_blocks;
+    SWINT_T                n;
+    SWINT_T                modified;
+    SWINT_T                in_use;
 
     struct WORDDATA_Page  *next_cache;
 
@@ -57,15 +57,15 @@ typedef struct WORDDATA
     WORDDATA_Page      *last_del_page;  /* last page after a delete (del) */
     WORDDATA_Page      *last_get_page;  /* last page after a read (get) */
     struct WORDDATA_Page *cache[WORDDATA_CACHE_SIZE];
-    int                page_counter;
+    SWINT_T                page_counter;
     sw_off_t           lastid;
-    int                num_Reusable_Pages;
+    SWINT_T                num_Reusable_Pages;
     WORDDATA_Reusable_Page Reusable_Pages[WORDDATA_MAX_REUSABLE_PAGES];
     FILE *fp;
 } WORDDATA;
 
 WORDDATA *WORDDATA_Open(FILE *fp);
 void WORDDATA_Close(WORDDATA *bt);
-sw_off_t WORDDATA_Put(WORDDATA *b, unsigned int len, unsigned char *data);
-unsigned char * WORDDATA_Get(WORDDATA *b, sw_off_t global_id, unsigned int *len);
-void WORDDATA_Del(WORDDATA *b, sw_off_t global_id, unsigned int *len);
+sw_off_t WORDDATA_Put(WORDDATA *b, SWUINT_T len, unsigned char *data);
+unsigned char * WORDDATA_Get(WORDDATA *b, sw_off_t global_id, SWUINT_T *len);
+void WORDDATA_Del(WORDDATA *b, sw_off_t global_id, SWUINT_T *len);

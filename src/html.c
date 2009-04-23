@@ -35,7 +35,7 @@ $Id$
 ** added safestrcpy() macro to avoid corruption from strcpy overflow
 ** SRE 11/17/99
 **
-** fixed cast to int problems pointed out by "gcc -Wall"
+** fixed cast to SWINT_T problems pointed out by "gcc -Wall"
 ** SRE 2/22/00
 **
 ** 2001-03-17  rasc  save real_filename as title (instead full real_path)
@@ -63,16 +63,16 @@ $Id$
 
 /* #### */
 
-static char   *parsetag(SWISH *sw, char *parsetag, char *buffer, int max_lines, int case_sensitive);
+static char   *parsetag(SWISH *sw, char *parsetag, char *buffer, SWINT_T max_lines, SWINT_T case_sensitive);
 
 static struct metaEntry *getHTMLMeta(IndexFILE * indexf, char *tag, SWISH *sw, char *name,
                                      char **parsed_tag, char *filename)
 {
     char   *temp;
-    int lenword = 0;
+    SWINT_T lenword = 0;
     char *word = NULL;
     char buffer[MAXSTRLEN + 1];
-    int     i;
+    SWINT_T     i;
     struct metaEntry *e = NULL;
 
 
@@ -171,15 +171,15 @@ static struct metaEntry *getHTMLMeta(IndexFILE * indexf, char *tag, SWISH *sw, c
 
 
 /* Parses the Meta tag */
-static int parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum, int structure, char *name, char *content, FileRec *thisFileEntry,
-                         int *position, char *filename)
+static SWINT_T parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, SWINT_T filenum, SWINT_T structure, char *name, char *content, FileRec *thisFileEntry,
+                         SWINT_T *position, char *filename)
 {
-    int     metaName;
+    SWINT_T     metaName;
     struct metaEntry *metaNameEntry;
     char   *temp,
            *start,
            *convtag;
-    int     wordcount = 0;      /* Word count */
+    SWINT_T     wordcount = 0;      /* Word count */
     char   *parsed_tag;
 
 
@@ -280,7 +280,7 @@ char   *parseHTMLtitle(SWISH *sw, char *buffer)
 */
 /* This is to check "title contains" option in config file */
 
-int     isoktitle(SWISH * sw, char *title)
+SWINT_T     isoktitle(SWISH * sw, char *title)
 {
     struct MOD_FS *fs = sw->FS;
 
@@ -294,10 +294,10 @@ int     isoktitle(SWISH * sw, char *title)
 ** a word is in.
 */
 
-static int getstructure(char *tag, int structure)
+static SWINT_T getstructure(char *tag, SWINT_T structure)
 {
 
-/* int len; *//* not used - 2/22/00 */
+/* SWINT_T len; *//* not used - 2/22/00 */
     char    oldChar = 0;
     char   *endOfTag = NULL;
     char   *pos;
@@ -305,7 +305,7 @@ static int getstructure(char *tag, int structure)
     pos = tag;
     while (*pos)
     {
-        if (isspace((int) ((unsigned char) *pos)))
+        if (isspace((SWINT_T) ((unsigned char) *pos)))
         {
             endOfTag = pos;     /* remember where we are... */
             oldChar = *pos;     /* ...and what we saw */
@@ -335,9 +335,9 @@ static int getstructure(char *tag, int structure)
     else if (strcasecmp(tag, "body") == 0)
         structure |= IN_BODY;   /* Out */
     /* H1, H2, H3, H4, H5, H6  */
-    else if (tag[0] == '/' && tolower((int)((unsigned char)tag[1])) == 'h' && isdigit((int)((unsigned char)tag[2]))) /* cast to int - 2/22/00 */
+    else if (tag[0] == '/' && tolower((SWINT_T)((unsigned char)tag[1])) == 'h' && isdigit((SWINT_T)((unsigned char)tag[2]))) /* cast to SWINT_T - 2/22/00 */
         structure &= ~IN_HEADER; /* In */
-    else if (tolower((int)((unsigned char)tag[0])) == 'h' && isdigit((int)(unsigned char)tag[1])) /* cast to int - 2/22/00 */
+    else if (tolower((SWINT_T)((unsigned char)tag[0])) == 'h' && isdigit((SWINT_T)(unsigned char)tag[1])) /* cast to SWINT_T - 2/22/00 */
         structure |= IN_HEADER; /* Out */
     /* EM, STRONG  */
     else if ((strcasecmp(tag, "/em") == 0) || (strcasecmp(tag, "/strong") == 0))
@@ -377,7 +377,7 @@ static int getstructure(char *tag, int structure)
 
 
 
-static char *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
+static char *parseHtmlSummary(char *buffer, char *field, SWINT_T size, SWISH * sw)
 {
     char   *p,
            *q,
@@ -390,7 +390,7 @@ static char *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
            *tmp,
            *tmp2,
            *tmp3;
-    int     found,
+    SWINT_T     found,
             lensummary;
 
     /* Get the summary if no metaname/field is given */
@@ -423,7 +423,7 @@ static char *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
 
         /* use only the required memory -save those not used */
         /* 2001-03-13 rasc  copy only <size> bytes of string */
-        if((int) strlen(summary) > size)
+        if((SWINT_T) strlen(summary) > size)
             summary[size]='\0';
         return summary;
     }
@@ -487,7 +487,7 @@ static char *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
                         tmp2 += 7;
                         if ((tmp = strchr(tmp2, '=')))
                         {
-                            for (++tmp; isspace((int) ((unsigned char) *tmp)); tmp++);
+                            for (++tmp; isspace((SWINT_T) ((unsigned char) *tmp)); tmp++);
                             if (*tmp == '\"')
                             {
                                 beginsum = tmp + 1;
@@ -572,7 +572,7 @@ static char *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
         summary = (char *)sw_ConvHTMLEntities2ISO(sw, (unsigned char *)summary);
     }
 
-    if (summary && size && ((int) strlen(summary)) > size)
+    if (summary && size && ((SWINT_T) strlen(summary)) > size)
         summary[size] = '\0';
     return summary;
 }
@@ -584,16 +584,16 @@ static char *parseHtmlSummary(char *buffer, char *field, int size, SWISH * sw)
 
 /* Gets the content between "<parsetag>" and "</parsetag>" from buffer
 limiting the scan to the first max_lines lines (0 means all lines) */
-static char   *parsetag(SWISH *sw, char *parsetag, char *buffer, int max_lines, int case_sensitive)
+static char   *parsetag(SWISH *sw, char *parsetag, char *buffer, SWINT_T max_lines, SWINT_T case_sensitive)
 {
-    register int c,
+    register SWINT_T c,
             d;
     register char *p,
            *r;
     char   *tag;
-    int     lencontent;
+    SWINT_T     lencontent;
     char   *content;
-    int     i,
+    SWINT_T     i,
             j,
             lines,
             status,
@@ -680,7 +680,7 @@ static char   *parsetag(SWISH *sw, char *parsetag, char *buffer, int max_lines, 
                         content[i] = ' ';
 
                 /* skip over initial spaces and quotes */
-                for (i = 0; isspace((int) ((unsigned char) content[i])) || content[i] == '\"'; i++)
+                for (i = 0; isspace((SWINT_T) ((unsigned char) content[i])) || content[i] == '\"'; i++)
                     ;
 
                 /* shift buffer to left */
@@ -691,7 +691,7 @@ static char   *parsetag(SWISH *sw, char *parsetag, char *buffer, int max_lines, 
 
 
                 /* remove trailing spaces, nulls, quotes */
-                for (j = strlen(content) - 1; ( j >= 0 ) && ( isspace((int) ((unsigned char) content[j])) || content[j] == '\0' || content[j] == '\"'); j--)
+                for (j = strlen(content) - 1; ( j >= 0 ) && ( isspace((SWINT_T) ((unsigned char) content[j])) || content[j] == '\0' || content[j] == '\"'); j--)
                     content[j] = '\0';
 
                 /* replace double quotes with single quotes -- why? */
@@ -738,7 +738,7 @@ static char   *parsetag(SWISH *sw, char *parsetag, char *buffer, int max_lines, 
 /* Parses the words in a comment.
 */
 
-int     parsecomment(SWISH * sw, char *tag, int filenum, int structure, int metaID, int *position)
+SWINT_T     parsecomment(SWISH * sw, char *tag, SWINT_T filenum, SWINT_T structure, SWINT_T metaID, SWINT_T *position)
 {
     structure |= IN_COMMENTS;
     return indexstring(sw, tag + 1, filenum, structure, 1, &metaID, position);
@@ -752,18 +752,18 @@ int     parsecomment(SWISH * sw, char *tag, int filenum, int structure, int meta
 ** to the appropriate structures.
 */
 
-int countwords_HTML(SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer)
+SWINT_T countwords_HTML(SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer)
 {
-    int     ftotalwords;
-    int    *metaID;
-    int     metaIDlen;
-    int     position;           /* Position of word in file */
-    int     currentmetanames;
+    SWINT_T     ftotalwords;
+    SWINT_T    *metaID;
+    SWINT_T     metaIDlen;
+    SWINT_T     position;           /* Position of word in file */
+    SWINT_T     currentmetanames;
     char   *p,
            *newp,
            *tag,
            *endtag;
-    int     structure;
+    SWINT_T     structure;
     FileRec *thisFileEntry = fi;
     struct metaEntry *metaNameEntry;
     IndexFILE *indexf = sw->indexlist;
@@ -783,7 +783,7 @@ int countwords_HTML(SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer)
     addCommonProperties( sw, fprop, fi, title, summary, 0 );
 
     /* Init meta info */
-    metaID = (int *) Mem_ZoneAlloc(sw->Index->perDocTmpZone,(metaIDlen = 16) * sizeof(int));
+    metaID = (SWINT_T *) Mem_ZoneAlloc(sw->Index->perDocTmpZone,(metaIDlen = 16) * sizeof(SWINT_T));
 
     currentmetanames = 0;
     ftotalwords = 0;
@@ -839,8 +839,8 @@ int countwords_HTML(SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer)
                             /* realloc memory if needed */
                             if (currentmetanames == metaIDlen)
                             {
-                                int *newbuf = (int *)Mem_ZoneAlloc(sw->Index->perDocTmpZone, metaIDlen * 2 * sizeof(int));
-                                memcpy((char *)newbuf,(char *)metaID,metaIDlen * sizeof(int));
+                                SWINT_T *newbuf = (SWINT_T *)Mem_ZoneAlloc(sw->Index->perDocTmpZone, metaIDlen * 2 * sizeof(SWINT_T));
+                                memcpy((char *)newbuf,(char *)metaID,metaIDlen * sizeof(SWINT_T));
                                 metaID = newbuf;
                                 metaIDlen *= 2;
                             }

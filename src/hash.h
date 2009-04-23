@@ -29,15 +29,15 @@
 
 */
 
-unsigned string_hash(char *, int);
-unsigned int_hash(int, int);
+unsigned string_hash(char *, SWINT_T);
+unsigned int_hash(SWINT_T, SWINT_T);
 unsigned hash (char *);
-unsigned numhash (int);
+unsigned numhash (SWINT_T);
 unsigned bighash (char *);
-unsigned bignumhash (int);
+unsigned bignumhash (SWINT_T);
 unsigned verybighash (char *);
 
-struct swline *add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word, int hash_size);
+struct swline *add_word_to_hash_table( WORD_HASH_TABLE *table_ptr, char *word, SWINT_T hash_size);
 struct swline * is_word_in_hash_table( WORD_HASH_TABLE table, char *word);
 void free_word_hash_table( WORD_HASH_TABLE *table_ptr);
 

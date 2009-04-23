@@ -50,6 +50,7 @@ $Id$
 **		If you turn on MEM_TRACE, turn on MEM_STATISTICS
 */
 
+#include "swishtypes.h"
 #include <memory.h>
 
 #ifdef __cplusplus
@@ -70,15 +71,15 @@ typedef struct _mem_zone {
 	struct _zone	*next;		/* link to free chunk */
 	char			*name;		/* name of zone */
 	size_t			size;		/* size to grow zone by */
-	int				attributes;	/* attributes of zone (not used yet) */
-	unsigned int	allocs;		/* count of allocations (for statistics) */
+	SWINT_T				attributes;	/* attributes of zone (not used yet) */
+	SWUINT_T	allocs;		/* count of allocations (for statistics) */
 } MEM_ZONE;
 
 
 /* The following are the basic malloc/realloc/free replacements */
 #if MEM_TRACE
 extern size_t memory_trace_counter;
-void Mem_bp(int n);
+void Mem_bp(SWINT_T n);
 #endif
 
 void *ecalloc(size_t nelem, size_t size);
@@ -89,9 +90,9 @@ void *ecalloc(size_t nelem, size_t size);
 #define erealloc(ptr, size) Mem_Realloc(ptr, size, __FILE__, __LINE__)
 #define efree(ptr) Mem_Free(ptr, __FILE__, __LINE__)
 
-void *Mem_Alloc(size_t size, char *file, int line);
-void *Mem_Realloc(void *ptr, size_t size, char *file, int line);
-void Mem_Free(void *ptr, char *file, int line);
+void *Mem_Alloc(size_t size, char *file, SWINT_T line);
+void *Mem_Realloc(void *ptr, size_t size, char *file, SWINT_T line);
+void Mem_Free(void *ptr, char *file, SWINT_T line);
 
 #else
 
@@ -102,12 +103,12 @@ void efree(void *ptr);
 #endif
 
 /* Hook to print out statistics if enabled */
-void Mem_Summary(char *title, int final);
+void Mem_Summary(char *title, SWINT_T final);
 
 /* Memory zone routines */
 
 /* create a zone -- size should be some reasonable number */
-MEM_ZONE *Mem_ZoneCreate(char *name, size_t size, int attributes);
+MEM_ZONE *Mem_ZoneCreate(char *name, size_t size, SWINT_T attributes);
 
 /* allocate memory from a zone (can use like malloc if you aren't going to realloc) */
 void *Mem_ZoneAlloc(MEM_ZONE *head, size_t size);
@@ -124,7 +125,7 @@ void Mem_ZoneStatistics(MEM_ZONE *head);
 void Mem_ZoneReset(MEM_ZONE *head); 
 
 /* Returns the allocated memory owned by a zone */
-int Mem_ZoneSize(MEM_ZONE *head);
+SWINT_T Mem_ZoneSize(MEM_ZONE *head);
 
 /* Don't let people use the regular C calls */
 #define malloc $Please_use_emalloc

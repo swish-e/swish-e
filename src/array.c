@@ -30,7 +30,7 @@ $Id$
 **
 **  Virtual Array Code. 
 **  11/2001 jmruiz - The intention of this routines is storing and reading
-**                   elemnts of arrays of long numbers avoiding the 
+**                   elemnts of arrays of SWINT_T numbers avoiding the 
 **                   allocation in memory of the total array. In other words,
 **                   if we need to read only 10 elements of the array, we
 **                   will must try to make the minimal I/O memory and disk
@@ -56,10 +56,10 @@ $Id$
 **    Closes and frees memory. arr is the value returned by ARRAY_Create or
 **    ARRAY_Open. Returns the root page of the array. This value must be
 **
-**  int ARRAY_Put(ARRAY *arr, int index, unsigned long value)
+**  SWINT_T ARRAY_Put(ARRAY *arr, SWINT_T index, SWUINT_T value)
 **    Writes the array element arr[index]=value to the virtual array
 **
-**  unsigned long ARRAY_Get(ARRAY *arr, int index)
+**  SWUINT_T ARRAY_Get(ARRAY *arr, SWINT_T index)
 **    Reads the array element index. Returns de value arr[index]
 **
 */
@@ -78,7 +78,7 @@ $Id$
 /* A ARRAY page size */
 #define ARRAY_PageSize 4096
 
-#define SizeOfElement sizeof(long)
+#define SizeOfElement sizeof(SWINT_T)
 
 /* Round to ARRAY_PageSize */
 #define ARRAY_RoundPageSize(n) (((sw_off_t)(n) + (sw_off_t)(ARRAY_PageSize - 1)) & (~(sw_off_t)(ARRAY_PageSize - 1)))
@@ -93,16 +93,16 @@ $Id$
 #define ARRAY_GetNextPage(pg,num) ( (num) = UNPACKFILEOFFSET(*(sw_off_t *)((pg)->data + 0 * sizeof(sw_off_t))))
 
 
-int ARRAY_WritePageToDisk(FILE *fp, ARRAY_Page *pg)
+SWINT_T ARRAY_WritePageToDisk(FILE *fp, ARRAY_Page *pg)
 {
     ARRAY_SetNextPage(pg,pg->next);
     sw_fseek(fp,(sw_off_t)((sw_off_t)pg->page_number * (sw_off_t)ARRAY_PageSize),SEEK_SET);
     return sw_fwrite(pg->data,ARRAY_PageSize,1,fp);
 }
 
-int ARRAY_WritePage(ARRAY *b, ARRAY_Page *pg)
+SWINT_T ARRAY_WritePage(ARRAY *b, ARRAY_Page *pg)
 {
-int hash = pg->page_number % ARRAY_CACHE_SIZE;
+SWINT_T hash = pg->page_number % ARRAY_CACHE_SIZE;
 ARRAY_Page *tmp;
     pg->modified =1;
     if((tmp = b->cache[hash]))
@@ -121,9 +121,9 @@ ARRAY_Page *tmp;
     return 0;
 }
 
-int ARRAY_FlushCache(ARRAY *b)
+SWINT_T ARRAY_FlushCache(ARRAY *b)
 {
-int i;
+SWINT_T i;
 ARRAY_Page *tmp, *next;
     for(i = 0; i < ARRAY_CACHE_SIZE; i++)
     {
@@ -155,9 +155,9 @@ ARRAY_Page *tmp, *next;
     return 0;
 }
 
-int ARRAY_CleanCache(ARRAY *b)
+SWINT_T ARRAY_CleanCache(ARRAY *b)
 {
-int i;
+SWINT_T i;
 ARRAY_Page *tmp,*next;
     for(i = 0; i < ARRAY_CACHE_SIZE; i++)
     {
@@ -191,7 +191,7 @@ ARRAY_Page *pg = (ARRAY_Page *)emalloc(sizeof(ARRAY_Page) + ARRAY_PageSize);
 
 ARRAY_Page *ARRAY_ReadPage(ARRAY *b, sw_off_t page_number)
 {
-int hash = (int)(page_number % (sw_off_t)ARRAY_CACHE_SIZE);
+SWINT_T hash = (SWINT_T)(page_number % (sw_off_t)ARRAY_CACHE_SIZE);
 ARRAY_Page *tmp;
     if((tmp = b->cache[hash]))
     {
@@ -218,8 +218,8 @@ ARRAY_Page *ARRAY_NewPage(ARRAY *b)
 ARRAY_Page *pg;
 sw_off_t offset;
 FILE *fp = b->fp;
-int hash;
-int size = ARRAY_PageSize;
+SWINT_T hash;
+SWINT_T size = ARRAY_PageSize;
 
     /* Get file pointer */
     if(sw_fseek(fp,(sw_off_t)0,SEEK_END) !=0)
@@ -255,7 +255,7 @@ int size = ARRAY_PageSize;
 
 void ARRAY_FreePage(ARRAY *b, ARRAY_Page *pg)
 {
-int hash = pg->page_number % ARRAY_CACHE_SIZE;
+SWINT_T hash = pg->page_number % ARRAY_CACHE_SIZE;
 ARRAY_Page *tmp;
 
     tmp = b->cache[hash];
@@ -281,10 +281,10 @@ ARRAY_Page *tmp;
     }
 }
 
-ARRAY *ARRAY_New(FILE *fp, unsigned int size)
+ARRAY *ARRAY_New(FILE *fp, SWUINT_T size)
 {
 ARRAY *b;
-int i;
+SWINT_T i;
     b = (ARRAY *) emalloc(sizeof(ARRAY));
     b->page_size = size;
     b->fp = fp;
@@ -298,7 +298,7 @@ ARRAY *ARRAY_Create(FILE *fp)
 {
 ARRAY *b;
 ARRAY_Page *root;
-int size = ARRAY_PageSize;
+SWINT_T size = ARRAY_PageSize;
 
     b = ARRAY_New(fp , size);
     root = ARRAY_NewPage(b);
@@ -315,7 +315,7 @@ int size = ARRAY_PageSize;
 ARRAY *ARRAY_Open(FILE *fp, sw_off_t root_page)
 {
 ARRAY *b;
-int size = ARRAY_PageSize;
+SWINT_T size = ARRAY_PageSize;
 
     b = ARRAY_New(fp , size);
 
@@ -334,11 +334,11 @@ sw_off_t root_page = bt->root_page;
 }
 
 
-int ARRAY_Put(ARRAY *b, int index, unsigned long value)
+SWINT_T ARRAY_Put(ARRAY *b, SWINT_T index, SWUINT_T value)
 {
 sw_off_t next_page; 
 ARRAY_Page *root_page, *tmp = NULL, *prev; 
-int i, hash, page_reads, page_index;
+SWINT_T i, hash, page_reads, page_index;
 
     page_reads = index / ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeOfElement);
     hash = page_reads % ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeOfElement);
@@ -375,7 +375,7 @@ int i, hash, page_reads, page_index;
         prev = tmp;
         next_page = tmp->next;
     }
-    *(unsigned long *)ARRAY_Data(tmp,page_index) = PACKLONG(value);
+    *(SWUINT_T *)ARRAY_Data(tmp,page_index) = PACKLONG(value);
     ARRAY_WritePage(b,tmp);
     ARRAY_FreePage(b,tmp);
     ARRAY_FreePage(b,root_page);
@@ -384,12 +384,12 @@ int i, hash, page_reads, page_index;
 }
 
 
-unsigned long ARRAY_Get(ARRAY *b, int index)
+SWUINT_T ARRAY_Get(ARRAY *b, SWINT_T index)
 {
 sw_off_t next_page;
-unsigned long value; 
+SWUINT_T value; 
 ARRAY_Page *root_page, *tmp;
-int i, hash, page_reads, page_index;
+SWINT_T i, hash, page_reads, page_index;
 
     page_reads = index / ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeOfElement);
     hash = page_reads % ((ARRAY_PageSize - ARRAY_PageHeaderSize) / SizeOfElement);
@@ -398,7 +398,7 @@ int i, hash, page_reads, page_index;
 
     root_page = ARRAY_ReadPage(b, b->root_page);
 /* $$$$ to be fixed $$$ */
-    next_page = UNPACKLONG(*(long *)ARRAY_Data(root_page, hash));
+    next_page = UNPACKLONG(*(SWINT_T *)ARRAY_Data(root_page, hash));
 
     tmp = NULL;
     for(i = 0; i <= page_reads; i++)
@@ -416,7 +416,7 @@ int i, hash, page_reads, page_index;
         }
         next_page = tmp->next;
     }
-    value = UNPACKLONG(*(unsigned long *)ARRAY_Data(tmp,page_index));
+    value = UNPACKLONG(*(SWUINT_T *)ARRAY_Data(tmp,page_index));
     ARRAY_FreePage(b,tmp);
     ARRAY_FreePage(b,root_page);
 
@@ -443,9 +443,9 @@ int main()
 {
 FILE *fp;
 ARRAY *bt;
-int i;
-static unsigned long nums[N_TEST];
-unsigned long root_page;
+SWINT_T i;
+static SWUINT_T nums[N_TEST];
+SWUINT_T root_page;
     srand(time(NULL));
 
 
@@ -465,18 +465,18 @@ printf("\n\nIndexing\n\n");
 //        nums[i]=i;
         ARRAY_Put(bt,i,nums[i]);
         if(nums[i]!= ARRAY_Get(bt,i))
-            printf("\n\nmal %d\n\n",i);
+            printf("\n\nmal %lld\n\n",i);
         if(!(i%1000))
         {
             ARRAY_FlushCache(bt);
-            printf("%d            \r",i);
+            printf("%lld            \r",i);
         }
     }
 
     root_page = ARRAY_Close(bt);
     sw_fclose(fp);
 
-printf("\n\nUnfreed %d\n\n",num);
+printf("\n\nUnfreed %lld\n\n",num);
 printf("\n\nSearching\n\n");
 
     fp = sw_fopen("kkkkk",F_READ_BINARY);
@@ -485,15 +485,15 @@ printf("\n\nSearching\n\n");
     for(i=0;i<N_TEST;i++)
     {
         if(nums[i] != ARRAY_Get(bt,i))
-            printf("\n\nmal %d\n\n",i);
+            printf("\n\nmal %lld\n\n",i);
         if(!(i%1000))
-            printf("%d            \r",i);
+            printf("%lld            \r",i);
     }
 
     root_page = ARRAY_Close(bt);
 
     sw_fclose(fp);
-printf("\n\nUnfreed %d\n\n",num);
+printf("\n\nUnfreed %lld\n\n",num);
 
 }
 

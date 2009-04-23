@@ -123,7 +123,7 @@ DestroyMetaString(metastring * s)
 
 
 void
-IncreaseBuffer(metastring * s, int chars_needed)
+IncreaseBuffer(metastring * s, SWINT_T chars_needed)
 {
     META_REALLOC(s->str, (s->bufsize + chars_needed + 10), char);
     assert( s->str != NULL );
@@ -143,8 +143,8 @@ MakeUpper(metastring * s)
 }
 
 
-int
-IsVowel(metastring * s, int pos)
+SWINT_T
+IsVowel(metastring * s, SWINT_T pos)
 {
     char c;
 
@@ -160,7 +160,7 @@ IsVowel(metastring * s, int pos)
 }
 
 
-int
+SWINT_T
 SlavoGermanic(metastring * s)
 {
     if ((char *) strstr(s->str, "W"))
@@ -176,7 +176,7 @@ SlavoGermanic(metastring * s)
 }
 
 
-int
+SWINT_T
 GetLength(metastring * s)
 {
     return s->length;
@@ -184,7 +184,7 @@ GetLength(metastring * s)
 
 
 char
-GetAt(metastring * s, int pos)
+GetAt(metastring * s, SWINT_T pos)
 {
     if ((pos < 0) || (pos >= s->length))
 	return '\0';
@@ -194,7 +194,7 @@ GetAt(metastring * s, int pos)
 
 
 void
-SetAt(metastring * s, int pos, char c)
+SetAt(metastring * s, SWINT_T pos, char c)
 {
     if ((pos < 0) || (pos >= s->length))
 	return;
@@ -206,8 +206,8 @@ SetAt(metastring * s, int pos, char c)
 /* 
    Caveats: the START value is 0 based
 */
-int
-StringAt(metastring * s, int start, int length, ...)
+SWINT_T
+StringAt(metastring * s, SWINT_T start, SWINT_T length, ...)
 {
     char *test;
     char *pos;
@@ -236,7 +236,7 @@ StringAt(metastring * s, int start, int length, ...)
 void
 MetaphAdd(metastring * s, char *new_str)
 {
-    int add_length;
+    SWINT_T add_length;
 
     if (new_str == NULL)
 	return;
@@ -255,12 +255,12 @@ MetaphAdd(metastring * s, char *new_str)
 void
 DoubleMetaphone(const char *str, char **codes)
 {
-    int        length;
+    SWINT_T        length;
     metastring *original;
     metastring *primary;
     metastring *secondary;
-    int        current;
-    int        last;
+    SWINT_T        current;
+    SWINT_T        last;
 
     current = 0;
     /* we need the real length and last prior to padding */

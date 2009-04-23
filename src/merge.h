@@ -39,14 +39,14 @@
 struct metaMergeEntry {
 	struct metaMergeEntry* next;
 	char* metaName;
-	int oldMetaID;
-	int newMetaID;
-	int metaType;
+	SWINT_T oldMetaID;
+	SWINT_T newMetaID;
+	SWINT_T metaType;
 };
 
 
 /* called by swish.c */
-void readmerge (char *, char *, char *, int);
+void readmerge (char *, char *, char *, SWINT_T);
 void merge_indexes( SWISH *sw_input, SWISH *sw_output );
 
 

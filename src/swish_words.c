@@ -81,7 +81,7 @@ static void print_swline( char *msg, struct swline *word_list )
 struct MOD_Swish_Words
 {
     char   *word;
-    int     lenword;
+    SWINT_T     lenword;
 };
 
 /* 
@@ -119,7 +119,7 @@ void freeModule_Swish_Words (SWISH *sw)
 /* Returns true if the character is a search operator */
 /* this could be a macro, but gcc is probably smart enough */
 
-static int isSearchOperatorChar( int c, int phrase_delimiter, int inphrase )
+static SWINT_T isSearchOperatorChar( SWINT_T c, SWINT_T phrase_delimiter, SWINT_T inphrase )
 {
     return inphrase
         ? ( '*' == c || '?' == c || c == phrase_delimiter )
@@ -138,11 +138,11 @@ static int isSearchOperatorChar( int c, int phrase_delimiter, int inphrase )
 
 
 
-static int next_token( char **buf, char **word, int *lenword, int phrase_delimiter, int inphrase )
+static SWINT_T next_token( char **buf, char **word, SWINT_T *lenword, SWINT_T phrase_delimiter, SWINT_T inphrase )
 {
-    int     i;
-    int     backslash;
-    int     leading_space = 0;
+    SWINT_T     i;
+    SWINT_T     backslash;
+    SWINT_T     leading_space = 0;
 
     **word = '\0';
 
@@ -247,9 +247,9 @@ static int next_token( char **buf, char **word, int *lenword, int phrase_delimit
 }
 
 
-static int next_swish_word(INDEXDATAHEADER *header, char **buf, char **word, int *lenword )
+static SWINT_T next_swish_word(INDEXDATAHEADER *header, char **buf, char **word, SWINT_T *lenword )
 {
-    int     i;
+    SWINT_T     i;
     
     /* Also set flag for "?" (wildcard), in general set and at end of a term/word
      * At start there is never a wildcard allowed, because of sequential lookup in index
@@ -293,7 +293,7 @@ static int next_swish_word(INDEXDATAHEADER *header, char **buf, char **word, int
 
 /* Convert a word into swish words */
 
-static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, char *word, int max_size )
+static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, char *word, SWINT_T max_size )
 {
     struct  swline  *swish_words = NULL;
     char   *curpos;
@@ -309,11 +309,11 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
     while( next_swish_word( header, &curpos, &self->word, &self->lenword ) )
     {
         /* Check Begin & EndCharacters */
-        if (!header->begincharslookuptable[(int) ((unsigned char) self->word[0])])
+        if (!header->begincharslookuptable[(SWINT_T) ((unsigned char) self->word[0])])
             continue;
 
 
-        if (!header->endcharslookuptable[(int) ((unsigned char) self->word[strlen(self->word) - 1])])
+        if (!header->endcharslookuptable[(SWINT_T) ((unsigned char) self->word[strlen(self->word) - 1])])
             continue;
 
 
@@ -325,7 +325,7 @@ static struct swline *parse_swish_words( SWISH *sw, INDEXDATAHEADER *header, cha
         - maxwordlen is checked when first tokenizing for security reasons
         - limit by vowels, consonants and digits is not needed since search will just fail
         ----------- */
-        if ( (int)strlen( self->word ) > max_size )
+        if ( (SWINT_T)strlen( self->word ) > max_size )
         {
             sw->lasterror = SEARCH_WORD_TOO_BIG;
             return NULL;
@@ -423,7 +423,7 @@ static void  replace_swline( struct swline **original, struct swline *entry, str
 }
 
 
-static int checkbuzzword(INDEXDATAHEADER *header, char *word )
+static SWINT_T checkbuzzword(INDEXDATAHEADER *header, char *word )
 {
     if ( !header->hashbuzzwordlist.count )
         return 0;
@@ -440,7 +440,7 @@ static int checkbuzzword(INDEXDATAHEADER *header, char *word )
     return is_word_in_hash_table( header->hashbuzzwordlist, word ) ? 1 : 0;
 }
 
-/* I hope this doesn't live too long */
+/* I hope this doesn't live too SWINT_T */
 
 static void fudge_wildcard( struct swline **original, struct swline *entry )
 {
@@ -533,9 +533,9 @@ static struct swline *tokenize_query_string( SEARCH_OBJECT *srch, char *words, I
     SWISH  *sw = srch->sw;
     struct  MOD_Swish_Words *self = sw->SwishWords;
     unsigned char PhraseDelimiter;
-    int     max_size;
-    int     inphrase = 0;
-    int     rc;
+    SWINT_T     max_size;
+    SWINT_T     inphrase = 0;
+    SWINT_T     rc;
 
 
 
@@ -780,7 +780,7 @@ struct swline *parse_swish_query( DB_RESULTS *db_results )
     return searchwordlist;
 }
 
-static int     isrule(char *word)
+static SWINT_T     isrule(char *word)
 {
     if (!strcmp(word, AND_WORD) || !strncmp(word, NEAR_WORD, strlen(NEAR_WORD)) || !strcmp(word, OR_WORD) || !strcmp(word, NOT_WORD))
         return 1;
@@ -788,7 +788,7 @@ static int     isrule(char *word)
         return 0;
 }
 
-static int     isnotrule(char *word)
+static SWINT_T     isnotrule(char *word)
 {
     if (!strcmp(word, NOT_WORD))
         return 1;
@@ -814,10 +814,10 @@ static struct swline *ignore_words_in_query(DB_RESULTS *db_results, struct swlin
     struct swline  *cur_token = searchwordlist;
     struct swline  *prev_token = NULL;
     struct swline  *prev_prev_token = NULL;  // for removing two things
-    int             in_phrase = 0;
-    int             word_count = 0; /* number of search words found */
-    int             paren_count = 0;
-    int             stop_word_removed = 0;
+    SWINT_T             in_phrase = 0;
+    SWINT_T             word_count = 0; /* number of search words found */
+    SWINT_T             paren_count = 0;
+    SWINT_T             stop_word_removed = 0;
     unsigned char   phrase_delimiter = (unsigned char)srch->PhraseDelimiter;
     
 
@@ -826,7 +826,7 @@ static struct swline *ignore_words_in_query(DB_RESULTS *db_results, struct swlin
 
     while ( cur_token )
     {
-        int remove = 0;
+        SWINT_T remove = 0;
         char first_char = cur_token->line[0];
 
         if ( cur_token == searchwordlist )
@@ -1011,7 +1011,7 @@ static struct swline *ignore_words_in_query(DB_RESULTS *db_results, struct swlin
 
 static struct swline *fixmetanames(struct swline *sp)
 {
-    int     metapar;
+    SWINT_T     metapar;
     struct swline *tmpp,
            *newp;
 
@@ -1118,7 +1118,7 @@ static struct swline *fixnot1(struct swline *sp)
 ** Add parentheses to avoid the way operator NOT confuse complex queries */
 static struct swline *fixnot2(struct swline *sp)
 {
-    int     openparen, found;
+    SWINT_T     openparen, found;
     struct swline *tmpp, *newp;
     char    *magic = MAGIC_NOT_WORD;  /* magic avoids parsing the
                                    ** "not" operator twice
@@ -1185,7 +1185,7 @@ static struct swline *expandphrase(struct swline *sp, char delimiter)
 {
     struct swline *tmp,
            *newp;
-    int     inphrase;
+    SWINT_T     inphrase;
 
     if (!sp)
         return NULL;
@@ -1237,7 +1237,7 @@ static struct swline *expandphrase(struct swline *sp, char delimiter)
 */
 void     stripIgnoreLastChars(INDEXDATAHEADER *header, char *word)
 {
-    int     k,j,i = strlen(word);
+    SWINT_T     k,j,i = strlen(word);
 
     /* Get rid of specified last char's */
     /* for (i=0; word[i] != '\0'; i++); */
@@ -1260,9 +1260,9 @@ void     stripIgnoreLastChars(INDEXDATAHEADER *header, char *word)
 
 void    stripIgnoreFirstChars(INDEXDATAHEADER *header, char *word)
 {
-    int     j,
+    SWINT_T     j,
             k;
-    int     i = 0;
+    SWINT_T     i = 0;
 
     /* Keep going until a char not to ignore is found */
     /* We must take care of the escaped characeters */

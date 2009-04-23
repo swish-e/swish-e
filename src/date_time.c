@@ -75,7 +75,7 @@ double TimeElapsed(void)
 double TimeElapsed(void)
 {
  struct timeval t;
- int i;
+ SWINT_T i;
 
     i = gettimeofday( &t, NULL );
     if ( i ) return 0;
@@ -108,7 +108,7 @@ time_t now;
 	
 	now = time(NULL);
 	/* 2/22/00 - switched to 4-digit year (%Y vs. %y) */
-	strftime(date, MAXSTRLEN, "%Y-%m-%d %H:%M:%S %Z", (struct tm *) localtime(&now)); 
+	strftime(date, MAXSTRLEN, "%Y-%m-%lld %H:%M:%S %Z", (struct tm *) localtime(&now)); 
 	
 	return date;
 }

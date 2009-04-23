@@ -26,7 +26,7 @@ $Id$
 
 /* private module prototypes and private definitions */
 
-.... int my_module_local_routine (...);
+.... SWINT_T my_module_local_routine (...);
 
 
 
@@ -113,12 +113,12 @@ void resetModule_#modulename# (SWISH *sw)
  -- return: 0/1 = none/config applied
 */
 
-int configModule_#modulename# (SWISH *sw, StringList *sl)
+SWINT_T configModule_#modulename# (SWISH *sw, StringList *sl)
 
 {
   struct MOD_#modulename# *md = sw->#modulename#;
   char *w0;
-  int  retval;
+  SWINT_T  retval;
 
 
   w0 = sl->word[0];
@@ -153,7 +153,7 @@ int configModule_#modulename# (SWISH *sw, StringList *sl)
  -- Set param from cmdline for this Module
 */
 
-int cmdlineModule_#modulename# (SWISH *sw, ..... to be defined ...)
+SWINT_T cmdlineModule_#modulename# (SWISH *sw, ..... to be defined ...)
 
 {
  this routine and the function has still to be defined...

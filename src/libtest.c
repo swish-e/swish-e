@@ -40,6 +40,7 @@ $Id$
 
 
 #include <stdio.h>
+#include "swishtypes.h"
 #include "swish-e.h"  /* use locally for testing */
 
 
@@ -224,8 +225,8 @@ int     main(int argc, char **argv)
 static void display_results( SW_HANDLE swish_handle, SW_RESULTS results )
 {
     SW_RESULT result;
-    int       hits;
-    int       first = 1;
+    SWINT_T       hits;
+    SWINT_T       first = 1;
 
     if ( !results )  /* better safe than sorry */
         return;
@@ -248,7 +249,7 @@ static void display_results( SW_HANDLE swish_handle, SW_RESULTS results )
     }
 
 
-    printf("# Total Results: %d\n", hits );
+    printf("# Total Results: %lld\n", hits );
 
 
 
@@ -270,7 +271,7 @@ static void display_results( SW_HANDLE swish_handle, SW_RESULTS results )
         /* SwishResultPropertyULong will return ULONG_MAX if the value cannot be returned */
         /* that could mean an error, or just that there was not a property assigned (which is not an error) */
 
-        printf("Path: %s\n  Rank: %lu\n  Size: %lu\n  Title: %s\n  Index: %s\n  Modified: %s\n  Record #: %lu\n  File   #: %lu\n\n",
+        printf("Path: %s\n  Rank: %llu\n  Size: %llu\n  Title: %s\n  Index: %s\n  Modified: %s\n  Record #: %llu\n  File   #: %llu\n\n",
             SwishResultPropertyStr   ( result, "swishdocpath" ),
             SwishResultPropertyULong ( result, "swishrank" ),
             SwishResultPropertyULong ( result, "swishdocsize" ),
@@ -371,7 +372,7 @@ static void print_header_value( SW_HANDLE swish_handle, const char *name, SWISH_
             return;
 
         case SWISH_NUMBER:
-            printf(" %lu\n", head_value.number );
+            printf(" %llu\n", head_value.number );
             return;
 
         case SWISH_BOOL:
@@ -394,7 +395,7 @@ static void print_header_value( SW_HANDLE swish_handle, const char *name, SWISH_
             return;
 
         default:
-            printf(" Unknown header type '%d'\n", (int)head_type );
+            printf(" Unknown header type '%lld'\n", (SWINT_T)head_type );
             return;
     }
 }
@@ -426,16 +427,16 @@ static void print_index_metadata( SW_HANDLE swish_handle )
       while ( *meta_list ) {
 	printf("# Meta: " );
 	printf( "%s ", SwishMetaName(*meta_list));
-	printf( "type=%d ", SwishMetaType(*meta_list));
-	printf( "id=%d ", SwishMetaID(*meta_list));
+	printf( "type=%lld ", SwishMetaType(*meta_list));
+	printf( "id=%lld ", SwishMetaID(*meta_list));
 	printf("\n");
 	meta_list++;
       }      
       while ( *prop_list ) {
 	printf("# Property: " );
 	printf( "%s ", SwishMetaName(*prop_list));
-	printf( "type=%d ", SwishMetaType(*prop_list));
-	printf( "id=%d ", SwishMetaID(*prop_list));
+	printf( "type=%lld ", SwishMetaType(*prop_list));
+	printf( "id=%lld ", SwishMetaID(*prop_list));
 	printf("\n");
 	prop_list++;
       }      
@@ -469,7 +470,7 @@ static void print_error_or_abort( SW_HANDLE swish_handle )
 
     /* print a message */        
     fprintf(stderr,
-        "err: Number [%d], Type [%s],  Optional Message: [%s]\n",
+        "err: Number [%lld], Type [%s],  Optional Message: [%s]\n",
         SwishError( swish_handle ),
         SwishErrorString( swish_handle ),
         SwishLastErrorMsg( swish_handle )
@@ -529,8 +530,8 @@ static void stem_it( SW_RESULT r, char *word )
     printf(" [%s] : ", word );
     
     fw = SwishFuzzyWord( r, word );
-    printf(" Status: %d", SwishFuzzyWordError(fw) );
-    printf(" Word Count: %d\n", SwishFuzzyWordCount(fw) );
+    printf(" Status: %lld", SwishFuzzyWordError(fw) );
+    printf(" Word Count: %lld\n", SwishFuzzyWordCount(fw) );
 
     printf("   words:");
     word_list = SwishFuzzyWordList( fw );
@@ -551,7 +552,7 @@ static void stem_it( SW_RESULT r, char *word )
 static void test_compress() 
 {
     char buffer[10000] = {0}; // 10K
-    int i;
+    SWINT_T i;
     char * place = buffer;
     for( i=0; i<1000; i++) {   // assume 10 bytes per number is enough :)
         place = compress3( i, place );

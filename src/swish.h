@@ -75,6 +75,7 @@
 #ifndef SWISH_H
 #define SWISH_H 1
 
+#include "swishtypes.h"
 
 
 #include <stdio.h>
@@ -349,7 +350,7 @@ CMD_MODE;
 
 typedef struct propEntry
 {
-    unsigned int propLen;       /* Length of buffer */
+    SWUINT_T propLen;       /* Length of buffer */
     unsigned char propValue[1]; /* Actual property value starts here */
 }
 propEntry;
@@ -358,7 +359,7 @@ propEntry;
 
 typedef struct docProperties
 {
-    int n;  /* to be removed - can just use count of properties */
+    SWINT_T n;  /* to be removed - can just use count of properties */
     struct propEntry *propEntry[1];  /* Array to hold properties */
 }
 docProperties;
@@ -370,18 +371,18 @@ struct metaEntry
 {
     /* Stored in index */
     char       *metaName;           /* MetaName string */
-    int         metaID;             /* Meta ID */
-    int         metaType;           /* See metanames.h for values */
-    int         alias;              /* if non-zero, this is an alias to the listed metaID */
-    int         sort_len;           /* sort length used when sorting a property */
-    int         rank_bias;          /* An integer used to bias hits on this metaname 0 = no bias */
+    SWINT_T         metaID;             /* Meta ID */
+    SWINT_T         metaType;           /* See metanames.h for values */
+    SWINT_T         alias;              /* if non-zero, this is an alias to the listed metaID */
+    SWINT_T         sort_len;           /* sort length used when sorting a property */
+    SWINT_T         rank_bias;          /* An integer used to bias hits on this metaname 0 = no bias */
 
     /* Fields used while indexing or searching */
-    int         max_len;            /* If non-zero, limits properties to this length (for storedescription) */
+    SWINT_T         max_len;            /* If non-zero, limits properties to this length (for storedescription) */
     char       *extractpath_default; /* String to index under this metaname if none found with ExtractPath */
-    int        *sorted_data;        /* Sorted data . NULL if not read/done */
-    int         sorted_loaded;      /* true if have attempted to load sorted data (doesn't me it exists) */
-    int         in_tag;             /* Flag to indicate that we are within this tag while indexing (parsing) */
+    SWINT_T        *sorted_data;        /* Sorted data . NULL if not read/done */
+    SWINT_T         sorted_loaded;      /* true if have attempted to load sorted data (doesn't me it exists) */
+    SWINT_T         in_tag;             /* Flag to indicate that we are within this tag while indexing (parsing) */
 };
 
 /* These are used to build the table of seek pointers in the main index. */
@@ -399,7 +400,7 @@ typedef struct   // there used to be more in this structure ;)
 
 typedef struct
 {
-    int             filenum;
+    SWINT_T             filenum;
     docProperties  *docProperties;  /* list of document props in memory */
     void     *prop_index;     /* pointers to properties on disk */
 } FileRec;
@@ -424,14 +425,14 @@ typedef struct
     char   *orig_path;          /* original path provided to swish */
     char   *work_path;          /* path to file to index (may be tmpfile or real_path) */
     char   *real_filename;      /* basename() of real_path  */
-    long    source_size;        /* size reported by fstat() before filtering, if read from a file */
-    long    fsize;              /* size of orig file, but once read into buffer is size of buffer */
-    long    bytes_read;         /* Number of bytes read from the stream - important for sw->truncateDocSize and -S prog */
-    int     done;               /* flag to read no more from this stream (truncate) */
-    int     external_program;   /* Flag to only read fsize bytes from stream */
+    SWINT_T    source_size;        /* size reported by fstat() before filtering, if read from a file */
+    SWINT_T    fsize;              /* size of orig file, but once read into buffer is size of buffer */
+    SWINT_T    bytes_read;         /* Number of bytes read from the stream - important for sw->truncateDocSize and -S prog */
+    SWINT_T     done;               /* flag to read no more from this stream (truncate) */
+    SWINT_T     external_program;   /* Flag to only read fsize bytes from stream */
     time_t  mtime;              /* Date of last mod of or. file */
-    int     doctype;            /* Type of document HTML, TXT, XML, ... */
-    int     index_no_content;   /* Flag, index "filename/real_path" only! */
+    SWINT_T     doctype;            /* Type of document HTML, TXT, XML, ... */
+    SWINT_T     index_no_content;   /* Flag, index "filename/real_path" only! */
     struct StoreDescription *stordesc;   /* Null if no description/summary */
     struct FilterList *hasfilter;       /* NULL if no filter for this file */
 }
@@ -441,23 +442,23 @@ FileProp;
 typedef struct LOCATION
 {
     struct LOCATION *next;
-    int     metaID;
-    int     filenum;
-    int     frequency;
-    unsigned int     posdata[1];
+    SWINT_T     metaID;
+    SWINT_T     filenum;
+    SWINT_T     frequency;
+    SWUINT_T     posdata[1];
 }
 LOCATION;
 
 
 /* 2002/01 jmruiz macros for accesing POSITION and structure */
-#define SET_POSDATA(pos,str)  ((unsigned int)((unsigned int)(pos) << (unsigned int)8 | (unsigned int)(str)))
-#define GET_POSITION(pos)      ((int)((unsigned int)(pos) >> (unsigned int)8))
-#define GET_STRUCTURE(pos)     ((int)((unsigned int)(pos) & (unsigned int)0xff))
+#define SET_POSDATA(pos,str)  ((SWUINT_T)((SWUINT_T)(pos) << (SWUINT_T)8 | (SWUINT_T)(str)))
+#define GET_POSITION(pos)      ((SWINT_T)((SWUINT_T)(pos) >> (SWUINT_T)8))
+#define GET_STRUCTURE(pos)     ((SWINT_T)((SWUINT_T)(pos) & (SWUINT_T)0xff))
 
 typedef struct ENTRY
 {
     struct ENTRY *next;
-    int     tfrequency;
+    SWINT_T     tfrequency;
        /* Chunk's LOCATIONs goes here */
     LOCATION *currentChunkLocationList;
     LOCATION *currentlocation;
@@ -468,7 +469,7 @@ typedef struct ENTRY
     struct
     {
         sw_off_t    wordID;
-        int     last_filenum;
+        SWINT_T     last_filenum;
     }
     u1;
     char    word[1];    /* actual word starts here */
@@ -494,8 +495,8 @@ struct swline
 
 typedef struct {
     struct swline  **hash_array;
-    int              hash_size;
-    int              count;
+    SWINT_T              hash_size;
+    SWINT_T              count;
     void            *mem_zone;
 }  WORD_HASH_TABLE;
 
@@ -504,80 +505,80 @@ typedef struct {
 typedef struct
 {
     /* vars for WordCharacters */
-    int     lenwordchars;
+    SWINT_T     lenwordchars;
     char   *wordchars;
 
     /* vars for BeginCharacters */
-    int     lenbeginchars;
+    SWINT_T     lenbeginchars;
     char   *beginchars;
 
     /* vars for EndCharacters */
-    int     lenendchars;
+    SWINT_T     lenendchars;
     char   *endchars;
 
     /* vars for IgnoreLastChar */
-    int     lenignorelastchar;
+    SWINT_T     lenignorelastchar;
     char   *ignorelastchar;
 
     /* vars for IgnoreFirstChar */
-    int     lenignorefirstchar;
+    SWINT_T     lenignorefirstchar;
     char   *ignorefirstchar;
 
     /* vars for bump position chars */
-    int     lenbumpposchars;
+    SWINT_T     lenbumpposchars;
     char   *bumpposchars;
 
     /* vars for header values */
     char   *savedasheader;
-    int     lensavedasheader;
+    SWINT_T     lensavedasheader;
 
     /* vars for numberchars */  /* Not yet stored in the header. */
-    int     lennumberchars;     /* Probably don't need it for searching */
+    SWINT_T     lennumberchars;     /* Probably don't need it for searching */
     char   *numberchars;
-    int     numberchars_used_flag;
+    SWINT_T     numberchars_used_flag;
 
 
-    int     lenindexedon;
+    SWINT_T     lenindexedon;
     char   *indexedon;
 
-    int     lenindexn;
+    SWINT_T     lenindexn;
     char   *indexn;
 
-    int     lenindexd;
+    SWINT_T     lenindexd;
     char   *indexd;
 
-    int     lenindexp;
+    SWINT_T     lenindexp;
     char   *indexp;
 
-    int     lenindexa;
+    SWINT_T     lenindexa;
     char   *indexa;
 
-    int     minwordlimit;
-    int     maxwordlimit;
+    SWINT_T     minwordlimit;
+    SWINT_T     maxwordlimit;
 
     FUZZY_OBJECT *fuzzy_data;
 
     /* Total files and words in index file */
-    int     totalwords;    /* Total *unique* words */
-    int     totalfiles;
-    int     removedfiles;
+    SWINT_T     totalwords;    /* Total *unique* words */
+    SWINT_T     totalfiles;
+    SWINT_T     removedfiles;
 
     /* var to specify how to ranking while indexing */
-    int     ignoreTotalWordCountWhenRanking; /* added 11/24/98 - MG */
+    SWINT_T     ignoreTotalWordCountWhenRanking; /* added 11/24/98 - MG */
 
-    int     *TotalWordsPerFile;
-    int     TotalWordsPerFileMax;  /* max size of array - this isn't saved in the header */
+    SWINT_T     *TotalWordsPerFile;
+    SWINT_T     TotalWordsPerFileMax;  /* max size of array - this isn't saved in the header */
 
 
     /* Lookup tables for fast access */
-    int     wordcharslookuptable[256];
-    int     begincharslookuptable[256];
-    int     endcharslookuptable[256];
-    int     ignorefirstcharlookuptable[256];
-    int     ignorelastcharlookuptable[256];
-    int     bumpposcharslookuptable[256];
-    int     translatecharslookuptable[256]; /* $$$ rasc 2001-02-21 */
-    int     numbercharslookuptable[256];    /* Dec 12, 2001 - moseley -- mostly for ignoring numbers */
+    SWINT_T     wordcharslookuptable[256];
+    SWINT_T     begincharslookuptable[256];
+    SWINT_T     endcharslookuptable[256];
+    SWINT_T     ignorefirstcharlookuptable[256];
+    SWINT_T     ignorelastcharlookuptable[256];
+    SWINT_T     bumpposcharslookuptable[256];
+    SWINT_T     translatecharslookuptable[256]; /* $$$ rasc 2001-02-21 */
+    SWINT_T     numbercharslookuptable[256];    /* Dec 12, 2001 - moseley -- mostly for ignoring numbers */
 
     /* values for handling stopwords */
     WORD_HASH_TABLE hashstoplist;
@@ -592,18 +593,18 @@ typedef struct
 
     /* This is an array of properties that are used */
     /* These should not be in the header, rather in indexf as they are not written to disk */
-    int     *propIDX_to_metaID;
-    int     *metaID_to_PropIDX;
-    int     property_count;
+    SWINT_T     *propIDX_to_metaID;
+    SWINT_T     *metaID_to_PropIDX;
+    SWINT_T     property_count;
 
 
 
     /* Values for fields (metanames) */
     struct metaEntry **metaEntryArray;
-    int     metaCounter;        /* Number of metanames */
+    SWINT_T     metaCounter;        /* Number of metanames */
 
-    int     total_word_positions;       /* IDF ranking */
-    int     removed_word_positions;     /* total words (not just unique words) */
+    SWINT_T     total_word_positions;       /* IDF ranking */
+    SWINT_T     removed_word_positions;     /* total words (not just unique words) */
 }
 INDEXDATAHEADER;
 
@@ -616,8 +617,8 @@ typedef struct IndexFILE
 
     char   *line;               /* Name of the index file */
 
-    unsigned long total_bytes;  /* Just to show total size when indexing */
-    unsigned long total_word_positions_cur_run;  /* count *while* indexing */
+    SWUINT_T total_bytes;  /* Just to show total size when indexing */
+    SWUINT_T total_word_positions_cur_run;  /* count *while* indexing */
 
 
 
@@ -631,17 +632,17 @@ typedef struct IndexFILE
     char   *keywords[256];
 
     /* Support for merge */
-    int     *meta_map;              // maps metas from this index to the output index
-    int     *path_order;            // lists files in order of pathname
-    int     current_file;           // current file pointer, used for merged reading
+    SWINT_T     *meta_map;              // maps metas from this index to the output index
+    SWINT_T     *path_order;            // lists files in order of pathname
+    SWINT_T     current_file;           // current file pointer, used for merged reading
     struct  metaEntry *path_meta;   // meta entry for the path name
     struct  metaEntry *modified_meta;
     propEntry *cur_prop;            // last read pathname
-    int     filenum;                // current filenumber to use
+    SWINT_T     filenum;                // current filenumber to use
 
 
     /* Used by merge.c */
-    int    *merge_file_num_map;
+    SWINT_T    *merge_file_num_map;
 
     /* Cache for stemming */
     WORD_HASH_TABLE hashstemcache;
@@ -670,7 +671,7 @@ struct multiswline
 
 typedef struct
 {
-    int     numWords;
+    SWINT_T     numWords;
     ENTRY **elist;     /* Sorted by word */
 }
 ENTRYARRAY;
@@ -686,16 +687,16 @@ struct url_info
 struct IndexContents
 {
     struct IndexContents *next;
-    int     DocType;
+    SWINT_T     DocType;
     struct swline *patt;
 };
 
 struct StoreDescription
 {
     struct StoreDescription *next;
-    int     DocType;
+    SWINT_T     DocType;
     char   *field;
-    int     size;
+    SWINT_T     size;
 };
 
 /* These two structs are used for lookuptables in order to save memory */
@@ -706,13 +707,13 @@ struct StoreDescription
 struct int_st
 {
     struct int_st *next;
-    int     index;
-    int     val[1];
+    SWINT_T     index;
+    SWINT_T     val[1];
 };
 
 struct int_lookup_st
 {
-    int     n_entries;
+    SWINT_T     n_entries;
     struct int_st *hash_entries[HASHSIZE];
     struct int_st *all_entries[1];
 };
@@ -723,13 +724,13 @@ struct int_lookup_st
 struct char_st
 {
     struct char_st *next;
-    int     index;
+    SWINT_T     index;
     char   *val;
 };
 
 struct char_lookup_st
 {
-    int     n_entries;
+    SWINT_T     n_entries;
     struct char_st *hash_entries[HASHSIZE];
     struct char_st *all_entries[1];
 };
@@ -742,10 +743,10 @@ typedef struct regex_list
     struct regex_list *next;
     regex_t     re;
     char       *replace;
-    int         replace_count;  /* number of pattern replacements - to estimate size of replacement string */
-    int         replace_length; /* newstr_max = replace_length + ( replace_count * search_str_len ) */
-    int         global;         /* /g flag to repeat sub */
-    int         negate;         /* Flag for matches if the match should be negated */
+    SWINT_T         replace_count;  /* number of pattern replacements - to estimate size of replacement string */
+    SWINT_T         replace_length; /* newstr_max = replace_length + ( replace_count * search_str_len ) */
+    SWINT_T         global;         /* /g flag to repeat sub */
+    SWINT_T         negate;         /* Flag for matches if the match should be negated */
     char       *pattern;        /* keep string pattern around for debugging */
 } regex_list;
 
@@ -795,10 +796,10 @@ UndefMetaFlag;
 typedef union
 {                               /* storage of the PropertyValue */
     char   *v_str;              /* strings */
-    int     v_int;              /* Integer */
+    SWINT_T     v_int;              /* Integer */
     time_t  v_date;             /* Date    */
     double  v_float;            /* Double Float */
-    unsigned long v_ulong;      /* Unsigned long */
+    SWUINT_T v_ulong;      /* Unsigned SWINT_T */
 }
 u_PropValue1;
 
@@ -806,7 +807,7 @@ typedef struct
 {                               /* Propvalue with type info */
     PropType datatype;
     u_PropValue1 value;
-    int      destroy;           /* flag to destroy (free) any pointer type */
+    SWINT_T      destroy;           /* flag to destroy (free) any pointer type */
 }
 PropValue;
 
@@ -842,27 +843,27 @@ typedef struct SWISH
 
 
     unsigned char            *Prop_IO_Buf;      /* For compressing and uncompressing properties (static-like buffer) */
-    unsigned long             PropIO_allocated;// total size of the structure
-    int                       PropCompressionLevel;
+    SWUINT_T             PropIO_allocated;// total size of the structure
+    SWINT_T                       PropCompressionLevel;
 
 
     /* Total words and files in all index files */
-    /* int     TotalWords;  Total *unique words*  $$$ doesn't seem to be used */
-    int     TotalFiles;
+    /* SWINT_T     TotalWords;  Total *unique words*  $$$ doesn't seem to be used */
+    SWINT_T     TotalFiles;
 
     /* verbose flag */
-    int     verbose;
+    SWINT_T     verbose;
 
-    int     headerOutVerbose;   /* -H <n> print extended header info */
+    SWINT_T     headerOutVerbose;   /* -H <n> print extended header info */
 
 
     /* Error vars */
-    int     lasterror;
+    SWINT_T     lasterror;
     char    lasterrorstr[MAX_ERROR_STRING_LEN+1];
 
 
     /* 06/00 Jose Ruiz */
-    int     isvowellookuptable[256];  /* used in check.c */
+    SWINT_T     isvowellookuptable[256];  /* used in check.c */
 
 
     /********* Document Source info **********/
@@ -882,7 +883,7 @@ typedef struct SWISH
     /* Limit indexing by a file date */
     time_t  mtime_limit;
 
-    long    truncateDocSize;    /* size of doc, at which it will be truncated (2001-03-16 rasc) */
+    SWINT_T    truncateDocSize;    /* size of doc, at which it will be truncated (2001-03-16 rasc) */
 
 
     /* structure for handling replace config data while searching */
@@ -899,17 +900,17 @@ typedef struct SWISH
     struct swline *nocontentslist;
 
     /* 08/00 Jose Ruiz Values for document type support */
-    int     DefaultDocType;
+    SWINT_T     DefaultDocType;
 
     /* maps file endings to document types */
     struct IndexContents *indexcontents;
 
 
     /* Should comments be indexed */
-    int     indexComments;
+    SWINT_T     indexComments;
 
     /* Should positions be compressed */
-    int     compressPositions;
+    SWINT_T     compressPositions;
 
 
     /******** Variables used by the parsers *********/
@@ -936,9 +937,9 @@ typedef struct SWISH
     /*** libxml2 additions ***/
 
     /* parser error warning level */
-    int     parser_warn_level;
+    SWINT_T     parser_warn_level;
 
-    int     obeyRobotsNoIndex;
+    SWINT_T     obeyRobotsNoIndex;
 
     /* for extracting links into a metaEntry */
     struct metaEntry *links_meta;
@@ -948,11 +949,11 @@ typedef struct SWISH
 
 
     /* if allocated the meta name to store alt tags as */
-    int               IndexAltTag;
+    SWINT_T               IndexAltTag;
     char             *IndexAltTagMeta;   // use this meta-tag, if set
 
     /* for converting relative links in href's and img src tags absoulte */
-    int               AbsoluteLinks;
+    SWINT_T               AbsoluteLinks;
 
 
     /* structure to handle XMLClassAttributes - list of attributes to use content to make a metaname*/
@@ -965,24 +966,24 @@ typedef struct SWISH
 
     /* Temporary place to store return string lists */
     const char **temp_string_buffer;
-    int        temp_string_buffer_len;
+    SWINT_T        temp_string_buffer_len;
 
 
     /* Temporary place to store a stemmed word -- so library user doesn't need to free memory */
     char * stemmed_word;
-    int    stemmed_word_len;
+    SWINT_T    stemmed_word_len;
 
 
     /* array to map the various possible HTML structure bits for rank */
-    int     structure_map_set; /* flag */
-    int     structure_map[256];
+    SWINT_T     structure_map_set; /* flag */
+    SWINT_T     structure_map[256];
 
 
     /* karman Mon Aug 30 07:54:10 CDT 2004 */
-    int     RankScheme;         /* Ranking Scheme */
-    int     TotalWordPos;
+    SWINT_T     RankScheme;         /* Ranking Scheme */
+    SWINT_T     TotalWordPos;
 
-    int     ReturnRawRank;
+    SWINT_T     ReturnRawRank;
 
 
     void *ref_count_ptr;  /* pointer for use with SWISH::API */
@@ -995,7 +996,7 @@ typedef struct SWISH
 ** Structure  StringList. Stores words up to a number of n
 */
 typedef struct  {
-        int n;
+        SWINT_T n;
         char **word;
 } StringList;
 
@@ -1004,15 +1005,15 @@ typedef struct  {
  * be implemented to an Indexing Data Source.
  * Right now there are two Indexing Data Source types:
  *  file-system based and an HTTP web crawler.
- * Any Data Source can be created as long as all of the
+ * Any Data Source can be created as SWINT_T as all of the
  * functions below are properly initialized.
  */
 struct _indexing_data_source_def
 {
-    const char *IndexingDataSourceName; /* long name for data source */
+    const char *IndexingDataSourceName; /* SWINT_T name for data source */
     const char *IndexingDataSourceId; /* short name for data source */
     void    (*indexpath_fn) (SWISH * sw, char *path); /* routine to index a "path" */
-    int     (*parseconfline_fn) (SWISH * sw, StringList *l); /* parse config file lines */
+    SWINT_T     (*parseconfline_fn) (SWISH * sw, StringList *l); /* parse config file lines */
 };
 
 
@@ -1022,8 +1023,8 @@ extern struct _indexing_data_source_def *IndexingDataSource;
 
 void    allocatedefaults(void);
 
-int SwishAttach(SWISH *);
-int open_single_index( SWISH *sw, IndexFILE *indexf, int db_mode );
+SWINT_T SwishAttach(SWISH *);
+SWINT_T open_single_index( SWISH *sw, IndexFILE *indexf, SWINT_T db_mode );
 SWISH  *SwishNew(void);
 void    SwishFree(SWISH *);
 
@@ -1039,10 +1040,10 @@ void    SwishFree(SWISH *);
 */
 /*
 #define CopyPositions(dest,posdest,orig,posorig,num) \
-{int i;for(i=0;i<num,i++) (dest)[i+(posdest)]=(orig)[i+(posorig)];}
+{SWINT_T i;for(i=0;i<num,i++) (dest)[i+(posdest)]=(orig)[i+(posorig)];}
 */
 #define CopyPositions(dest,posdest,orig,posorig,num) \
- memcpy((char *)((int *)(dest)+(posdest)),(char *)((int *)(orig)+(posorig)),(num)*sizeof(int))
+ memcpy((char *)((SWINT_T *)(dest)+(posdest)),(char *)((SWINT_T *)(orig)+(posorig)),(num)*sizeof(SWINT_T))
 
 
 /* Min macro */
@@ -1086,7 +1087,7 @@ void free_swish_memory( SWISH *sw );  /* in swish2.c */
 /* These are are checked everywhere (can't share bits) */
 
 
-extern unsigned int DEBUG_MASK;
+extern SWUINT_T DEBUG_MASK;
 
 
 

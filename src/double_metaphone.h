@@ -40,9 +40,9 @@ extern "C" {
 typedef struct
 {
     char *str;
-    int length;
-    int bufsize;
-    int free_string_on_destroy;
+    SWINT_T length;
+    SWINT_T bufsize;
+    SWINT_T free_string_on_destroy;
 }
 metastring;      
 

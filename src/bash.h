@@ -41,7 +41,7 @@ $Id$
 /* horrible Win32 hack */
 #if defined _WIN32 || defined(__VMS)
 /* Fake group functions... */
-#define GETGROUPS_T int
+#define GETGROUPS_T SWINT_T
 #define getegid() 0
 #define geteuid() 0
 #define getgid()  0
@@ -49,7 +49,7 @@ $Id$
 
 #define savestring(x) (char *)strcpy((char *)xmalloc(1 + strlen (x)), (x))
 
-extern int file_status(const char *name);
-extern int absolute_program(const char *string);
-extern char *get_next_path_element(const char *path_list, int *path_index_pointer);
-extern char *make_full_pathname(const char *path, const char *name, int name_len);
+extern SWINT_T file_status(const char *name);
+extern SWINT_T absolute_program(const char *string);
+extern char *get_next_path_element(const char *path_list, SWINT_T *path_index_pointer);
+extern char *make_full_pathname(const char *path, const char *name, SWINT_T name_len);

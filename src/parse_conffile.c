@@ -74,17 +74,17 @@ $Id$
 
 
 
-static int read_integer( char *string,  char *message, int low, int high );
+static SWINT_T read_integer( char *string,  char *message, SWINT_T low, SWINT_T high );
 static void Build_ReplaceRules( char *name, char **params, regex_list **reg_list );
 static  void add_ExtractPath( char * name, SWISH *sw, struct metaEntry *m, char **params );
-static int     getDocTypeOrAbort(StringList * sl, int n);
-static int parseconfline(SWISH *, StringList *);
+static SWINT_T     getDocTypeOrAbort(StringList * sl, SWINT_T n);
+static SWINT_T parseconfline(SWISH *, StringList *);
 static void get_undefined_meta_flags( char *w0, StringList * sl, UndefMetaFlag *setting );
 
 static void readwordsfile(WORD_HASH_TABLE *table_ptr, char *stopw_file);
 static void word_hash_config(StringList *sl, WORD_HASH_TABLE *table_ptr );
 
-static char *read_line_from_file( int * linenum, FILE *fp );
+static char *read_line_from_file( SWINT_T * linenum, FILE *fp );
 
 void fuzzy_or_die( IndexFILE *indexf, char *mode )
 {
@@ -97,15 +97,15 @@ void fuzzy_or_die( IndexFILE *indexf, char *mode )
 ** in the right variables and structures.
 */
 
-void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int hasverbose)
+void    getdefaults(SWISH * sw, char *conffile, SWINT_T *hasdir, SWINT_T *hasindex, SWINT_T hasverbose)
 {
-    int     i,
+    SWINT_T     i,
             gotdir,
             gotindex;
     char   *line = NULL;
     FILE   *fp;
-    int     linenumber = 0;
-    int     baddirective = 0;
+    SWINT_T     linenumber = 0;
+    SWINT_T     baddirective = 0;
     StringList *sl;
     IndexFILE *indexf = NULL;
     unsigned char *StringValue = NULL;
@@ -593,7 +593,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         if (strcasecmp(w0, "MetaNamesRank") == 0)
         {
             struct metaEntry *meta_entry;
-            int               rank = 0;
+            SWINT_T               rank = 0;
 
             if (sl->n < 3)
                 progerr("%s: requires only two or more values, a rank (integer) and a list of property names", w0);
@@ -931,7 +931,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         if (strcasecmp(w0, "PropertyNamesMaxLength") == 0)
         {
             struct metaEntry *meta_entry;
-            int               max_length = 0;
+            SWINT_T               max_length = 0;
 
             if (sl->n < 3)
                 progerr("%s: requires only two or more values, a length and a list of property names", w0);
@@ -969,7 +969,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         if (strcasecmp(w0, "PropertyNamesSortKeyLength") == 0)
         {
             struct metaEntry *meta_entry;
-            int               max_length = 0;
+            SWINT_T               max_length = 0;
 
             if (sl->n < 3)
                 progerr("%s: requires only two or more values, a length and a list of property names", w0);
@@ -1245,7 +1245,7 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
         else if (configModule_Prog(sw, sl));
         else if (!parseconfline(sw, sl))
         {
-            printf("Bad directive on line #%d of file %s: %s\n", linenumber, conffile, line);
+            printf("Bad directive on line #%lld of file %s: %s\n", linenumber, conffile, line);
             if ( ++baddirective > 30 )
                 progerr("Too many errors.  Can not continue.");
         }
@@ -1269,14 +1269,14 @@ void    getdefaults(SWISH * sw, char *conffile, int *hasdir, int *hasindex, int 
 *
 *************************************************************************/
 
-static int read_integer( char *string,  char *message, int low, int high )
+static SWINT_T read_integer( char *string,  char *message, SWINT_T low, SWINT_T high )
 {
     char *badchar;
-    long  num;
-    int   result;
+    SWINT_T  num;
+    SWINT_T   result;
 
     if ( !string )
-        progerr("'%s' requires an integer between %d and %d.", message, low, high );
+        progerr("'%s' requires an integer between %lld and %lld.", message, low, high );
 
     num = strtol( string, &badchar, 10 );
 
@@ -1286,11 +1286,11 @@ static int read_integer( char *string,  char *message, int low, int high )
     if ( *badchar )
         progerr("Invalid char '%c' found in argument to '%s %s'", badchar[0], message, string);
 
-    result = (int)num;
+    result = (SWINT_T)num;
 
 
     if ( result < low || result > high )
-        progerr("'%s' value of '%d' is not an integer between %d and %d.", message, result, low, high );
+        progerr("'%s' value of '%lld' is not an integer between %lld and %lld.", message, result, low, high );
 
 
     return result;
@@ -1312,7 +1312,7 @@ static int read_integer( char *string,  char *message, int low, int high )
   --  2001-03-04 rasc
 */
 
-int     getYesNoOrAbort(StringList * sl, int n, int lastparam)
+SWINT_T     getYesNoOrAbort(StringList * sl, SWINT_T n, SWINT_T lastparam)
 {
     if (lastparam && n < (sl->n - 1))
     {
@@ -1328,7 +1328,7 @@ int     getYesNoOrAbort(StringList * sl, int n, int lastparam)
         if (!strcasecmp(sl->word[n], "no") || !strcasecmp(sl->word[n], "off") ||!strcasecmp(sl->word[n], "0"))
             return 0;
     }
-    progerr("%s requires parameter #%d of yes|on|1 or no|off|0", sl->word[0], n);
+    progerr("%s requires parameter #%lld of yes|on|1 or no|off|0", sl->word[0], n);
     return 0;
 }
 
@@ -1395,8 +1395,8 @@ static void Build_ReplaceRules( char *name, char **params, regex_list **reg_list
 {
     char *pattern = NULL;
     char *replace = NULL;
-    int   cflags = REG_EXTENDED;
-    int   global = 0;
+    SWINT_T   cflags = REG_EXTENDED;
+    SWINT_T   global = 0;
 
     params++;
 
@@ -1460,12 +1460,12 @@ static void Build_ReplaceRules( char *name, char **params, regex_list **reg_list
 */
 
 
-int	strtoDocType( char * s )
+SWINT_T	strtoDocType( char * s )
 {
     static struct
     {
         char    *type;
-        int      id;
+        SWINT_T      id;
     }
     doc_map[] =
     {
@@ -1486,18 +1486,18 @@ int	strtoDocType( char * s )
         {"TXT*", TXT }
 #endif
     };
-    int i;
+    SWINT_T i;
 
-    for (i = 0; i < (int)(sizeof(doc_map) / sizeof(doc_map[0])); i++)
+    for (i = 0; i < (SWINT_T)(sizeof(doc_map) / sizeof(doc_map[0])); i++)
         if ( strcasecmp(doc_map[i].type, s) == 0 )
 		    return doc_map[i].id;
 
     return 0;
 }
 
-static int     getDocTypeOrAbort(StringList * sl, int n)
+static SWINT_T     getDocTypeOrAbort(StringList * sl, SWINT_T n)
 {
-    int doctype;
+    SWINT_T doctype;
 
     if (n < sl->n)
     {
@@ -1509,7 +1509,7 @@ static int     getDocTypeOrAbort(StringList * sl, int n)
             return doctype;
     }
 
-    progerr("%s: missing %d. parameter", sl->word[0], n);
+    progerr("%s: missing %lld. parameter", sl->word[0], n);
     return 0;                   /* never happens */
 }
 
@@ -1520,9 +1520,9 @@ static int     getDocTypeOrAbort(StringList * sl, int n)
  02/2001 Rewritten Jmruiz
  */
 
-void    grabCmdOptions(StringList * sl, int start, struct swline **listOfWords)
+void    grabCmdOptions(StringList * sl, SWINT_T start, struct swline **listOfWords)
 {
-    int     i;
+    SWINT_T     i;
 
     for (i = start; i < sl->n; i++)
         *listOfWords = (struct swline *) addswline(*listOfWords, sl->word[i]);
@@ -1546,7 +1546,7 @@ void    grabCmdOptions(StringList * sl, int start, struct swline **listOfWords)
 
 static void word_hash_config( StringList *sl, WORD_HASH_TABLE *table_ptr )
 {
-    int i;
+    SWINT_T i;
 
     if (sl->n < 2)
         progerr("%s: requires at least one value", sl->word[0]);
@@ -1580,7 +1580,7 @@ static void    readwordsfile(WORD_HASH_TABLE *table_ptr, char *stopw_file)
     char    line[MAXSTRLEN];
     FILE   *fp;
     StringList *sl;
-    int     i;
+    SWINT_T     i;
 
 
     /* Not this reports "Sucess" on trying to open a directory. to lazy to fix now */
@@ -1612,7 +1612,7 @@ static void    readwordsfile(WORD_HASH_TABLE *table_ptr, char *stopw_file)
 
 
 
-static int     parseconfline(SWISH * sw, StringList * sl)
+static SWINT_T     parseconfline(SWISH * sw, StringList * sl)
 {
     /* invoke routine to parse config file lines */
     return (*IndexingDataSource->parseconfline_fn) (sw, (void *) sl);
@@ -1708,10 +1708,10 @@ void freeSwishConfigOptions( SWISH *sw )
 
 #define LINE_BUF_LEN MAXSTRLEN
 
-static char *read_line_from_file( int * linenum, FILE *fp )
+static char *read_line_from_file( SWINT_T * linenum, FILE *fp )
 {
     char * line = NULL;         /* output buffer */
-    int  buf_size = 0;
+    SWINT_T  buf_size = 0;
 
     /* Initialze the buffer */
     buf_size = LINE_BUF_LEN * sizeof( char );
@@ -1722,7 +1722,7 @@ static char *read_line_from_file( int * linenum, FILE *fp )
     /* repeat until we have either a full line or no line */
     while( 1 )
     {
-        int cur_len = strlen( line );
+        SWINT_T cur_len = strlen( line );
 
 
         /* Make sure there's at least LINE_BUF_LEN room in the buffer */

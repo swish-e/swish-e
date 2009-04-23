@@ -35,7 +35,7 @@ $Id$
 
 ** HTML entity routines (encoding, etc.):
 **
-** internally we are working with int/wchar_t to support unicode-16 for future
+** internally we are working with SWINT_T/wchar_t to support unicode-16 for future
 ** enhancements of swish (rasc - Rainer Scherg).
 **
 ** 2001-05-05  rasc   
@@ -64,7 +64,7 @@ $Id$
 
 /* Prototypes */
 
-static int is_EOE(int c);       /* is_EndOfEntity */
+static SWINT_T is_EOE(SWINT_T c);       /* is_EndOfEntity */
 
 
 
@@ -76,13 +76,13 @@ static int is_EOE(int c);       /* is_EndOfEntity */
 */
 
 /* #define IS_EOE(a)   ((a)==';')    -- be W3C compliant */
-#define IS_EOE(a)   (is_EOE((int)(a))) /* tolerant routine */
+#define IS_EOE(a)   (is_EOE((SWINT_T)(a))) /* tolerant routine */
 
 
 typedef struct
 {
     char   *name;
-    int     code;
+    SWINT_T     code;
 }
 CEntity;
 
@@ -111,7 +111,7 @@ struct CEHE
 };
 
 static struct CEHE *ce_hasharray[128];
-static int ce_hasharray_initialized = 0;
+static SWINT_T ce_hasharray_initialized = 0;
 
 
 /*
@@ -385,7 +385,7 @@ static CEntity entity_table[] = {
     {"or", 0x2228},             /* logical or = vee, U+2228 ISOtech */
     {"cap", 0x2229},            /* intersection = cap, U+2229 ISOtech */
     {"cup", 0x222A},            /* union = cup, U+222A ISOtech */
-    {"int", 0x222B},            /* integral, U+222B ISOtech */
+    {"SWINT_T", 0x222B},            /* integral, U+222B ISOtech */
     {"there4", 0x2234},         /* therefore, U+2234 ISOtech */
     {"sim", 0x223C},            /* tilde operator = varies with = similar to, U+223C ISOtech */
     {"cong", 0x2245},           /* approximately equal to, U+2245 ISOtech */
@@ -450,7 +450,7 @@ void    initModule_Entities(SWISH * sw)
 
     if ( !ce_hasharray_initialized++ )
     {
-        int     i,
+        SWINT_T     i,
                 tab_len;
         CEntity *ce_p;
         struct CEHE **hash_pp,
@@ -474,7 +474,7 @@ void    initModule_Entities(SWISH * sw)
         for (i = tab_len - 1; i >= 0; i--)
         {
             ce_p = &entity_table[i];
-            hash_pp = &ce_hasharray[(int) *(ce_p->name) & 0x7F];
+            hash_pp = &ce_hasharray[(SWINT_T) *(ce_p->name) & 0x7F];
             /* insert entity-ptr at start of ptr sequence in hash */
             tmp_p = *hash_pp;
             *hash_pp = (struct CEHE *) emalloc(sizeof(struct CEHE));
@@ -506,7 +506,7 @@ void    freeModule_Entities(SWISH * sw)
        -- free local entity hash table 
      */
     {
-        int     i;
+        SWINT_T     i;
         struct CEHE *hash_p,
                *tmp_p;
         /* free ptr "chains" in array */
@@ -542,11 +542,11 @@ void    freeModule_Entities(SWISH * sw)
  -- return: 0/1 = none/config applied
 */
 
-int     configModule_Entities(SWISH * sw, StringList * sl)
+SWINT_T     configModule_Entities(SWISH * sw, StringList * sl)
 {
     struct MOD_Entities *md = sw->Entities;
     char   *w0;
-    int     retval;
+    SWINT_T     retval;
 
 
     w0 = sl->word[0];
@@ -605,7 +605,7 @@ unsigned char *strConvHTMLEntities2ISO(unsigned char *buf)
     unsigned char *s,
            *t;
     unsigned char *d;
-    int     code;
+    SWINT_T     code;
 
 
     s = d = buf;
@@ -645,12 +645,12 @@ unsigned char *strConvHTMLEntities2ISO(unsigned char *buf)
  --    on illegal entities, just return the char...
 */
 
-int     charEntityDecode(unsigned char *s, unsigned char **end)
+SWINT_T     charEntityDecode(unsigned char *s, unsigned char **end)
 {
     unsigned char *s1, *t, *e_end;
     unsigned char s_cmp[MAX_ENTITY_LEN + 1];
-    int     len;
-    int     code;
+    SWINT_T     len;
+    SWINT_T     code;
 
 
     /*
@@ -660,7 +660,7 @@ int     charEntityDecode(unsigned char *s, unsigned char **end)
     {
         if (end)
             *end = s + 1;
-        return (int) *s;
+        return (SWINT_T) *s;
     }
 
 
@@ -678,10 +678,10 @@ int     charEntityDecode(unsigned char *s, unsigned char **end)
         case 'x':
         case 'X':
             ++s;                /* skip x */
-            code = (int) strtoul((char *)s, (char **) &e_end, (int) 16);
+            code = (SWINT_T) strtoul((char *)s, (char **) &e_end, (SWINT_T) 16);
             break;
         default:
-            code = (int) strtoul((char *)s, (char **) &e_end, (int) 10);
+            code = (SWINT_T) strtoul((char *)s, (char **) &e_end, (SWINT_T) 10);
             break;
         }
 
@@ -775,7 +775,7 @@ int     charEntityDecode(unsigned char *s, unsigned char **end)
   -- return: cmp value
 */
 
-static int is_EOE(int c)
+static SWINT_T is_EOE(SWINT_T c)
 {
 /* be tolerant ! */
     return ((!isprint(c)) || ispunct(c) || isspace(c)) ? 1 : 0;

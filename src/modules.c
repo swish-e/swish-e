@@ -65,8 +65,8 @@ typedef struct
 // void Module_NewMod();  This gives compiler warnings under Windows
 //void Module_NewMod2();
 
-extern void Module_NewMod( SWISH *sw, int selfID, void **data );
-extern void Module_NewMod2( SWISH *sw, int selfID, void **data );
+extern void Module_NewMod( SWISH *sw, SWINT_T selfID, void **data );
+extern void Module_NewMod2( SWISH *sw, SWINT_T selfID, void **data );
 
 static MODULE_REGISTRATION module_list[] = {  
     { Module_NewMod, "newmod.c", "Test Module" },
@@ -81,12 +81,12 @@ static MODULE_REGISTRATION module_list[] = {
 #define numModuleList (sizeof(module_list)/sizeof(module_list[0]))
 
 
-static int valid_hookID( HOOK hookID )
+static SWINT_T valid_hookID( HOOK hookID )
 {
     return hookID > HOOK__FIRST && hookID < HOOK__LAST;
 }
 
-static int isregistered_moduleID( int ID )
+static SWINT_T isregistered_moduleID( SWINT_T ID )
 {
     return sizeof(module_list) && ID >= 0 && ID < numModuleList;
 }
@@ -97,8 +97,8 @@ typedef struct CALLBACK
 {
     struct CALLBACK *next;
     CALLBACK_FUNCTION callback_function;
-    int    module_id;
-    int    priority;
+    SWINT_T    module_id;
+    SWINT_T    priority;
 } CALLBACK;
 
 
@@ -135,7 +135,7 @@ typedef struct CALLBACK
 
 void Init_Modules( SWISH *sw )
 {
-    int id;
+    SWINT_T id;
 
     if ( sw->module_callbacks )
         progerr("Init_Modules called with non-NULL sw->module_hooks");
@@ -196,7 +196,7 @@ void Init_Modules( SWISH *sw )
 
 void Free_Module_Hooks( SWISH *sw )
 {
-    int id;
+    SWINT_T id;
 
     if ( !sw->module_callbacks )
         progerr("Free_Module_Hooks called with NULL sw->module_hooks");
@@ -263,7 +263,7 @@ void Free_Module_Hooks( SWISH *sw )
 **************************************************************************/
 
 
-void Register_Hook(SWISH *sw, HOOK hookID, int priority, int selfID, CALLBACK_FUNCTION callback )
+void Register_Hook(SWISH *sw, HOOK hookID, SWINT_T priority, SWINT_T selfID, CALLBACK_FUNCTION callback )
 {
     CALLBACK    *node;
     CALLBACK    *newentry;
@@ -271,10 +271,10 @@ void Register_Hook(SWISH *sw, HOOK hookID, int priority, int selfID, CALLBACK_FU
     CALLBACK    *first = (CALLBACK *)sw->module_callbacks[ hookID ];
 
     if ( !isregistered_moduleID( selfID ) )
-        progerr("register_swish_hook called with non registered module ID '%d'", selfID );
+        progerr("register_swish_hook called with non registered module ID '%lld'", selfID );
 
     if ( !valid_hookID( hookID ) )
-        progerr("register_swish_hook called by '%s' with invalid hook ID '%d'",
+        progerr("register_swish_hook called by '%s' with invalid hook ID '%lld'",
             module_list[selfID].module_file, hookID );
 
     /* Create the new entry */
@@ -350,7 +350,7 @@ HOOK_STATUS Run_Hook(SWISH *sw, HOOK hookID, void *parameters )
     
     
     if ( !valid_hookID( hookID ) )
-        progerr("run_swish_hook called with invalid hook ID '%d'", hookID );
+        progerr("run_swish_hook called with invalid hook ID '%lld'", hookID );
 
     node = sw->module_callbacks[ hookID ];
 
@@ -371,8 +371,8 @@ HOOK_STATUS Run_Hook(SWISH *sw, HOOK hookID, void *parameters )
 
 
         if ( HOOK_OK != status && HOOK_STOP != status )
-            progerr("Module '%s' returned invalid status '%d' when processing hook '%d'",
-                module_list[node->module_id].module_file, (int)status, (int)hookID );
+            progerr("Module '%s' returned invalid status '%lld' when processing hook '%lld'",
+                module_list[node->module_id].module_file, (SWINT_T)status, (SWINT_T)hookID );
 
 
         if ( HOOK_STOP == status )

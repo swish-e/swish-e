@@ -146,16 +146,16 @@ void    freeModule_ResultSort(SWISH * sw)
  -- return: 0/1 = none/config applied
 */
 
-int     configModule_ResultSort(SWISH * sw, StringList * sl)
+SWINT_T     configModule_ResultSort(SWISH * sw, StringList * sl)
 {
     struct MOD_ResultSort *md = sw->ResultSort;
     char   *w0 = sl->word[0];
     unsigned char *w1,
            *w2,
            *w3;
-    int     retval = 1;
-    int     incr = 0;
-    int     i,
+    SWINT_T     retval = 1;
+    SWINT_T     incr = 0;
+    SWINT_T     i,
             j;
     struct swline *tmplist = NULL;
     struct metaEntry *m = NULL;
@@ -208,10 +208,10 @@ int     configModule_ResultSort(SWISH * sw, StringList * sl)
             }
             for (i = 0; w3[i]; i++)
             {
-                j = (int) w2[0];
-                md->iSortTranslationTable[(int) w3[i]] = md->iSortTranslationTable[j] + incr * (i + 1);
+                j = (SWINT_T) w2[0];
+                md->iSortTranslationTable[(SWINT_T) w3[i]] = md->iSortTranslationTable[j] + incr * (i + 1);
 
-                md->iSortCaseTranslationTable[(int) w3[i]] = md->iSortCaseTranslationTable[j] + incr * (i + 1);
+                md->iSortCaseTranslationTable[(SWINT_T) w3[i]] = md->iSortCaseTranslationTable[j] + incr * (i + 1);
             }
         }
         else
@@ -246,14 +246,14 @@ fields */
 ************************************************************************/
 
 
-static int     compFileProps(const void *s1, const void *s2)
+static SWINT_T     compFileProps(const void *s1, const void *s2)
 {
-    int         a = *(int *)s1;
-    int         b = *(int *)s2;
+    SWINT_T         a = *(SWINT_T *)s1;
+    SWINT_T         b = *(SWINT_T *)s2;
 
 #ifdef DEBUGSORT
-    int  ret = Compare_Properties(CurrentPreSortMetaEntry, PropLookup[a].SortProp, PropLookup[b].SortProp );
-    printf(" results: file %d [%s] (len %d) vs. %d [%s] (len %d).  Lower file = %s\n",
+    SWINT_T  ret = Compare_Properties(CurrentPreSortMetaEntry, PropLookup[a].SortProp, PropLookup[b].SortProp );
+    printf(" results: file %lld [%s] (len %lld) vs. %lld [%s] (len %lld).  Lower file = %s\n",
             a, PropLookup[a].file_name, PropLookup[a].SortProp ? PropLookup[a].SortProp->propLen : -1,
             b, PropLookup[b].file_name, PropLookup[b].SortProp ? PropLookup[b].SortProp->propLen : -1,
 
@@ -272,7 +272,7 @@ static int     compFileProps(const void *s1, const void *s2)
 *
 ************************************************************************/
 
-int     is_presorted_prop(SWISH * sw, char *name)
+SWINT_T     is_presorted_prop(SWISH * sw, char *name)
 {
     struct MOD_ResultSort *md = sw->ResultSort;
     struct swline *tmplist = NULL;
@@ -299,17 +299,17 @@ int     is_presorted_prop(SWISH * sw, char *name)
 * Pre sort a single property
 *
 ************************************************************************/
-int *CreatePropSortArray(IndexFILE *indexf, struct metaEntry *m, FileRec *fi, int free_cache )
+SWINT_T *CreatePropSortArray(IndexFILE *indexf, struct metaEntry *m, FileRec *fi, SWINT_T free_cache )
 {
-    int             *sort_array = NULL;     /* array that gets sorted */
-    int             *out_array = NULL;     /* array that gets sorted */
-    int             total_files = indexf->header.totalfiles;
-    int             i,
+    SWINT_T             *sort_array = NULL;     /* array that gets sorted */
+    SWINT_T             *out_array = NULL;     /* array that gets sorted */
+    SWINT_T             total_files = indexf->header.totalfiles;
+    SWINT_T             i,
                     k;
 
 
-    sort_array = emalloc( total_files * sizeof( long ) );
-    out_array  = emalloc( total_files * sizeof( long ) );
+    sort_array = emalloc( total_files * sizeof( SWINT_T ) );
+    out_array  = emalloc( total_files * sizeof( SWINT_T ) );
 
     /* First time called, create place to cache property positions */
     if ( !PropLookup )
@@ -369,7 +369,7 @@ int *CreatePropSortArray(IndexFILE *indexf, struct metaEntry *m, FileRec *fi, in
 
 
     /* Sort them using qsort. The main work is done by compFileProps */
-    swish_qsort( sort_array, total_files, sizeof( int ), &compFileProps);
+    swish_qsort( sort_array, total_files, sizeof( SWINT_T ), &compFileProps);
 
 
     /* Build the sorted table */
@@ -414,18 +414,18 @@ int *CreatePropSortArray(IndexFILE *indexf, struct metaEntry *m, FileRec *fi, in
 
 void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
 {
-    int             i;
-    int             *out_array = NULL;     /* array that gets sorted */
+    SWINT_T             i;
+    SWINT_T             *out_array = NULL;     /* array that gets sorted */
 #ifndef USE_PRESORT_ARRAY
     unsigned char   *out_buffer  = NULL;
     unsigned char   *cur;
 #endif
     struct metaEntry *m;
-    int             props_sorted = 0;
-    int             total_files = indexf->header.totalfiles;
+    SWINT_T             props_sorted = 0;
+    SWINT_T             total_files = indexf->header.totalfiles;
     FileRec         fi;
     INDEXDATAHEADER *header = &indexf->header;
-    int             propIDX;
+    SWINT_T             propIDX;
 
     memset( &fi, 0, sizeof( FileRec ) );
 
@@ -447,10 +447,10 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
     for (propIDX = 0; propIDX < header->property_count; propIDX++)
     {
         /* convert the count to a propID (metaID) */
-        int metaID = header->propIDX_to_metaID[propIDX];
+        SWINT_T metaID = header->propIDX_to_metaID[propIDX];
 
         if ( !(m = getPropNameByID(&indexf->header, metaID )))
-            progerr("Failed to lookup propIDX %d (metaID %d)", propIDX, metaID );
+            progerr("Failed to lookup propIDX %lld (metaID %lld)", propIDX, metaID );
 
 
         /* Check if this property must be in a presorted index */
@@ -531,7 +531,7 @@ void    sortFileProperties(SWISH * sw, IndexFILE * indexf)
         else if ( props_sorted == 1 )
             printf("One property sorted.       %-40s\n", " ");
         else
-            printf("%d properties sorted.      %-40s\n", props_sorted, " ");
+            printf("%lld properties sorted.      %-40s\n", props_sorted, " ");
     }
 }
 
@@ -567,7 +567,7 @@ struct
 {
     unsigned char from;
     unsigned char order;
-    int     offset;
+    SWINT_T     offset;
 }
 iTranslationTableExceptions[] =
 {
@@ -615,9 +615,9 @@ iTranslationTableExceptions[] =
 
 /* Initialization routine for the comparison table (ignoring case )*/
 /* This routine should be called once  at the start of the module */
-void    initStrCaseCmpTranslationTable(int *iCaseTranslationTable)
+void    initStrCaseCmpTranslationTable(SWINT_T *iCaseTranslationTable)
 {
-    int     i;
+    SWINT_T     i;
 
     /* Build default table using tolower(asciival) * 256 */
     /* The goal of multiply by 256 is having holes to put values inside
@@ -633,9 +633,9 @@ void    initStrCaseCmpTranslationTable(int *iCaseTranslationTable)
 
 /* Initialization routine for the comparison table (case sensitive) */
 /* This routine should be called once at the start of the module */
-void    initStrCmpTranslationTable(int *iCaseTranslationTable)
+void    initStrCmpTranslationTable(SWINT_T *iCaseTranslationTable)
 {
-    int     i;
+    SWINT_T     i;
 
     /* Build default table using asciival * 256 */
     /* The goal of multiply by 256 is having holes to put values inside
@@ -652,7 +652,7 @@ void    initStrCmpTranslationTable(int *iCaseTranslationTable)
 /* Comparison string routine function.
 ** Similar to strcasecmp but using our own translation table
 */
-int     sw_strcasecmp(unsigned char *s1, unsigned char *s2, int *iTranslationTable)
+SWINT_T     sw_strcasecmp(unsigned char *s1, unsigned char *s2, SWINT_T *iTranslationTable)
 {
     while (iTranslationTable[*s1] == iTranslationTable[*s2])
         if (!*s1++)
@@ -665,7 +665,7 @@ int     sw_strcasecmp(unsigned char *s1, unsigned char *s2, int *iTranslationTab
 /* Comparison string routine function.
 ** Similar to strcmp but using our own translation table
 */
-int     sw_strcmp(unsigned char *s1, unsigned char *s2, int *iTranslationTable)
+SWINT_T     sw_strcmp(unsigned char *s1, unsigned char *s2, SWINT_T *iTranslationTable)
 {
     while (iTranslationTable[*s1] == iTranslationTable[*s2])
         if (!*s1++)

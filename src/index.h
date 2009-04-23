@@ -41,18 +41,18 @@ struct dev_ino
 
 struct IgnoreLimitPositions
 {
-    int     n;                  /* Number of entries per file */
-    int    *pos;                /* Store metaID1,position1, metaID2,position2 ..... */
+    SWINT_T     n;                  /* Number of entries per file */
+    SWINT_T    *pos;                /* Store metaID1,position1, metaID2,position2 ..... */
 };
 
 /* This is used to build a list of the metaIDs that are currently in scope when indexing words */
 
 typedef struct
 {
-    int    *array;              /* list of metaIDs that need to be indexed */
-    int     max;                /* max size of table */
-    int     num;                /* number in list */
-    int     defaultID;          /* default metaID (should always be one, I suppose) */
+    SWINT_T    *array;              /* list of metaIDs that need to be indexed */
+    SWINT_T     max;                /* max size of table */
+    SWINT_T     num;                /* number in list */
+    SWINT_T     defaultID;          /* default metaID (should always be one, I suppose) */
 }
 METAIDTABLE;
 
@@ -72,14 +72,14 @@ struct MOD_Index
 
     /* Compression Work buffer while compression locations in index ** proccess */
     unsigned char *compression_buffer;
-    int     len_compression_buffer;
+    SWINT_T     len_compression_buffer;
 
     unsigned char *worddata_buffer;  /* Buffer to store worddata */
-    int    len_worddata_buffer;     /* Max size of the buffer */
-    int    sz_worddata_buffer;      /* Space being used in worddata_buffer */
+    SWINT_T    len_worddata_buffer;     /* Max size of the buffer */
+    SWINT_T    sz_worddata_buffer;      /* Space being used in worddata_buffer */
 
     /* File counter */
-    int     filenum;
+    SWINT_T     filenum;
 
     /* index tmp (both FS and HTTP methods) */
     char   *tmpdir;
@@ -94,13 +94,13 @@ struct MOD_Index
     struct dev_ino *inode_hash[BIGHASHSIZE];
 
     /* Buffers used by indexstring */
-    int     lenswishword;
+    SWINT_T     lenswishword;
     char   *swishword;
-    int     lenword;
+    SWINT_T     lenword;
     char   *word;
 
     /* Economic mode (-e) */
-    int     swap_locdata;       /* swap location data */
+    SWINT_T     swap_locdata;       /* swap location data */
 
     /* Pointer to swap functions */
     sw_off_t    (*swap_tell) (FILE *);
@@ -112,20 +112,20 @@ struct MOD_Index
     int     (*swap_getc) (FILE *);                      // no rw64
 
     /* IgnoreLimit option values */
-    int     plimit;
-    int     flimit;
+    SWINT_T     plimit;
+    SWINT_T     flimit;
     /* Number of words from IgnoreLimit */
-    int     nIgnoreLimitWords;
+    SWINT_T     nIgnoreLimitWords;
     struct swline *IgnoreLimitWords;
 
     /* Positions from stopwords from IgnoreLimit */
     struct IgnoreLimitPositions **IgnoreLimitPositionsArray;
 
     /* Index in blocks of chunk_size files */
-    int     chunk_size;
+    SWINT_T     chunk_size;
 
     /* Variable to control the size of the zone used for store locations during chunk proccesing */
-    int     optimalChunkLocZoneSize;
+    SWINT_T     optimalChunkLocZoneSize;
 
     /* variable to handle free memory space for locations inside currentChunkLocZone */
 
@@ -136,51 +136,51 @@ struct MOD_Index
     MEM_ZONE *totalLocZone;
     MEM_ZONE *entryZone;
 
-    int     update_mode;    /* Set to 1 when in update mode */
+    SWINT_T     update_mode;    /* Set to 1 when in update mode */
                             /* Set to 2 when in remove mode */
 };
 
 void    initModule_Index(SWISH *);
 void    freeModule_Index(SWISH *);
-int     configModule_Index(SWISH *, StringList *);
+SWINT_T     configModule_Index(SWISH *, StringList *);
 
 
 void    do_index_file(SWISH * sw, FileProp * fprop);
 
 ENTRY  *getentry(SWISH * , char *);
-void    addentry(SWISH *, ENTRY *, int, int, int, int);
+void    addentry(SWISH *, ENTRY *, SWINT_T, SWINT_T, SWINT_T, SWINT_T);
 
-void    addCommonProperties(SWISH * sw, FileProp * fprop, FileRec * fi, char *title, char *summary, int start);
+void    addCommonProperties(SWISH * sw, FileProp * fprop, FileRec * fi, char *title, char *summary, SWINT_T start);
 
 
-int     getfilecount(IndexFILE *);
+SWINT_T     getfilecount(IndexFILE *);
 
-int     getNumberOfIgnoreLimitWords(SWISH *);
+SWINT_T     getNumberOfIgnoreLimitWords(SWISH *);
 void    getPositionsFromIgnoreLimitWords(SWISH * sw);
 
 char   *ruleparse(SWISH *, char *);
 
-#define isIgnoreFirstChar(header,c) (header)->ignorefirstcharlookuptable[(int)((unsigned char)c)]
-#define isIgnoreLastChar(header,c) (header)->ignorelastcharlookuptable[(int)((unsigned char)c)]
-#define isBumpPositionCounterChar(header,c) (header)->bumpposcharslookuptable[(int)((unsigned char)c)]
+#define isIgnoreFirstChar(header,c) (header)->ignorefirstcharlookuptable[(SWINT_T)((unsigned char)c)]
+#define isIgnoreLastChar(header,c) (header)->ignorelastcharlookuptable[(SWINT_T)((unsigned char)c)]
+#define isBumpPositionCounterChar(header,c) (header)->bumpposcharslookuptable[(SWINT_T)((unsigned char)c)]
 
 
 void    computehashentry(ENTRY **, ENTRY *);
 
 void    sort_words(SWISH *);
 
-int     indexstring(SWISH * sw, char *s, int filenum, int structure, int numMetaNames, int *metaID, int *position);
+SWINT_T     indexstring(SWISH * sw, char *s, SWINT_T filenum, SWINT_T structure, SWINT_T numMetaNames, SWINT_T *metaID, SWINT_T *position);
 
-void    addsummarytofile(IndexFILE *, int, char *);
+void    addsummarytofile(IndexFILE *, SWINT_T, char *);
 
 void    BuildSortedArrayOfWords(SWISH *, IndexFILE *);
 
 
 
-void    PrintHeaderLookupTable(int ID, int table[], int table_size, FILE * fp);
+void    PrintHeaderLookupTable(SWINT_T ID, SWINT_T table[], SWINT_T table_size, FILE * fp);
 void    coalesce_all_word_locations(SWISH * sw, IndexFILE * indexf);
 void    coalesce_word_locations(SWISH * sw, ENTRY * e);
 
-void    adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files, struct IgnoreLimitPositions **ilp);
+void    adjustWordPositions(unsigned char *worddata, SWINT_T *sz_worddata, SWINT_T n_files, struct IgnoreLimitPositions **ilp);
 
 #endif

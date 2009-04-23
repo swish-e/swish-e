@@ -33,8 +33,8 @@ $Id$
 
 */
 
-int parse_HTML(SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer);
-int parse_XML(SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer);
-int parse_TXT(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer);
+SWINT_T parse_HTML(SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer);
+SWINT_T parse_XML(SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer);
+SWINT_T parse_TXT(SWISH * sw, FileProp * fprop, FileRec *fi, char *buffer);
 
 

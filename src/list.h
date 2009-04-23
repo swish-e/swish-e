@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-struct swline *newswline_n(char *line, int size);
+struct swline *newswline_n(char *line, SWINT_T size);
 struct swline *newswline(char *line);
 struct swline *addswline (struct swline *rp, char *line);
 struct swline *dupswline (struct swline *rp);

@@ -38,7 +38,7 @@ still copyright HP?
 ** added safestrcpy() macro to avoid corruption from strcpy overflow
 ** SRE 11/17/99
 **
-** fixed cast to int problems pointed out by "gcc -Wall"
+** fixed cast to SWINT_T problems pointed out by "gcc -Wall"
 ** SRE 2/22/00
 **
 ** 2001-02-xx  rasc  makeItLow, strtolower  optimized/new
@@ -68,15 +68,15 @@ still copyright HP?
 /* Jose Ruiz 02/2001 Faster one */
 char   *lstrstr(char *s, char *t)
 {
-    int     lens;
-    int     lent;
-    int     first = tolower((unsigned char) *t);
+    SWINT_T     lens;
+    SWINT_T     lent;
+    SWINT_T     first = tolower((unsigned char) *t);
 
     lent = strlen(t);
     lens = strlen(s);
     for (; lens && lent <= lens; lens--, s++)
     {
-        if (tolower((int) ((unsigned char) *s)) == first)
+        if (tolower((SWINT_T) ((unsigned char) *s)) == first)
         {
             if (lent == 1)
                 return s;
@@ -102,7 +102,7 @@ static char   *getword(char **in_buf)
     char   *start = *in_buf;
     char    buf[MAXWORDLEN + 1];
     char   *cur_char = buf;
-    int     backslash = 0;
+    SWINT_T     backslash = 0;
 
 
     quotechar = '\0';
@@ -145,7 +145,7 @@ static char   *getword(char **in_buf)
         {
             /* break on ending quote or unquoted space */
 
-            if (uc == quotechar || (!quotechar && isspace((int) uc)))
+            if (uc == quotechar || (!quotechar && isspace((SWINT_T) uc)))
             {
                 s++;            // past quote or space char.
                 break;
@@ -158,7 +158,7 @@ static char   *getword(char **in_buf)
         *cur_char++ = *s++;
 
         if (cur_char - buf > MAXWORDLEN)
-            progerr("Parsed word '%s' exceeded max length of %d", start, MAXWORDLEN);
+            progerr("Parsed word '%s' exceeded max length of %lld", start, MAXWORDLEN);
     }
 
     if (backslash)
@@ -182,9 +182,9 @@ char   *getconfvalue(line, var)
      char   *line;
      char   *var;
 {
-    int     i;
+    SWINT_T     i;
     char   *c;
-    int     lentmpvalue;
+    SWINT_T     lentmpvalue;
     char   *tmpvalue,
            *p;
 
@@ -193,7 +193,7 @@ char   *getconfvalue(line, var)
         if (c != line)
             return NULL;
         c += strlen(var);
-        while (isspace((int) ((unsigned char) *c)) || *c == '\"')
+        while (isspace((SWINT_T) ((unsigned char) *c)) || *c == '\"')
             c++;
         if (*c == '\0')
             return NULL;
@@ -229,7 +229,7 @@ char   *replace(string, oldpiece, newpiece)
      char   *oldpiece;
      char   *newpiece;
 {
-    int     limit,
+    SWINT_T     limit,
             curpos,
             lennewpiece,
             lenoldpiece,
@@ -237,7 +237,7 @@ char   *replace(string, oldpiece, newpiece)
     char   *c,
            *p,
            *q;
-    int     lennewstring;
+    SWINT_T     lennewstring;
     char   *newstring;
 
     newstring = (char *) emalloc((lennewstring = strlen(string) * 2) + 1);
@@ -289,7 +289,7 @@ char   *replace(string, oldpiece, newpiece)
   --                   e.g. ".htm.de" or ".html.gz")
 */
 
-int     isoksuffix(char *filename, struct swline *rulelist)
+SWINT_T     isoksuffix(char *filename, struct swline *rulelist)
 {
     char   *s,
            *fe;
@@ -328,9 +328,9 @@ int     isoksuffix(char *filename, struct swline *rulelist)
 char   *SafeStrCopy(dest, orig, initialsize)
      char   *dest;
      char   *orig;
-     int    *initialsize;
+     SWINT_T    *initialsize;
 {
-    int     len,
+    SWINT_T     len,
             oldlen;
 
     len = strlen(orig);
@@ -348,7 +348,7 @@ char   *SafeStrCopy(dest, orig, initialsize)
 }
 
 /* Comparison routine to sort a string - See sortstring */
-int     ccomp(const void *s1, const void *s2)
+SWINT_T     ccomp(const void *s1, const void *s2)
 {
     return (*(unsigned char *) s1 - *(unsigned char *) s2);
 }
@@ -356,7 +356,7 @@ int     ccomp(const void *s1, const void *s2)
 /* Sort a string  removing dups */
 void    sortstring(char *s)
 {
-    int     i,
+    SWINT_T     i,
             j,
             len;
 
@@ -372,7 +372,7 @@ void    sortstring(char *s)
 /* Merges two strings removing dups and ordering results */
 char   *mergestrings(char *s1, char *s2)
 {
-    int     i,
+    SWINT_T     i,
             j,
             ilen1,
             ilen2,
@@ -399,14 +399,14 @@ char   *mergestrings(char *s1, char *s2)
     return (p);
 }
 
-void    makelookuptable(char *s, int *l)
+void    makelookuptable(char *s, SWINT_T *l)
 {
-    int     i;
+    SWINT_T     i;
 
     for (i = 0; i < 256; i++)
         l[i] = 0;
     for (; *s; s++)
-        l[(int) ((unsigned char) *s)] = 1;
+        l[(SWINT_T) ((unsigned char) *s)] = 1;
 }
 
 void    makeallstringlookuptables(SWISH * sw)
@@ -420,7 +420,7 @@ void    makeallstringlookuptables(SWISH * sw)
 StringList *parse_line(char *line)
 {
     StringList *sl;
-    int     cursize,
+    SWINT_T     cursize,
             maxsize;
     char   *p;
 
@@ -482,9 +482,9 @@ void    freeStringList(StringList * sl)
 unsigned char *SafeMemCopy(dest, orig, off_dest, sz_dest, len)
      unsigned char *dest;
      unsigned char *orig;
-     int     off_dest;
-     int    *sz_dest;
-     int     len;
+     SWINT_T     off_dest;
+     SWINT_T    *sz_dest;
+     SWINT_T     len;
 {
     if (len > (*sz_dest - off_dest))
     {
@@ -500,12 +500,12 @@ unsigned char *SafeMemCopy(dest, orig, off_dest, sz_dest, len)
 
 
 /* Routine to check if a string contains only numbers */
-int     isnumstring(unsigned char *s)
+SWINT_T     isnumstring(unsigned char *s)
 {
     if (!s || !*s)
         return 0;
     for (; *s; s++)
-        if (!isdigit((int) (*s)))
+        if (!isdigit((SWINT_T) (*s)))
             break;
     if (*s)
         return 0;
@@ -529,7 +529,7 @@ void    remove_newlines(char *s)
 
 void    remove_tags(char *s)
 {
-    int     intag;
+    SWINT_T     intag;
     char   *p,
            *q;
 
@@ -559,7 +559,7 @@ void    remove_tags(char *s)
 }
 
 /* #### Function to convert binary data of length len to a string */
-unsigned char *bin2string(unsigned char *data, int len)
+unsigned char *bin2string(unsigned char *data, SWINT_T len)
 {
     unsigned char *s = NULL;
 
@@ -593,7 +593,7 @@ unsigned char *bin2string(unsigned char *data, int len)
 
 char   *str_skip_ws(char *s)
 {
-    while (*s && isspace((int) (unsigned char) *s))
+    while (*s && isspace((SWINT_T) (unsigned char) *s))
         s++;
     return s;
 }
@@ -605,9 +605,9 @@ char   *str_skip_ws(char *s)
 
 void  str_trim_ws(char *string)
 {
-    int i = strlen( string );
+    SWINT_T i = strlen( string );
 
-    while ( i  && isspace( (int)string[i-1]) )
+    while ( i  && isspace( (SWINT_T)string[i-1]) )
         string[--i] = '\0';
 }
 
@@ -811,12 +811,12 @@ char   *str_ISO_normalize(char *s)
 
 /* 02/2001 Jmruiz - Builds a string from a Stringlist starting at the
 n element */
-unsigned char *StringListToString(StringList * sl, int n)
+unsigned char *StringListToString(StringList * sl, SWINT_T n)
 {
-    int     i,
+    SWINT_T     i,
             j;
     unsigned char *s;
-    int     len_s,
+    SWINT_T     len_s,
             len_w;
 
     s = emalloc((len_s = 256) + 1);
@@ -848,18 +848,18 @@ unsigned char *StringListToString(StringList * sl, int n)
 /* 
   -- translate chars 
   -- rewrite string itself via an character translation table
-  -- translation table is a int[256] 
+  -- translation table is a SWINT_T[256] 
   -- return: ptr to string itself
 */
 
-unsigned char *TranslateChars(int trlookup[], unsigned char *s)
+unsigned char *TranslateChars(SWINT_T trlookup[], unsigned char *s)
 {
     unsigned char *p;
 
     p = s;
     while (*p)
     {
-        *p = (unsigned char) trlookup[(int) *p];
+        *p = (unsigned char) trlookup[(SWINT_T) *p];
         p++;
     }
     return s;
@@ -875,9 +875,9 @@ unsigned char *TranslateChars(int trlookup[], unsigned char *s)
    -- return: 0/1 param fail/ok
 */
 
-int     BuildTranslateChars(int trlookup[], unsigned char *from, unsigned char *to)
+SWINT_T     BuildTranslateChars(SWINT_T trlookup[], unsigned char *from, unsigned char *to)
 {
-    int     i;
+    SWINT_T     i;
 
     /* default init = 1:1 translation */
     for (i = 0; i < 256; i++)
@@ -890,7 +890,7 @@ int     BuildTranslateChars(int trlookup[], unsigned char *from, unsigned char *
     if (!strcmp( (char *)from, ":ascii7:"))
     {
         for (i = 0; i < 256; i++)
-            trlookup[i] = (int) char_ISO_normalize((unsigned char) i);
+            trlookup[i] = (SWINT_T) char_ISO_normalize((unsigned char) i);
         return 1;
     }
 
@@ -899,7 +899,7 @@ int     BuildTranslateChars(int trlookup[], unsigned char *from, unsigned char *
 
     /* alter table for "non 1:1" translation... */
     while (*from && *to)
-        trlookup[(int) *from++] = (int) *to++;
+        trlookup[(SWINT_T) *from++] = (SWINT_T) *to++;
     if (*to || *from)
         return 0;               /* length the same? no? -> err */
 
@@ -949,7 +949,7 @@ char   *cstr_dirname(char *path)
 {
     char   *s;
     char   *dir;
-    int     len;
+    SWINT_T     len;
 
     s = strrchr(path, '/');
 
@@ -1030,25 +1030,25 @@ char   *estrredup(char *s1, char *s2)
 /* Simple routing for comparing pointers to integers in order to
 get an ascending sort with qsort */
 /* Identical to previous one but use two integers per array */
-int     icomp2(const void *s1, const void *s2)
+SWINT_T     icomp2(const void *s1, const void *s2)
 {
-    int     rc,
+    SWINT_T     rc,
            *p1,
            *p2;
 
-    rc = (*(int *) s1 - *(int *) s2);
+    rc = (*(SWINT_T *) s1 - *(SWINT_T *) s2);
     if (rc)
         return (rc);
     else
     {
-        p1 = (int *) s1;
-        p2 = (int *) s2;
+        p1 = (SWINT_T *) s1;
+        p2 = (SWINT_T *) s2;
         return (*(++p1) - *(++p2));
     }
 }
 
 
-/* Functions to format a long with commas. */
+/* Functions to format a SWINT_T with commas. */
 /* Should really do this with locales. */
 /* Maybe not the best file for this */
 
@@ -1070,11 +1070,11 @@ static void thousep(char *s1, const char *s2)
 
 char comma_buffer[100];
 
-const char *comma_long( unsigned long u )
+const char *comma_long( SWUINT_T u )
 {
     char buf[60];
 
-    sprintf( buf, "%lu", u );
+    sprintf( buf, "%llu", u );
     thousep( comma_buffer, buf );
     return comma_buffer;
 }

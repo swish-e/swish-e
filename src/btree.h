@@ -33,14 +33,14 @@ typedef struct BTREE_Page
 {
     sw_off_t           next;    /* Next Page */
     sw_off_t           prev;    /* Previous Page */
-    unsigned int       size;    /* Size of page */
-    unsigned int       n;       /* Number of keys in page */
-    unsigned int       flags;
-    unsigned int       data_end;
+    SWUINT_T       size;    /* Size of page */
+    SWUINT_T       n;       /* Number of keys in page */
+    SWUINT_T       flags;
+    SWUINT_T       data_end;
 
     sw_off_t           page_number;
-    int                modified;
-    int                in_use;
+    SWINT_T                modified;
+    SWINT_T                in_use;
 
     struct BTREE_Page  *next_cache;
 
@@ -52,22 +52,22 @@ typedef struct BTREE_Page
 typedef struct BTREE
 {
     sw_off_t root_page;
-    int page_size;
+    SWINT_T page_size;
     struct BTREE_Page *cache[BTREE_CACHE_SIZE];
-    int levels;
+    SWINT_T levels;
     sw_off_t tree[1024];
           /* Values for sequential reading */
     sw_off_t current_page;
-    unsigned long current_position;
+    SWUINT_T current_position;
 
     FILE *fp;
 } BTREE;
 
-BTREE *BTREE_Create(FILE *fp, unsigned int size);
-BTREE *BTREE_Open(FILE *fp, int size, sw_off_t root_page);
+BTREE *BTREE_Create(FILE *fp, SWUINT_T size);
+BTREE *BTREE_Open(FILE *fp, SWINT_T size, sw_off_t root_page);
 sw_off_t BTREE_Close(BTREE *bt);
-int BTREE_Insert(BTREE *b, unsigned char *key, int key_len, sw_off_t data_pointer);
-sw_off_t BTREE_Search(BTREE *b, unsigned char *key, int key_len, unsigned char **found, int *found_len, int exact_match);
-sw_off_t BTREE_Next(BTREE *b, unsigned char **found, int *found_len);
-int BTREE_Update(BTREE *b, unsigned char *key, int key_len, sw_off_t new_data_pointer);
+SWINT_T BTREE_Insert(BTREE *b, unsigned char *key, SWINT_T key_len, sw_off_t data_pointer);
+sw_off_t BTREE_Search(BTREE *b, unsigned char *key, SWINT_T key_len, unsigned char **found, SWINT_T *found_len, SWINT_T exact_match);
+sw_off_t BTREE_Next(BTREE *b, unsigned char **found, SWINT_T *found_len);
+SWINT_T BTREE_Update(BTREE *b, unsigned char *key, SWINT_T key_len, sw_off_t new_data_pointer);
 

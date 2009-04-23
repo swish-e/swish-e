@@ -45,7 +45,7 @@ $Id$
 ** Added word length arg to ReplaceEnd and Stem to avoid strcat overflow
 ** 11/17/99 - SRE
 **
-** fixed int cast, missing return value, braces around initializations: problems pointed out by "gcc -Wall"
+** fixed SWINT_T cast, missing return value, braces around initializations: problems pointed out by "gcc -Wall"
 ** SRE 2/22/00
 **
 ** Jose Ruiz 18/10/00
@@ -194,7 +194,7 @@ void fuzzy_free_word( FUZZY_WORD *fw )
  * called by the individual stemming routines.
  */
 
-FUZZY_WORD *create_fuzzy_word( const char *input_word, int word_count )
+FUZZY_WORD *create_fuzzy_word( const char *input_word, SWINT_T word_count )
 {
     size_t bytes;
     FUZZY_WORD *fw;
@@ -218,11 +218,11 @@ FUZZY_WORD *create_fuzzy_word( const char *input_word, int word_count )
 
 void dump_fuzzy_list( void )
 {
-    int i;
+    SWINT_T i;
 
     printf("Options available for FuzzyIndexingMode:\n");
 
-    for (i = 0; i < (int)(sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0])); i++)
+    for (i = 0; i < (SWINT_T)(sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0])); i++)
         printf("    %s\n", fuzzy_opts[i].name );
 }
 
@@ -272,9 +272,9 @@ void free_fuzzy_mode( FUZZY_OBJECT *fi )
 
 FUZZY_OBJECT *set_fuzzy_mode(FUZZY_OBJECT *fi, char *param )
 {
-    int     i;
+    SWINT_T     i;
 
-    for (i = 0; i < (int)(sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0])); i++)
+    for (i = 0; i < (SWINT_T)(sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0])); i++)
         if ( 0 == strcasecmp(fuzzy_opts[i].name, param ) )
         {
             if ( fuzzy_opts[i].name == "Stem" || fuzzy_opts[i].name == "Stemming_en" )
@@ -295,17 +295,17 @@ FUZZY_OBJECT *set_fuzzy_mode(FUZZY_OBJECT *fi, char *param )
 /* This one will fail badly (abort) since it's getting the value from the index file */
 
 
-FUZZY_OBJECT *get_fuzzy_mode( FUZZY_OBJECT *fi, int fuzzy )
+FUZZY_OBJECT *get_fuzzy_mode( FUZZY_OBJECT *fi, SWINT_T fuzzy )
 {
-    int i;
+    SWINT_T i;
 
-    for (i = 0; i < (int)(sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0])); i++)
+    for (i = 0; i < (SWINT_T)(sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0])); i++)
         if ( (FuzzyIndexType)fuzzy == fuzzy_opts[i].fuzzy_mode )
         {
             return create_fuzzy_struct( fi, &fuzzy_opts[i] );
         }
 
-    progerr("Invalid FuzzyIndexingMode '%d' in index file", fuzzy);
+    progerr("Invalid FuzzyIndexingMode '%lld' in index file", fuzzy);
     return NULL;
 }
 
@@ -331,7 +331,7 @@ FuzzyIndexType fuzzy_mode_value( FUZZY_OBJECT *fi )
 }
 
 
-int stemmer_applied( FUZZY_OBJECT *fi )
+SWINT_T stemmer_applied( FUZZY_OBJECT *fi )
 {
      return (FUZZY_NONE != fi->stemmer->fuzzy_mode ) ? 1 : 0;
 }
@@ -483,7 +483,7 @@ const char **SwishFuzzyWordList( FUZZY_WORD *fw )
 
 /* Returns the number of words in the list */
 
-int SwishFuzzyWordCount( FUZZY_WORD *fw )
+SWINT_T SwishFuzzyWordCount( FUZZY_WORD *fw )
 {
     if ( !fw )
         return 0;
@@ -494,12 +494,12 @@ int SwishFuzzyWordCount( FUZZY_WORD *fw )
 
 /* Returns the integer value of the error */
 
-int SwishFuzzyWordError( FUZZY_WORD *fw )
+SWINT_T SwishFuzzyWordError( FUZZY_WORD *fw )
 {
     if ( !fw )
         return -1;
 
-    return (int)fw->error;
+    return (SWINT_T)fw->error;
 }
 
 /* Frees the word */

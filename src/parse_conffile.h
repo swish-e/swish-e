@@ -31,10 +31,10 @@ $Id$
 
 */
 
-void grabCmdOptions(StringList *sl, int start, struct swline **listOfWords);
-void getdefaults(SWISH *sw, char *conffile, int *hasdir, int *hasindex, int hasverbose);
-int getYesNoOrAbort (StringList *sl, int n, int islast);
-int	strtoDocType( char * s );
+void grabCmdOptions(StringList *sl, SWINT_T start, struct swline **listOfWords);
+void getdefaults(SWISH *sw, char *conffile, SWINT_T *hasdir, SWINT_T *hasindex, SWINT_T hasverbose);
+SWINT_T getYesNoOrAbort (StringList *sl, SWINT_T n, SWINT_T islast);
+SWINT_T	strtoDocType( char * s );
 
 void free_Extracted_Path( SWISH *sw );
 void free_regex_list( regex_list **reg_list );

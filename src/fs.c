@@ -53,8 +53,8 @@ $Id$
 
 typedef struct
 {
-    int     currentsize;
-    int     maxsize;
+    SWINT_T     currentsize;
+    SWINT_T     maxsize;
     char  **filenames;
 }
 DOCENTRYARRAY;
@@ -64,8 +64,8 @@ DOCENTRYARRAY;
 #define MAXKEYLEN 34            /* Hash key -- allow for 64 bit inodes */
 
 
-static int get_rules( char *name, StringList *sl, PATH_LIST *pathlist );
-static int check_FileTests( char *path, PATH_LIST *test );
+static SWINT_T get_rules( char *name, StringList *sl, PATH_LIST *pathlist );
+static SWINT_T check_FileTests( char *path, PATH_LIST *test );
 static void indexadir(SWISH *, char *);
 static void indexafile(SWISH *, char *);
 static void printfile(SWISH *, char *);
@@ -131,7 +131,7 @@ void    freeModule_FS(SWISH * sw)
 
 
 
-int     configModule_FS(SWISH * sw, StringList * sl)
+SWINT_T     configModule_FS(SWISH * sw, StringList * sl)
 {
     struct MOD_FS *fs = sw->FS;
     char   *w0 = sl->word[0];
@@ -153,11 +153,11 @@ int     configModule_FS(SWISH * sw, StringList * sl)
 
 }
 
-static int get_rules( char *name, StringList *sl, PATH_LIST *pathlist )
+static SWINT_T get_rules( char *name, StringList *sl, PATH_LIST *pathlist )
 {
     char   *w1;
     char   *both;
-    int     regex_pattern = 0;
+    SWINT_T     regex_pattern = 0;
 
 
     if (sl->n < 4)
@@ -172,11 +172,11 @@ static int get_rules( char *name, StringList *sl, PATH_LIST *pathlist )
 
     if ( strcasecmp(sl->word[2], "is") == 0 )
     {
-        int    i;
+        SWINT_T    i;
         /* make patterns match the full string */
         for ( i = 3; i < sl->n; i++ )
         {
-            int len = strlen( sl->word[i] );
+            SWINT_T len = strlen( sl->word[i] );
             char *new;
             char *old = sl->word[i];
 
@@ -259,7 +259,7 @@ static int get_rules( char *name, StringList *sl, PATH_LIST *pathlist )
 ** or endless looping due to symbolic links.
 */
 
-static int     fs_already_indexed(SWISH * sw, char *path)
+static SWINT_T     fs_already_indexed(SWISH * sw, char *path)
 {
 #ifndef NO_SYMBOLIC_FILE_LINKS
     struct dev_ino *p;
@@ -272,10 +272,10 @@ static int     fs_already_indexed(SWISH * sw, char *path)
 
     /* Create hash key:  string contains device and inode. */
     /* Avoid snprintf -> MAXKEYLEN is big enough for two longs
-       snprintf( key, MAXKEYLEN, "%lx/%lx", (unsigned long)buf.st_dev,
-       (unsigned long)buf.st_ino  );
+       snprintf( key, MAXKEYLEN, "%llux/%llux", (SWUINT_T)buf.st_dev,
+       (SWUINT_T)buf.st_ino  );
      */
-    sprintf(key, "%lx/%lx", (unsigned long) buf.st_dev, (unsigned long) buf.st_ino);
+    sprintf(key, "%llux/%llux", (SWUINT_T) buf.st_dev, (SWUINT_T) buf.st_ino);
 
     hashval = bighash(key);     /* Search hash for this file. */
     for (p = sw->Index->inode_hash[hashval]; p != NULL; p = p->next)
@@ -305,7 +305,7 @@ static int     fs_already_indexed(SWISH * sw, char *path)
 
 static void    indexadir(SWISH * sw, char *dir)
 {
-    int             allgoodfiles = 0;
+    SWINT_T             allgoodfiles = 0;
     DIR             *dfd;
 
 #ifdef NEXTSTEP
@@ -313,11 +313,11 @@ static void    indexadir(SWISH * sw, char *dir)
 #else
     struct dirent   *dp;
 #endif
-    int             pathbuflen;
+    SWINT_T             pathbuflen;
     char            *pathname;
     DOCENTRYARRAY   *sortfilelist = NULL;
     DOCENTRYARRAY   *sortdirlist = NULL;
-    int             dirlen = strlen( dir );
+    SWINT_T             dirlen = strlen( dir );
     struct MOD_FS   *fs = sw->FS;
 
     /* First check if it's a symlink and if so are they allowed */
@@ -397,7 +397,7 @@ static void    indexadir(SWISH * sw, char *dir)
 
     while ((dp = readdir(dfd)) != NULL)
     {
-        int filelen = strlen( dp->d_name );
+        SWINT_T filelen = strlen( dp->d_name );
 
         /* For security reasons, don't index dot files */
         /* Check for hidden under Windows? */
@@ -504,7 +504,7 @@ static void    indexafile(SWISH * sw, char *path)
 * Returns 1 = something matched
 *
 **********************************************************/
-static int check_FileTests( char *path, PATH_LIST *test )
+static SWINT_T check_FileTests( char *path, PATH_LIST *test )
 {
     char *dir;
     char *file;
@@ -628,7 +628,7 @@ static void    printfile(SWISH * sw, char *filename)
 ** Original addsortentry used strcmp - So, I use the same routine here
 ** What about Win32?
 */
-int     compfilenames(const void *s1, const void *s2)
+SWINT_T     compfilenames(const void *s1, const void *s2)
 {
     char *r1 = *(char * const *) s1;
     char *r2 = *(char * const *) s2;
@@ -642,7 +642,7 @@ int     compfilenames(const void *s1, const void *s2)
 
 static void    printfiles(SWISH * sw, DOCENTRYARRAY * e)
 {
-    int     i;
+    SWINT_T     i;
 
     if (e)
     {
@@ -675,7 +675,7 @@ static void    printfiles(SWISH * sw, DOCENTRYARRAY * e)
 
 void    printdirs(SWISH * sw, DOCENTRYARRAY * e)
 {
-    int     i;
+    SWINT_T     i;
 
     if (e)
     {

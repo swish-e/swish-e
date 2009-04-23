@@ -8,7 +8,7 @@ extern "C" {
 extern struct SN_env * romanian_ISO_8859_2_create_env(void);
 extern void romanian_ISO_8859_2_close_env(struct SN_env * z);
 
-extern int romanian_ISO_8859_2_stem(struct SN_env * z);
+extern SWINT_T romanian_ISO_8859_2_stem(struct SN_env * z);
 
 #ifdef __cplusplus
 }

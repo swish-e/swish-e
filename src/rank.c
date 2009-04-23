@@ -34,7 +34,7 @@ $Id$
 #include "rank.h"
 
 /* 1000 precomputed 10000 * log(i) */
-static int swish_log[] = {\
+static SWINT_T swish_log[] = {\
  0, 0, 6931, 10986, 13863, 16094, 17918, 19459, 20794, 21972,\
  23026, 23979, 24849, 25649, 26391, 27081, 27726, 28332, 28904, 29444,\
  29957, 30445, 30910, 31355, 31781, 32189, 32581, 32958, 33322, 33673,\
@@ -139,7 +139,7 @@ static int swish_log[] = {\
 };
 
 /* 1000 precomputed 1000 * log10(i) */
-static int swish_log10[] = {\
+static SWINT_T swish_log10[] = {\
  0, 0, 3010, 4771, 6021, 6990, 7782, 8451, 9031, 9542,\
  10000, 10414, 10792, 11139, 11461, 11761, 12041, 12304, 12553, 12788,\
  13010, 13222, 13424, 13617, 13802, 13979, 14150, 14314, 14472, 14624,\
@@ -244,8 +244,8 @@ static int swish_log10[] = {\
 };
 
 typedef struct {
-    int    mask;
-    int    rank;
+    SWINT_T    mask;
+    SWINT_T    rank;
 } RankFactor;
 
 static RankFactor ranks[] = {
@@ -273,16 +273,16 @@ static RankFactor ranks[] = {
 *******************************************************************************/
 static void build_struct_map( SWISH *sw )
 {
-    int     structure;
-    int     i;
+    SWINT_T     structure;
+    SWINT_T     i;
 
-    int     array_size = sizeof( sw->structure_map ) / sizeof( sw->structure_map[0]);
+    SWINT_T     array_size = sizeof( sw->structure_map ) / sizeof( sw->structure_map[0]);
 
     for ( structure = 0; structure < array_size; structure++ )
     {
-        int factor = 1;  /* All words are of value 1 */
+        SWINT_T factor = 1;  /* All words are of value 1 */
 
-        for (i = 0; i < (int)numRanks; i++)
+        for (i = 0; i < (SWINT_T)numRanks; i++)
             if (ranks[i].mask & structure)
                 factor += ranks[i].rank;
 
@@ -292,12 +292,12 @@ static void build_struct_map( SWISH *sw )
     sw->structure_map_set = 1;  /* flag */
 }
 
-int
+SWINT_T
 getrank ( RESULT *r )
 {
         SWISH   *sw;
         IndexFILE  *indexf;
-        int     scheme;
+        SWINT_T     scheme;
 
         indexf  = r->db_results->indexf;
         sw      = indexf->sw;
@@ -306,7 +306,7 @@ getrank ( RESULT *r )
     if( DEBUG_RANK )
     {
         fprintf( stderr, "-----------------------------------------------------------------\n");
-        fprintf( stderr, "Ranking Scheme: %d \n", scheme );
+        fprintf( stderr, "Ranking Scheme: %lld \n", scheme );
     }
 
         switch ( scheme )
@@ -340,8 +340,8 @@ getrank ( RESULT *r )
 /* 2001-11 jmruiz With thousands results (>1000000) this routine is a bottleneck.
 **                (it is called thousands of times) Trying to avoid
 **                this I have added some optimizations.
-**                To avoid the annoying conversion in "return (int)rank"
-**                from double to int that degrades performance search
+**                To avoid the annoying conversion in "return (SWINT_T)rank"
+**                from double to SWINT_T that degrades performance search
 **                I have switched to integer computations.
 **
 **                To avoid the loss of precision I use rank *10000,
@@ -354,20 +354,20 @@ karman Mon Aug 30 07:03:35 CDT 2004
 */
 
 
-int
+SWINT_T
 getrankDEF( RESULT *r )
 {
-    unsigned int        *posdata;
-    int         meta_bias;
+    SWUINT_T        *posdata;
+    SWINT_T         meta_bias;
     IndexFILE  *indexf;
-    int         rank;
-    int         reduction;
-    int         words;  /* number of word positions (total words, not unique) in the given file -- probably should be per metaname */
-    int         i;
+    SWINT_T         rank;
+    SWINT_T         reduction;
+    SWINT_T         words;  /* number of word positions (total words, not unique) in the given file -- probably should be per metaname */
+    SWINT_T         i;
     SWISH      *sw;
-    int         metaID;
-    int         freq;
-    int         struct_tally[256];
+    SWINT_T         metaID;
+    SWINT_T         freq;
+    SWINT_T         struct_tally[256];
     
     if( DEBUG_RANK )
     {
@@ -420,14 +420,14 @@ getrankDEF( RESULT *r )
         rank += sw->structure_map[ GET_STRUCTURE(posdata[i]) ] + meta_bias;
         if( DEBUG_RANK > 1 )
         {
-            fprintf(stderr, "Word entry %d at position %d has struct %d\n", i,  GET_POSITION(posdata[i]),  GET_STRUCTURE(posdata[i]) );
+            fprintf(stderr, "Word entry %lld at position %lld has struct %lld\n", i,  GET_POSITION(posdata[i]),  GET_STRUCTURE(posdata[i]) );
             struct_tally[ GET_STRUCTURE(posdata[i]) ]++;
         }
     }
 
     if( DEBUG_RANK )
     {
-        fprintf( stderr, "File num: %d.  Raw Rank: %d.  Frequency: %d ", r->filenum, rank, r->frequency );
+        fprintf( stderr, "File num: %lld.  Raw Rank: %lld.  Frequency: %lld ", r->filenum, rank, r->frequency );
     }
 
     /* Ranks could end up less than zero -- but since the *final* rank is calcualted here */
@@ -443,13 +443,13 @@ getrankDEF( RESULT *r )
 
     if( DEBUG_RANK > 1 )
     {
-     fprintf( stderr, "scaled rank: %d\n  Structure tally:\n", rank );
+     fprintf( stderr, "scaled rank: %lld\n  Structure tally:\n", rank );
 
      for ( i = 0; i <= 255; i++ )
      {
          if ( struct_tally[i] )
          {
-             fprintf( stderr, "      struct 0x%x = count of %2d (", i, struct_tally[i] );
+             fprintf( stderr, "      struct 0x%llx = count of %2lld (", i, struct_tally[i] );
             if ( i & IN_EMPHASIZED ) fprintf(stderr," EM");
             if ( i & IN_HEADER ) fprintf(stderr," HEADING");
             if ( i & IN_COMMENTS ) fprintf(stderr," COMMENT");
@@ -458,7 +458,7 @@ getrankDEF( RESULT *r )
             if ( i & IN_HEAD ) fprintf(stderr," HEAD");
             if ( i & IN_TITLE ) fprintf(stderr," TITLE");
             if ( i & IN_FILE ) fprintf(stderr," FILE");
-            fprintf(stderr," ) x rank map of %d = %d\n\n",  sw->structure_map[i], sw->structure_map[i] *  struct_tally[i]);
+            fprintf(stderr," ) x rank map of %lld = %lld\n\n",  sw->structure_map[i], sw->structure_map[i] *  struct_tally[i]);
          }
      }
     }
@@ -486,7 +486,7 @@ getrankDEF( RESULT *r )
         
         /* rare case - do not overrun the static arrays (they only have 1000 entries) */
         else           
-            reduction = (int) (10000 * (floor(log10((double)words) + 0.5)));
+            reduction = (SWINT_T) (10000 * (floor(log10((double)words) + 0.5)));
     }
     else
         reduction = swish_log10[words];
@@ -520,28 +520,28 @@ karman Sun Aug 29 21:01:28 CDT 2004
 */
 
 
-int
+SWINT_T
 getrankIDF( RESULT *r )
 {
 
-    unsigned int        *posdata;
-    int         meta_bias;
+    SWUINT_T        *posdata;
+    SWINT_T         meta_bias;
     IndexFILE  *indexf;
-    int         words;
-    int         i;
+    SWINT_T         words;
+    SWINT_T         i;
     SWISH      *sw;
-    int         metaID;
-    int         freq;
-    int         total_files;
-    int         total_words;
-    int         average_words;
-    int         density;
-    int         idf;
-    int         total_word_freq;
-    int         word_weight;
-    int         word_score;
+    SWINT_T         metaID;
+    SWINT_T         freq;
+    SWINT_T         total_files;
+    SWINT_T         total_words;
+    SWINT_T         average_words;
+    SWINT_T         density;
+    SWINT_T         idf;
+    SWINT_T         total_word_freq;
+    SWINT_T         word_weight;
+    SWINT_T         word_score;
     
-    /* int density_magic        = 2; */
+    /* SWINT_T density_magic        = 2; */
 
     /* the value named 'rank' in getrank() is here named 'word_score'.
     it's largely semantic, but helps emphasize that *docs* are ranked,
@@ -554,7 +554,7 @@ getrankIDF( RESULT *r )
 
 /* this first part is identical to getrankDEF -- could be optimized as a single function */
 
-    int        struct_tally[256];
+    SWINT_T        struct_tally[256];
     if( DEBUG_RANK )
     {
         for ( i = 0; i <= 255; i++ )
@@ -587,7 +587,7 @@ getrankIDF( RESULT *r )
 
     if( DEBUG_RANK )
     {
-        fprintf( stderr, "File num: %d  Word Score: %d  Frequency: %d  ", r->filenum, word_score, freq );
+        fprintf( stderr, "File num: %lld  Word Score: %lld  Frequency: %lld  ", r->filenum, word_score, freq );
     }
 
 
@@ -608,7 +608,7 @@ getrankIDF( RESULT *r )
 
     total_files         = sw->TotalFiles;
     total_word_freq     = r->tfrequency;
-    idf                 = (int) ( log( total_files / total_word_freq ) * 1000 );
+    idf                 = (SWINT_T) ( log( total_files / total_word_freq ) * 1000 );
 
     /*  *1000 helps create a wider spread
     between the most common words and the rest of the pack:
@@ -624,7 +624,7 @@ getrankIDF( RESULT *r )
 
     if( DEBUG_RANK )
     {
-        fprintf(stderr, "Total files: %d   Total word freq: %d   IDF: %d  \n",
+        fprintf(stderr, "Total files: %lld   Total word freq: %lld   IDF: %lld  \n",
                  total_files, total_word_freq, idf );
     }
 
@@ -640,7 +640,7 @@ getrankIDF( RESULT *r )
 
     if( DEBUG_RANK )
     {
-        fprintf(stderr, "Total words: %d   Average words: %d   Indexed words in this doc: %d  ",
+        fprintf(stderr, "Total words: %lld   Average words: %lld   Indexed words in this doc: %lld  ",
          total_words, average_words, words );
     }
 
@@ -665,7 +665,7 @@ where c > 0 (optimized at 2 ... we think...)
 
     density             = freq * log( 1 + ( density_magic * ( average_words / words ) ) ); */
 
-    /* doesn't work that well with int values. Use below (cruder) instead.
+    /* doesn't work that well with SWINT_T values. Use below (cruder) instead.
     NOTE that there is likely a sweet spot for density. A word like 'the' will always have a high
     density in normal language, but it is not very relevant. A word like 'foo' might have a very
     low density in doc A but slightly higher in doc B -- doc B is likely more relevant. So low
@@ -687,7 +687,7 @@ that something is awry. */
 
     if ( words < 1 ) {
     
-        fprintf(stderr, "Word count for document %d is zero\n", r->filenum );
+        fprintf(stderr, "Word count for document %lld is zero\n", r->filenum );
         words = 1;
         
     }
@@ -706,7 +706,7 @@ that something is awry. */
 
     if( DEBUG_RANK )
     {
-        fprintf(stderr, "Density: %d    Word Weight: %d   \n", density, word_weight );
+        fprintf(stderr, "Density: %lld    Word Weight: %lld   \n", density, word_weight );
     }
 
 
@@ -718,7 +718,7 @@ that something is awry. */
 
         if( DEBUG_RANK > 1 )
         {
-            fprintf(stderr, "Word entry %d at position %d has struct %d\n", i,  GET_POSITION(posdata[i]),  GET_STRUCTURE(posdata[i]) );
+            fprintf(stderr, "Word entry %lld at position %lld has struct %lld\n", i,  GET_POSITION(posdata[i]),  GET_STRUCTURE(posdata[i]) );
 
             struct_tally[ GET_STRUCTURE(posdata[i]) ]++;
         }
@@ -734,20 +734,20 @@ that something is awry. */
 
     if( DEBUG_RANK )
     {
-        fprintf(stderr, "Raw score after IDF weighting: %d  \n", word_score );
+        fprintf(stderr, "Raw score after IDF weighting: %lld  \n", word_score );
     }
 
     word_score = scale_word_score( word_score );
 
     if( DEBUG_RANK > 1 )
     {
-        fprintf( stderr, "scaled rank: %d\n  Structure tally:\n", word_score );
+        fprintf( stderr, "scaled rank: %lld\n  Structure tally:\n", word_score );
 
         for ( i = 0; i <= 255; i++ )
         {
             if ( struct_tally[i] )
             {
-                fprintf( stderr, "      struct 0x%x = count of %2d (", i, struct_tally[i] );
+                fprintf( stderr, "      struct 0x%llx = count of %2lld (", i, struct_tally[i] );
                 if ( i & IN_EMPHASIZED ) fprintf(stderr," EM");
                 if ( i & IN_HEADER ) fprintf(stderr," HEADING");
                 if ( i & IN_COMMENTS ) fprintf(stderr," COMMENT");
@@ -756,22 +756,22 @@ that something is awry. */
                 if ( i & IN_HEAD ) fprintf(stderr," HEAD");
                 if ( i & IN_TITLE ) fprintf(stderr," TITLE");
                 if ( i & IN_FILE ) fprintf(stderr," FILE");
-                fprintf(stderr," ) x rank map of %d = %d\n\n",  sw->structure_map[i], sw->structure_map[i] *  struct_tally[i]);
+                fprintf(stderr," ) x rank map of %lld = %lld\n\n",  sw->structure_map[i], sw->structure_map[i] *  struct_tally[i]);
             }
         }
     }
     
     if ( DEBUG_RANK )
     {
-        fprintf(stderr, "Scaled score: %d \n", word_score );
+        fprintf(stderr, "Scaled score: %lld \n", word_score );
         
     }
 
     return ( r->rank = word_score );
 }
 
-int
-scale_word_score( int score )
+SWINT_T
+scale_word_score( SWINT_T score )
 {
 
     /* Scale the rank - this was originally based on frequency */
@@ -779,7 +779,7 @@ scale_word_score( int score )
 
 
         return  score > 1000
-                ? (int) floor( (log((double)score) * 10000 ) + 0.5)
+                ? (SWINT_T) floor( (log((double)score) * 10000 ) + 0.5)
                 : swish_log[score];
 
 }

@@ -32,6 +32,7 @@ $Id$
 #ifndef STEMMER_H
 #define STEMMER_H 1
 
+#include "swishtypes.h"
 #include "snowball/api.h"  /* For snoball's SN_env */
 
 /* 
@@ -82,9 +83,9 @@ typedef enum {
 typedef struct {
     STEM_RETURNS error;         /* return value from stemmer */
     const char *orig_word;      /* address of input string */
-    int list_size;              /* number of entries in the string list */
+    SWINT_T list_size;              /* number of entries in the string list */
     char **word_list;           /* pointer to list of stemmed words */
-    int free_strings;           /* flag if true means free individual strings in string list */
+    SWINT_T free_strings;           /* flag if true means free individual strings in string list */
     char *string_list[1];       /* null terminated array of string pointers */
 } FUZZY_WORD;
 
@@ -108,7 +109,7 @@ struct s_FUZZY_OPTS {
     FUZZY_WORD      *(*routine) ( FUZZY_OBJECT *fi, const char *inword );
     struct SN_env   *(*init) (void);
     void            (*stemmer_free) (struct SN_env *);
-    int             (*lang_stem)(struct SN_env *);
+    SWINT_T             (*lang_stem)(struct SN_env *);
 };
 
 
@@ -126,16 +127,16 @@ struct s_FUZZY_OBJECT {
 
 FUZZY_WORD *fuzzy_convert( FUZZY_OBJECT *fi, const char *inword );
 void fuzzy_free_word( FUZZY_WORD *fd );
-FUZZY_WORD *create_fuzzy_word( const char *input_word, int word_count );
+FUZZY_WORD *create_fuzzy_word( const char *input_word, SWINT_T word_count );
 
 
 FuzzyIndexType fuzzy_mode_value( FUZZY_OBJECT *fi );
 const char *fuzzy_string( FUZZY_OBJECT *fi );
 
 FUZZY_OBJECT *set_fuzzy_mode( FUZZY_OBJECT *fi, char *param );
-FUZZY_OBJECT *get_fuzzy_mode( FUZZY_OBJECT *fi, int fuzzy );
+FUZZY_OBJECT *get_fuzzy_mode( FUZZY_OBJECT *fi, SWINT_T fuzzy );
 void free_fuzzy_mode( FUZZY_OBJECT *fi );
-int stemmer_applied( FUZZY_OBJECT *fi );
+SWINT_T stemmer_applied( FUZZY_OBJECT *fi );
 void dump_fuzzy_list( void );
 
 

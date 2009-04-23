@@ -50,12 +50,12 @@ typedef enum {
 
 
 /* Define what the init and callback functions looks like */
-typedef void (*INIT_FUNCTION)( SWISH *sw, int selfID, void **moduledata );
-typedef HOOK_STATUS (*CALLBACK_FUNCTION)( SWISH *sw, int selfID, void **moduleData, void *parameters );
+typedef void (*INIT_FUNCTION)( SWISH *sw, SWINT_T selfID, void **moduledata );
+typedef HOOK_STATUS (*CALLBACK_FUNCTION)( SWISH *sw, SWINT_T selfID, void **moduleData, void *parameters );
 
 void Init_Modules( SWISH *sw );
 void Free_Module_Hooks( SWISH *sw );
-void Register_Hook(SWISH *sw, HOOK hookID, int priority, int selfID, CALLBACK_FUNCTION callback );
+void Register_Hook(SWISH *sw, HOOK hookID, SWINT_T priority, SWINT_T selfID, CALLBACK_FUNCTION callback );
 HOOK_STATUS Run_Hook(SWISH *sw, HOOK hookID, void *parameters );
 
 

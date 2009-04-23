@@ -2,7 +2,7 @@
 #include <stdlib.h> /* for calloc, free */
 #include "header.h"
 
-extern struct SN_env * SN_create_env(int S_size, int I_size, int B_size)
+extern struct SN_env * SN_create_env(SWINT_T S_size, SWINT_T I_size, SWINT_T B_size)
 {
     struct SN_env * z = (struct SN_env *) calloc(1, sizeof(struct SN_env));
     if (z == NULL) return NULL;
@@ -10,7 +10,7 @@ extern struct SN_env * SN_create_env(int S_size, int I_size, int B_size)
     if (z->p == NULL) goto error;
     if (S_size)
     {
-        int i;
+        SWINT_T i;
         z->S = (symbol * *) calloc(S_size, sizeof(symbol *));
         if (z->S == NULL) goto error;
 
@@ -23,7 +23,7 @@ extern struct SN_env * SN_create_env(int S_size, int I_size, int B_size)
 
     if (I_size)
     {
-        z->I = (int *) calloc(I_size, sizeof(int));
+        z->I = (SWINT_T *) calloc(I_size, sizeof(SWINT_T));
         if (z->I == NULL) goto error;
     }
 
@@ -39,12 +39,12 @@ error:
     return NULL;
 }
 
-extern void SN_close_env(struct SN_env * z, int S_size)
+extern void SN_close_env(struct SN_env * z, SWINT_T S_size)
 {
     if (z == NULL) return;
     if (S_size)
     {
-        int i;
+        SWINT_T i;
         for (i = 0; i < S_size; i++)
         {
             lose_s(z->S[i]);
@@ -57,9 +57,9 @@ extern void SN_close_env(struct SN_env * z, int S_size)
     free(z);
 }
 
-extern int SN_set_current(struct SN_env * z, int size, const symbol * s)
+extern SWINT_T SN_set_current(struct SN_env * z, SWINT_T size, const symbol * s)
 {
-    int err = replace_s(z, 0, z->l, size, s, NULL);
+    SWINT_T err = replace_s(z, 0, z->l, size, s, NULL);
     z->c = 0;
     return err;
 }

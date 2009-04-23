@@ -50,23 +50,23 @@ $Id$
 **           Closes and writes the hash table to the file
 **           Returns the pointer to the db hash file inside the file
 **
-**       int FHASH_Insert(FHASH *f, unsigned char *key, int key_len, unsigned char *data, int data_len);
+**       SWINT_T FHASH_Insert(FHASH *f, unsigned char *key, SWINT_T key_len, unsigned char *data, SWINT_T data_len);
 **           Adds a new entry pair (key,data) to the hash db file. Length of 
 **               key is key_len, length of data is data_len
 **
-**       int FHASH_Search(FHASH *f, unsigned char *key, int key_len, unsigned char *data, int data_len);
+**       SWINT_T FHASH_Search(FHASH *f, unsigned char *key, SWINT_T key_len, unsigned char *data, SWINT_T data_len);
 **           Searchs and returns the data for a given key of length key_len
 **           The data is returned in the data array that must be allocated by
-**               the caller. If data buffer is not long enough, data will
+**               the caller. If data buffer is not SWINT_T enough, data will
 **               be truncated
 **           Returns the copied length in data
 **
-**       int FHASH_Update(FHASH *f, unsigned char *key, int key_len, unsigned char *data, int data_len);
+**       SWINT_T FHASH_Update(FHASH *f, unsigned char *key, SWINT_T key_len, unsigned char *data, SWINT_T data_len);
 **           Updates data for a given key of length key_len
 **           Data must be of the same size of the original record
 **           Returns 0 (OK) or 1 (no OK)
 **
-**       int FHASH_Delete(FHASH *f, unsigned char *key, int key_len);
+**       SWINT_T FHASH_Delete(FHASH *f, unsigned char *key, SWINT_T key_len);
 **           Deletes the entry for the given key of length key_len
 **           Returns 0 (OK) or 1 (no OK)
 **
@@ -84,7 +84,7 @@ $Id$
 FHASH *FHASH_Create(FILE *fp)
 {
 FHASH *f;
-unsigned int i;
+SWUINT_T i;
 sw_off_t tmp = (sw_off_t)0;
 
     f = (FHASH *) emalloc(sizeof(FHASH));
@@ -116,7 +116,7 @@ sw_off_t tmp = (sw_off_t)0;
 FHASH *FHASH_Open(FILE *fp, sw_off_t start)
 {
 FHASH *f;
-unsigned int i;
+SWUINT_T i;
 sw_off_t tmp;
 
     f = (FHASH *) emalloc(sizeof(FHASH));
@@ -140,7 +140,7 @@ sw_off_t FHASH_Close(FHASH *f)
 sw_off_t start = f->start;
 sw_off_t tmp;
 FILE *fp = f->fp;
-int i;
+SWINT_T i;
     /* put file pointer at start of hash table */
     sw_fseek(fp,start,SEEK_SET);
 
@@ -158,9 +158,9 @@ int i;
     return start;
 }
 
-int FHASH_CompareKeys(unsigned char *key1, int key_len1, unsigned char *key2, int key_len2)
+SWINT_T FHASH_CompareKeys(unsigned char *key1, SWINT_T key_len1, unsigned char *key2, SWINT_T key_len2)
 {
-int rc;
+SWINT_T rc;
 
     if(key_len1 > key_len2)
         rc = memcmp(key1,key2,key_len2);
@@ -174,18 +174,18 @@ int rc;
 }
 
 
-unsigned int FHASH_hash(unsigned char *s, int len)
+SWUINT_T FHASH_hash(unsigned char *s, SWINT_T len)
 {
-    unsigned int hashval;
+    SWUINT_T hashval;
 
     for (hashval = 0; len; s++,len--)
-        hashval = (int) ((unsigned char) *s) + 31 * hashval;
+        hashval = (SWINT_T) ((unsigned char) *s) + 31 * hashval;
     return hashval % FHASH_SIZE;
 }
 
-int FHASH_Insert(FHASH *f, unsigned char *key, int key_len, unsigned char *data, int data_len)
+SWINT_T FHASH_Insert(FHASH *f, unsigned char *key, SWINT_T key_len, unsigned char *data, SWINT_T data_len)
 {
-unsigned int hashval = FHASH_hash(key,key_len);
+SWUINT_T hashval = FHASH_hash(key,key_len);
 sw_off_t new,next;
 FILE *fp = f->fp;
 
@@ -204,32 +204,32 @@ FILE *fp = f->fp;
     return 0;
 }
 
-int FHASH_Search(FHASH *f, unsigned char *key, int key_len, unsigned char *data, int data_len)
+SWINT_T FHASH_Search(FHASH *f, unsigned char *key, SWINT_T key_len, unsigned char *data, SWINT_T data_len)
 {
     /* Calculate the has value for the key passed in and lookup the seek pointer */
-    unsigned int    hashval = FHASH_hash(key,key_len);
+    SWUINT_T    hashval = FHASH_hash(key,key_len);
     sw_off_t        next = f->hash_offsets[hashval];
 
     sw_off_t        tmp;
 
     FILE            *fp = f->fp;
     unsigned char   stack_buffer[2048], *read_key;
-    int             read_key_len;
-    int             read_data_len;
-    int             retval;
+    SWINT_T             read_key_len;
+    SWINT_T             read_data_len;
+    SWINT_T             retval;
 
     while(next)
     {
         if ( 0 != sw_fseek(fp,next,SEEK_SET) )
             /* Will key be null terminated? */
-            progerrno( "Failed to seek to offset %ld looking for key '%s' :", next, key );
+            progerrno( "Failed to seek to offset %lld looking for key '%s' :", next, key );
 
         retval = sw_fread((unsigned char *)&tmp,1,sizeof(tmp),fp);
         if (feof(fp))
-            progerrno( "eof() while Attempting to read '%d' bytes from file hash: ", sizeof(tmp) );
+            progerrno( "eof() while Attempting to read '%lld' bytes from file hash: ", sizeof(tmp) );
 
         if ( sizeof(tmp) != retval )
-            progerrno( "Only read '%d' bytes but expected '%d' while reading file hash: ", retval, sizeof(tmp) );
+            progerrno( "Only read '%lld' bytes but expected '%lld' while reading file hash: ", retval, sizeof(tmp) );
 
 
 
@@ -259,13 +259,13 @@ int FHASH_Search(FHASH *f, unsigned char *key, int key_len, unsigned char *data,
     return 0;
 }
 
-int FHASH_Update(FHASH *f, unsigned char *key, int key_len, unsigned char *data, int data_len)
+SWINT_T FHASH_Update(FHASH *f, unsigned char *key, SWINT_T key_len, unsigned char *data, SWINT_T data_len)
 {
-unsigned int hashval = FHASH_hash(key,key_len);
+SWUINT_T hashval = FHASH_hash(key,key_len);
 sw_off_t next = f->hash_offsets[hashval];
 FILE *fp = f->fp;
 unsigned char stack_buffer[2048], *read_key;
-int read_key_len, read_data_len;
+SWINT_T read_key_len, read_data_len;
 sw_off_t tmp;
     while(next)
     {
@@ -296,14 +296,14 @@ sw_off_t tmp;
     return 1;
 }
 
-int FHASH_Delete(FHASH *f, unsigned char *key, int key_len)
+SWINT_T FHASH_Delete(FHASH *f, unsigned char *key, SWINT_T key_len)
 {
-unsigned int hashval = FHASH_hash(key,key_len);
+SWUINT_T hashval = FHASH_hash(key,key_len);
 sw_off_t next = f->hash_offsets[hashval];
 sw_off_t prev = 0;
 FILE *fp = f->fp;
 unsigned char stack_buffer[2048], *read_key;
-int read_key_len;
+SWINT_T read_key_len;
 sw_off_t tmp;
     while(next)
     {

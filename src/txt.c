@@ -54,11 +54,11 @@ $Id$
 ** to the appropriate structures. This is the most simple function.
 ** Just a call to indexstring
 */
-int countwords_TXT (SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer)
+SWINT_T countwords_TXT (SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer)
 
 {
-    int     metaID;
-    int     positionMeta;    /* Position of word in file */
+    SWINT_T     metaID;
+    SWINT_T     positionMeta;    /* Position of word in file */
     char   *summary=NULL;
     char   *title = "";
 

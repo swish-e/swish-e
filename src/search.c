@@ -65,7 +65,7 @@ $Id$
 **   - Moved META tag check before expandstar so META names don't get
 **     expanded!
 **
-** fixed cast to int problems pointed out by "gcc -Wall"
+** fixed cast to SWINT_T problems pointed out by "gcc -Wall"
 ** SRE 2/22/00
 **
 ** fixed search() for case where stopword is followed by rule:
@@ -91,7 +91,7 @@ $Id$
 ** 04/00 - Jose Ruiz
 ** Function getfileinfo rewrite
 **     - Now use a hash approach for faster searching
-**     - Solves the long timed searches (a* or b* or c*)
+**     - Solves the SWINT_T timed searches (a* or b* or c*)
 **
 ** 04/00 - Jose Ruiz
 ** Ordering of result rewrite
@@ -143,24 +143,24 @@ $Id$
 #include "rank.h"
 
 /* ------ static fucntions ----------- */
-static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word, DB_RESULTS *last );
+static SWINT_T init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word, DB_RESULTS *last );
 static void query_index( DB_RESULTS *db_results );
-static int isbooleanrule(char *);
-static int isunaryrule(char *);
-static int getrulenum(char *);
+static SWINT_T isbooleanrule(char *);
+static SWINT_T isunaryrule(char *);
+static SWINT_T getrulenum(char *);
 static RESULT_LIST *sortresultsbyfilenum(RESULT_LIST *r);
 
-static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, IndexFILE * indexf, struct swline **searchwordlist);
-static RESULT_LIST *operate(DB_RESULTS *db_results, RESULT_LIST * l_rp, int rulenum, char *wordin, int metaID, int andLevel, IndexFILE * indexf, int distance);
-static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID);
-static RESULT_LIST *andresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_LIST *, int);
-static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RESULT_LIST * l_r2, int andLevel, int distance);
+static RESULT_LIST *parseterm(DB_RESULTS *db_results, SWINT_T parseone, SWINT_T metaID, IndexFILE * indexf, struct swline **searchwordlist);
+static RESULT_LIST *operate(DB_RESULTS *db_results, RESULT_LIST * l_rp, SWINT_T rulenum, char *wordin, SWINT_T metaID, SWINT_T andLevel, IndexFILE * indexf, SWINT_T distance);
+static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, SWINT_T metaID);
+static RESULT_LIST *andresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_LIST *, SWINT_T);
+static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RESULT_LIST * l_r2, SWINT_T andLevel, SWINT_T distance);
 static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_LIST *);
 static RESULT_LIST *notresultlist(DB_RESULTS *db_results, RESULT_LIST *, IndexFILE *);
 static RESULT_LIST *notresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_LIST *);
-static RESULT_LIST *phraseresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_LIST *, int);
+static RESULT_LIST *phraseresultlists(DB_RESULTS *db_results, RESULT_LIST *, RESULT_LIST *, SWINT_T);
 static RESULT_LIST *mergeresulthashlist(DB_RESULTS *db_results, RESULT_LIST *r);
-static void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int tfrequency, int frequency, DB_RESULTS * db_results);
+static void addtoresultlist(RESULT_LIST * l_rp, SWINT_T filenum, SWINT_T rank, SWINT_T tfrequency, SWINT_T frequency, DB_RESULTS * db_results);
 static void freeresultlist(DB_RESULTS *db_results);
 static void freeresult(RESULT *);
 static void make_db_res_and_free(RESULT_LIST *l_res);
@@ -172,7 +172,7 @@ static void make_db_res_and_free(RESULT_LIST *l_res);
 *
 ***********************************************************************/
 
-void SwishRankScheme(SWISH *sw, int scheme)
+void SwishRankScheme(SWISH *sw, SWINT_T scheme)
 {
     sw->RankScheme = scheme;
 }
@@ -184,7 +184,7 @@ void SwishRankScheme(SWISH *sw, int scheme)
 *
 *********************************************************************/
 
-void SwishReturnRawRank(SWISH *sw, int flag)
+void SwishReturnRawRank(SWISH *sw, SWINT_T flag)
 {
     sw->ReturnRawRank = flag;
 }
@@ -209,7 +209,7 @@ void SwishReturnRawRank(SWISH *sw, int flag)
 
 SEARCH_OBJECT *New_Search_Object( SWISH *sw, char *query )
 {
-    int         index_count;
+    SWINT_T         index_count;
     IndexFILE  *indexf = sw->indexlist;
 
     
@@ -244,7 +244,7 @@ SEARCH_OBJECT *New_Search_Object( SWISH *sw, char *query )
 
     while( indexf )
     {
-        int     table_size = sizeof(PROP_LIMITS) * (indexf->header.metaCounter + 1); /* metaID start at one */
+        SWINT_T     table_size = sizeof(PROP_LIMITS) * (indexf->header.metaCounter + 1); /* metaID start at one */
         PROP_LIMITS *index_limits;  /* an array of limits data */
 
         /* Create a table indexed by meta ID */
@@ -292,21 +292,21 @@ void *SwishResult_parent ( RESULT *result )
 
 /********** Search object methods *************************/
 
-void SwishSetStructure( SEARCH_OBJECT *srch, int structure )
+void SwishSetStructure( SEARCH_OBJECT *srch, SWINT_T structure )
 {
     if ( srch )
         srch->structure = structure;
 }
 
-int SwishGetStructure( SEARCH_OBJECT *srch )
+SWINT_T SwishGetStructure( SEARCH_OBJECT *srch )
 {
     return srch ? srch->structure : 0;
 }
 
 void SwishPhraseDelimiter( SEARCH_OBJECT *srch, char delimiter )
 {
-    if ( srch && delimiter && !isspace( (int)delimiter ) )
-        srch->PhraseDelimiter = (int)delimiter;
+    if ( srch && delimiter && !isspace( (SWINT_T)delimiter ) )
+        srch->PhraseDelimiter = (SWINT_T)delimiter;
 }
 
 
@@ -319,7 +319,7 @@ char SwishGetPhraseDelimiter(SEARCH_OBJECT *srch)
 void SwishSetSort( SEARCH_OBJECT *srch, char *sort )
 {
     StringList  *slsort = NULL;
-    int          i;
+    SWINT_T          i;
 
     if ( !srch || !sort || !*sort )
         return;
@@ -353,7 +353,7 @@ void SwishSetSort( SEARCH_OBJECT *srch, char *sort )
 
 void Free_Search_Object( SEARCH_OBJECT *srch )
 {
-    int         index_count;
+    SWINT_T         index_count;
     IndexFILE   *indexf;
     
     if ( !srch )
@@ -419,7 +419,7 @@ static RESULTS_OBJECT *New_Results_Object( SEARCH_OBJECT *srch )
     RESULTS_OBJECT  *results;
     IndexFILE       *indexf;
     DB_RESULTS      *last = NULL;
-    int             indexf_count;
+    SWINT_T             indexf_count;
 
     reset_lasterror( srch->sw );
     
@@ -484,9 +484,9 @@ static RESULTS_OBJECT *New_Results_Object( SEARCH_OBJECT *srch )
 *
 ***************************************************************************/
 
-static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word, DB_RESULTS *last )
+static SWINT_T init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word, DB_RESULTS *last )
 {
-    int cur_length = 0;    /* array size */
+    SWINT_T cur_length = 0;    /* array size */
     struct metaEntry *m;
     struct metaEntry *rank_meta;
 
@@ -525,7 +525,7 @@ static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word, 
     while ( sort_word )
     {
         char *field = sort_word->line;
-        int  sortmode = -1;  /* default */
+        SWINT_T  sortmode = -1;  /* default */
 
         db_results->num_sort_props++;
 
@@ -590,7 +590,7 @@ static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word, 
 /****************** Utility Methods **********************************/
 
 
-int SwishHits( RESULTS_OBJECT *results )
+SWINT_T SwishHits( RESULTS_OBJECT *results )
 {
     if ( !results )
         return 0;       /* probably should be an error */
@@ -624,7 +624,7 @@ void Free_Results_Object( RESULTS_OBJECT *results )
 {
     DB_RESULTS *next;
     DB_RESULTS *cur;
-    int         i;
+    SWINT_T         i;
 
     if ( !results )
         return;
@@ -645,7 +645,7 @@ void Free_Results_Object( RESULTS_OBJECT *results )
             for ( i = 0; i < cur->num_sort_props; i++ )
                 if ( cur->sort_data[i].key )
                 {
-                    int j;
+                    SWINT_T j;
                     for ( j = 0; j < cur->result_count; j++ )
                         if ( cur->sort_data[i].key[j] &&  cur->sort_data[i].key[j] != (propEntry *)-1 )
                            efree( cur->sort_data[i].key[j] ); /** double loop! -- memzone please */
@@ -660,7 +660,7 @@ void Free_Results_Object( RESULTS_OBJECT *results )
         /* free the property string cache, if used */
         if ( cur->prop_string_cache )
         {
-            int i;
+            SWINT_T i;
             for ( i=0; i< cur->indexf->header.metaCounter; i++ )
                 if ( cur->prop_string_cache[i] )
                     efree( cur->prop_string_cache[i] );
@@ -699,7 +699,7 @@ void Free_Results_Object( RESULTS_OBJECT *results )
 static void dump_result_lists( RESULTS_OBJECT *results, char *message )    
 {
     DB_RESULTS *db_results = results->db_results;
-    int cnt = 0;
+    SWINT_T cnt = 0;
     struct swline *query;
 
     printf("\nDump Results: (%s)\n", message );
@@ -732,7 +732,7 @@ static void dump_result_lists( RESULTS_OBJECT *results, char *message )
 
         while ( result )
         {
-            printf("  Result (%2d): filenum '%d' from index file '%s'\n", ++cnt, result->filenum, db_results->indexf->line );
+            printf("  Result (%2lld): filenum '%lld' from index file '%s'\n", ++cnt, result->filenum, db_results->indexf->line );
             result = result->next;
         }
 
@@ -1031,9 +1031,9 @@ static void query_index( DB_RESULTS *db_results )
 ****************************************************************************/
 
 
-int     SwishSeekResult(RESULTS_OBJECT *results, int pos)
+SWINT_T     SwishSeekResult(RESULTS_OBJECT *results, SWINT_T pos)
 {
-    int    i;
+    SWINT_T    i;
     RESULT *cur_result = NULL;
 
     reset_lasterror( results->sw );
@@ -1099,7 +1099,7 @@ RESULT *SwishNextResult(RESULTS_OBJECT *results)
 {
     RESULT *res = NULL;
     RESULT *res2 = NULL;
-    int     rc;
+    SWINT_T     rc;
     DB_RESULTS *db_results = NULL;
     DB_RESULTS *db_results_winner = NULL;
     SWISH   *sw = results->sw;
@@ -1197,14 +1197,14 @@ RESULT *SwishNextResult(RESULTS_OBJECT *results)
 ** with the default metaname.
 */
 
-static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, IndexFILE * indexf, struct swline **searchwordlist)
+static RESULT_LIST *parseterm(DB_RESULTS *db_results, SWINT_T parseone, SWINT_T metaID, IndexFILE * indexf, struct swline **searchwordlist)
 {
-    int     rulenum;
+    SWINT_T     rulenum;
     char   *word;
-    int     lenword;
+    SWINT_T     lenword;
     RESULT_LIST *l_rp,
            *new_l_rp;
-    int     distance = 0;
+    SWINT_T     distance = 0;
 
     /*
      * The andLevel is used to help keep the ranking function honest
@@ -1219,7 +1219,7 @@ static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, 
      * across terms that are in parenthesis. (It treats an () expression
      * as one term, and weights it as "one".)
      */
-    int     andLevel = 0;       /* number of terms ANDed so far */
+    SWINT_T     andLevel = 0;       /* number of terms ANDed so far */
 
     word = NULL;
     lenword = 0;
@@ -1395,12 +1395,12 @@ static RESULT_LIST *parseterm(DB_RESULTS *db_results, int parseone, int metaID, 
 ** it calls getfileinfo(), which does the real searching.
 */
 
-static RESULT_LIST *operate(DB_RESULTS *db_results, RESULT_LIST * l_rp, int rulenum, char *wordin, int metaID, int andLevel, IndexFILE * indexf, int distance)
+static RESULT_LIST *operate(DB_RESULTS *db_results, RESULT_LIST * l_rp, SWINT_T rulenum, char *wordin, SWINT_T metaID, SWINT_T andLevel, IndexFILE * indexf, SWINT_T distance)
 {
     RESULT_LIST     *new_l_rp;
     RESULT_LIST     *return_l_rp;
     char            *word;
-    int             lenword;
+    SWINT_T             lenword;
 
 
     /* $$$ why dup the input string?? */
@@ -1472,13 +1472,13 @@ static void addResultToList(RESULT_LIST *l_r, RESULT *r)
 
 /* Routine to test structure in a result */
 /* Also removes posdata that do not fit with structure field */
-static int test_structure(int structure, int frequency, unsigned int *posdata)
+static SWINT_T test_structure(SWINT_T structure, SWINT_T frequency, SWUINT_T *posdata)
 {
-    int i, j;    /* i -> counter upto frequency, j -> new frequency */
-    int *p,*q;   /* Use pointers to ints instead of arrays for
+    SWINT_T i, j;    /* i -> counter upto frequency, j -> new frequency */
+    SWINT_T *p,*q;   /* Use pointers to ints instead of arrays for
                  ** faster proccess */
     
-    for(i = j = 0, p = q = (int*)posdata; i < frequency; i++, p++)
+    for(i = j = 0, p = q = (SWINT_T*)posdata; i < frequency; i++, p++)
     {
         if(GET_STRUCTURE(*p) & structure)
         {
@@ -1506,9 +1506,9 @@ static int test_structure(int structure, int frequency, unsigned int *posdata)
 
 #define MAX_POSDATA_STACK 256
 
-static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
+static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, SWINT_T metaID)
 {
-    int     j,
+    SWINT_T     j,
             x,
             filenum,
             frequency,
@@ -1519,24 +1519,24 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
             tmpval;
     char remains[100];   // hard-coded !!!?
     char myWord[100];
-    int           rLen;
-    int           tLen;
+    SWINT_T           rLen;
+    SWINT_T           tLen;
     unsigned char   *q;
     RESULT_LIST *l_rp, *l_rp2;
     sw_off_t    wordID;
-    int     metadata_length;
+    SWINT_T     metadata_length;
     char   *p;
-    int     tfrequency = 0;
+    SWINT_T     tfrequency = 0;
     unsigned char   *s, *buffer; 
-    int     sz_buffer;
+    SWINT_T     sz_buffer;
     unsigned char flag;
-    unsigned int     stack_posdata[MAX_POSDATA_STACK];  /* stack buffer for posdata */
-    unsigned int    *posdata;
+    SWUINT_T     stack_posdata[MAX_POSDATA_STACK];  /* stack buffer for posdata */
+    SWUINT_T    *posdata;
     IndexFILE  *indexf = db_results->indexf;
     SWISH  *sw = indexf->sw;
-    int     structure = db_results->srch->structure;
+    SWINT_T     structure = db_results->srch->structure;
     unsigned char *start;
-    int saved_bytes = 0;
+    SWINT_T saved_bytes = 0;
 
     x = j = filenum = frequency = len = curmetaID = index_structure = index_structfreq = 0;
     metadata_length = 0;
@@ -1663,7 +1663,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
        if (rLen)
        {
           char *pw, *ps;
-          int found = 0;
+          SWINT_T found = 0;
           pw = &remains[0];
           ps = &myWord[strlen(word)];
 
@@ -1760,7 +1760,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
 
         if (curmetaID == metaID) /* found a matching meta value */
         {
-            int meta_rank = metaID * -1;  /*  store metaID in rank value until computed by getrank() */
+            SWINT_T meta_rank = metaID * -1;  /*  store metaID in rank value until computed by getrank() */
             filenum = 0;
             start = s;   /* points to the star of data */
             do
@@ -1772,7 +1772,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
                 /* stack_posdata is just to avoid calling emalloc */
                 /* it should be enough for most cases */
                 if(frequency > MAX_POSDATA_STACK)
-                    posdata = (unsigned int *)emalloc(frequency * sizeof(int));
+                    posdata = (SWUINT_T *)emalloc(frequency * sizeof(SWINT_T));
                 else
                     posdata = stack_posdata;
 
@@ -1801,7 +1801,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
                     addtoresultlist(l_rp, filenum, meta_rank, tfrequency, frequency, db_results);
 
                     /* Copy positions */
-                    memcpy((unsigned char *)l_rp->tail->posdata,(unsigned char *)posdata,frequency * sizeof(int));
+                    memcpy((unsigned char *)l_rp->tail->posdata,(unsigned char *)posdata,frequency * sizeof(SWINT_T));
 
                     /* Calculate rank now -- can't delay as an optimization */
                     getrank( l_rp->tail );
@@ -1867,7 +1867,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
 /* Is a word a boolean rule?
 */
 
-static int     isbooleanrule(char *word)
+static SWINT_T     isbooleanrule(char *word)
 {
     if (!strcmp(word, AND_WORD) || !strncmp(word, NEAR_WORD, strlen(NEAR_WORD)) || !strcmp(word, OR_WORD) || !strcmp(word, PHRASE_WORD) || !strcmp(word, AND_NOT_WORD))
         return 1;
@@ -1878,7 +1878,7 @@ static int     isbooleanrule(char *word)
 /* Is a word a unary rule?
 */
 
-static int     isunaryrule(char *word)
+static SWINT_T     isunaryrule(char *word)
 {
     if (!strcmp(word, NOT_WORD))
         return 1;
@@ -1889,7 +1889,7 @@ static int     isunaryrule(char *word)
 /* Return the number for a rule.
 */
 
-static int     getrulenum(char *word)
+static SWINT_T     getrulenum(char *word)
 {
     if (!strcmp(word, AND_WORD))
         return AND_RULE;
@@ -1912,13 +1912,13 @@ static int     getrulenum(char *word)
 // Definition of sequence: one or more positions, where each
 //                         sequence is separated from another
 //                         by means of a "0" (zero)
-static int KeepPos(RESULT *r, int pos, int dist)
+static SWINT_T KeepPos(RESULT *r, SWINT_T pos, SWINT_T dist)
 {
-  int i;
-  int pos1;
-  int first;
-  int found;
-  int detect;
+  SWINT_T i;
+  SWINT_T pos1;
+  SWINT_T first;
+  SWINT_T found;
+  SWINT_T detect;
 
   // no earlier "nearx" for this document; so the position
   // to be checked is always a valid one, otherwise it wouldn't
@@ -1976,22 +1976,22 @@ static int KeepPos(RESULT *r, int pos, int dist)
 ** On input, both result lists r1 and r2 must be sorted by filenum
 ** On output, the new result list remains sorted
 */
-static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RESULT_LIST * l_r2, int andLevel, int distance)
+static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RESULT_LIST * l_r2, SWINT_T andLevel, SWINT_T distance)
 {
     RESULT_LIST *new_results_list = NULL;
     RESULT *r1;
     RESULT *r2;
-    int res = 0;
-    int i, j, pos1, pos2;
-    int found, found1, found2, detect1, detect2;
-    int iZero = 0;
-    int first1, first2;
-    int *posd1 = NULL;
-    int *posd2 = NULL;
-    int cnt1, cnt2;
+    SWINT_T res = 0;
+    SWINT_T i, j, pos1, pos2;
+    SWINT_T found, found1, found2, detect1, detect2;
+    SWINT_T iZero = 0;
+    SWINT_T first1, first2;
+    SWINT_T *posd1 = NULL;
+    SWINT_T *posd2 = NULL;
+    SWINT_T cnt1, cnt2;
 #ifdef DUMP_NEAR_VALUES
     FILE *ofd;
-    int maxneed = 0;
+    SWINT_T maxneed = 0;
 #endif
 
     // Check if a valid distance was specified
@@ -2027,16 +2027,16 @@ static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, 
              * simply scale up the old average (in r1->rank)
              * and recompute a new, equally weighted average.
              */
-            int     newRank = 0;
+            SWINT_T     newRank = 0;
 #ifdef DUMP_NEAR_VALUES
-            int     maxpos;
+            SWINT_T     maxpos;
 
             // Determine max combinations
             maxpos = (r1->frequency * r2->frequency);
 
             if (maxneed > 0)
             {
-              fprintf(ofd,"  maxneed: %ld\n", maxneed);
+              fprintf(ofd,"  maxneed: %lld\n", maxneed);
               maxneed = 0; // reset for next to come
             }
 
@@ -2046,27 +2046,27 @@ static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, 
 
 #ifdef DUMP_NEAR_VALUES
             // make sure to skip the found entry if not within given proximity
-            fprintf(ofd, "file %ld (andLevel %ld)\n", r1->filenum, andLevel);
+            fprintf(ofd, "file %lld (andLevel %lld)\n", r1->filenum, andLevel);
 
             // Detects if there was already a "nearx" executed before, which
             // means there must be one or more "0" present in positions
             if (r1->bArea > 0)
-              fprintf(ofd,"  bArea1: %ld\n", r1->bArea);
-            // This can never happen, as long as no parenthesis/brackets
+              fprintf(ofd,"  bArea1: %lld\n", r1->bArea);
+            // This can never happen, as SWINT_T as no parenthesis/brackets
             // are supported; the complete query is parsed left to right
             // TODO: modify if priority brackets are going to be supported
             if (r2->bArea > 0)
-              fprintf(ofd,"  bArea2: %ld\n", r2->bArea);
+              fprintf(ofd,"  bArea2: %lld\n", r2->bArea);
 
-            fprintf(ofd,"  maxpos: %ld\n", maxpos);
+            fprintf(ofd,"  maxpos: %lld\n", maxpos);
             fprintf(ofd,"  %s: ", "term1");
             for (j = 0; j < r1->frequency; j++)
-              fprintf(ofd, "  %ld:", GET_POSITION(r1->posdata[j]));
+              fprintf(ofd, "  %lld:", GET_POSITION(r1->posdata[j]));
             fprintf(ofd,"\n");
 
             fprintf(ofd,"  %s: ", "term2");
             for (j = 0; j < r2->frequency; j++)
-              fprintf(ofd, "  %ld:", GET_POSITION(r2->posdata[j]));
+              fprintf(ofd, "  %lld:", GET_POSITION(r2->posdata[j]));
             fprintf(ofd,"\n");
 #endif
 
@@ -2098,9 +2098,9 @@ static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, 
                 // BUGFIX: copy also the 0 in between, otherwise more than
                 // two "and" operator will gor wrong for the 3td, 4th, etc.
                 if (posd1)
-                  posd1 = (int *)erealloc(posd1, cnt1 * sizeof(int));
+                  posd1 = (SWINT_T *)erealloc(posd1, cnt1 * sizeof(SWINT_T));
                 else
-                  posd1 = (int *)emalloc(cnt1 * sizeof(int));
+                  posd1 = (SWINT_T *)emalloc(cnt1 * sizeof(SWINT_T));
                 posd1[cnt1-1] = r1->posdata[i];
 
                 continue;
@@ -2130,9 +2130,9 @@ static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, 
                   // BUGFIX: copy also the 0 in between, otherwise more than
                   // two "and" operator will gor wrong for the 3td, 4th, etc.
                   if (posd2)
-                    posd2 = (int *)erealloc(posd2, cnt2 * sizeof(int));
+                    posd2 = (SWINT_T *)erealloc(posd2, cnt2 * sizeof(SWINT_T));
                   else
-                    posd2 = (int *)emalloc(cnt2 * sizeof(int));
+                    posd2 = (SWINT_T *)emalloc(cnt2 * sizeof(SWINT_T));
                   posd2[cnt2-1] = r2->posdata[j];
 
                   continue;     // skip 0
@@ -2145,18 +2145,18 @@ static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, 
 
 #ifdef DUMP_NEAR_VALUES
                   maxneed++;
-                  fprintf(ofd, "  hit %ld: (%ld - %ld): %ld\n", i, pos1, pos2, abs(pos1 - pos2));
+                  fprintf(ofd, "  hit %lld: (%lld - %lld): %lld\n", i, pos1, pos2, abs(pos1 - pos2));
 #endif
                   cnt1++;
                   cnt2++;
                   if (posd1)
-                    posd1 = (int *)erealloc(posd1, cnt1 * sizeof(int));
+                    posd1 = (SWINT_T *)erealloc(posd1, cnt1 * sizeof(SWINT_T));
                   else
-                    posd1 = (int *)emalloc(cnt1 * sizeof(int));
+                    posd1 = (SWINT_T *)emalloc(cnt1 * sizeof(SWINT_T));
                   if (posd2)
-                    posd2 = (int *)erealloc(posd2, cnt2 * sizeof(int));
+                    posd2 = (SWINT_T *)erealloc(posd2, cnt2 * sizeof(SWINT_T));
                   else
-                    posd2 = (int *)emalloc(cnt2 * sizeof(int));
+                    posd2 = (SWINT_T *)emalloc(cnt2 * sizeof(SWINT_T));
                   
                   posd1[cnt1-1] = r1->posdata[i];
                   posd2[cnt2-1] = r2->posdata[j];
@@ -2231,7 +2231,7 @@ static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, 
 
 #ifdef DUMP_NEAR_VALUES
     if (maxneed > 0)
-      fprintf(ofd,"  maxneed: %ld\n", maxneed);
+      fprintf(ofd,"  maxneed: %lld\n", maxneed);
 
     fclose(ofd);
 #endif
@@ -2246,12 +2246,12 @@ static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, 
 ** On output, the new result list remains sorted
 */
 
-static RESULT_LIST *andresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RESULT_LIST * l_r2, int andLevel)
+static RESULT_LIST *andresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RESULT_LIST * l_r2, SWINT_T andLevel)
 {
     RESULT_LIST *new_results_list = NULL;
     RESULT *r1;
     RESULT *r2;
-    int     res = 0;
+    SWINT_T     res = 0;
 
 
     /* patch provided by Mukund Srinivasan */
@@ -2278,14 +2278,14 @@ static RESULT_LIST *andresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, R
              * simply scale up the old average (in r1->rank)
              * and recompute a new, equally weighted average.
              */
-            int     newRank = 0;
+            SWINT_T     newRank = 0;
 
             newRank = ((r1->rank * andLevel) + r2->rank) / (andLevel + 1);
 
 
             if ( DEBUG_RANK )
             {
-                fprintf( stderr, "File num: %d  1st score: %d  2nd score: %d  andLevel: %d  newRank:  %d\n----\n", 
+                fprintf( stderr, "File num: %lld  1st score: %lld  2nd score: %lld  andLevel: %lld  newRank:  %lld\n----\n", 
                     r1->filenum, r1->rank, r2->rank, andLevel, newRank );
             }
             
@@ -2321,7 +2321,7 @@ static RESULT_LIST *andresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, R
 
 /* Takes two lists of results from searches and ORs them together.
 2001-11 jmruiz Completely rewritten. Older one was really
-               slow when the lists are very long
+               slow when the lists are very SWINT_T
                On input, both result lists r1 and r2 must be sorted by filenum
                On output, the new result list remains sorted
 
@@ -2333,7 +2333,7 @@ static RESULT_LIST *andresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, R
 
 static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RESULT_LIST * l_r2)
 {
-    int     rc;
+    SWINT_T     rc;
     RESULT *r1;
     RESULT *r2;
     RESULT *rp,
@@ -2341,7 +2341,7 @@ static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RE
     RESULT_LIST *new_results_list = NULL;
     RESULTS_OBJECT *results = db_results->results;
     /* TODO use to detect rank size overflow 
-    unsigned int max_rank_size = 256 ^ sizeof(int);
+    SWUINT_T max_rank_size = 256 ^ sizeof(SWINT_T);
     */
 
     /* If either list is empty, just return the other */
@@ -2372,11 +2372,11 @@ static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RE
 
         else /* Matching file number */
         {
-            int result_size, r1rank, r2rank;
+            SWINT_T result_size, r1rank, r2rank;
             
             /* Create a new RESULT - Should be a function to create this, I'd think */
 
-            result_size = sizeof(RESULT) + ( (r1->frequency + r2->frequency - 1) * sizeof(int) );
+            result_size = sizeof(RESULT) + ( (r1->frequency + r2->frequency - 1) * sizeof(SWINT_T) );
             rp = (RESULT *) Mem_ZoneAlloc(results->resultSearchZone, result_size );
             memset( rp, 0, result_size );
 
@@ -2391,7 +2391,7 @@ static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RE
 	    
             if (DEBUG_RANK)
             {
-                fprintf( stderr, "----\nFile num: %d  1st score: %d  2nd score: %d  newRank:  %d\n", 
+                fprintf( stderr, "----\nFile num: %lld  1st score: %lld  2nd score: %lld  newRank:  %lld\n", 
                     r1->filenum, r1->rank, r2->rank, rp->rank );
             }
 
@@ -2447,13 +2447,13 @@ static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RE
 struct markentry
 {
     struct markentry *next;
-    int     num;
+    SWINT_T     num;
 };
 
 /* This marks a number as having been printed.
 */
 
-static void    marknum(RESULTS_OBJECT *results, struct markentry **markentrylist, int num)
+static void    marknum(RESULTS_OBJECT *results, struct markentry **markentrylist, SWINT_T num)
 {
     unsigned hashval;
     struct markentry *mp;
@@ -2471,7 +2471,7 @@ static void    marknum(RESULTS_OBJECT *results, struct markentry **markentrylist
 /* Has a number been printed?
 */
 
-static int     ismarked(struct markentry **markentrylist, int num)
+static SWINT_T     ismarked(struct markentry **markentrylist, SWINT_T num)
 {
     unsigned hashval;
     struct markentry *mp;
@@ -2493,7 +2493,7 @@ static int     ismarked(struct markentry **markentrylist, int num)
 
 static void    initmarkentrylist(struct markentry **markentrylist)
 {
-    int     i;
+    SWINT_T     i;
 
     for (i = 0; i < BIGHASHSIZE; i++)
         markentrylist[i] = NULL;
@@ -2501,7 +2501,7 @@ static void    initmarkentrylist(struct markentry **markentrylist)
 
 static void    freemarkentrylist(struct markentry **markentrylist)
 {
-    int     i;
+    SWINT_T     i;
 
     for (i = 0; i < BIGHASHSIZE; i++)
     {
@@ -2518,7 +2518,7 @@ static void    freemarkentrylist(struct markentry **markentrylist)
 
 static RESULT_LIST *notresultlist(DB_RESULTS *db_results, RESULT_LIST * l_rp, IndexFILE * indexf)
 {
-    int     i,
+    SWINT_T     i,
             filenums;
     RESULT *rp;
     RESULT_LIST *new_results_list = NULL;
@@ -2563,14 +2563,14 @@ static RESULT_LIST *notresultlist(DB_RESULTS *db_results, RESULT_LIST * l_rp, In
 ** On input, both result lists r1 abd r2 must be sorted by filenum
 ** On output, the new result list remains sorted
 */
-static RESULT_LIST *phraseresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RESULT_LIST * l_r2, int distance)
+static RESULT_LIST *phraseresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RESULT_LIST * l_r2, SWINT_T distance)
 {
-    int     i,
+    SWINT_T     i,
             j,
             found,
             newRank,
            *allpositions;
-    int     res = 0;
+    SWINT_T     res = 0;
     RESULT_LIST *new_results_list = NULL;
     RESULT *r1, *r2;
                 
@@ -2598,10 +2598,10 @@ static RESULT_LIST *phraseresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1
                     {
                         found++;
                         if (allpositions)
-                            allpositions = (int *) erealloc(allpositions, found * sizeof(int));
+                            allpositions = (SWINT_T *) erealloc(allpositions, found * sizeof(SWINT_T));
 
                         else
-                            allpositions = (int *) emalloc(found * sizeof(int));
+                            allpositions = (SWINT_T *) emalloc(found * sizeof(SWINT_T));
 
                         allpositions[found - 1] = r2->posdata[j];
                         break;
@@ -2647,13 +2647,13 @@ static RESULT_LIST *phraseresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1
 */
 
 
-static void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int tfrequency, int frequency, DB_RESULTS *db_results)
+static void addtoresultlist(RESULT_LIST * l_rp, SWINT_T filenum, SWINT_T rank, SWINT_T tfrequency, SWINT_T frequency, DB_RESULTS *db_results)
 {
     RESULT *newnode;
-    int     result_size;
+    SWINT_T     result_size;
     RESULTS_OBJECT *results = db_results->results;
 
-    result_size = sizeof(RESULT) + ((frequency - 1) * sizeof(int));
+    result_size = sizeof(RESULT) + ((frequency - 1) * sizeof(SWINT_T));
     newnode = (RESULT *) Mem_ZoneAlloc( results->resultSearchZone, result_size );
     memset( newnode, 0, result_size );
     newnode->fi.filenum = newnode->filenum = filenum;
@@ -2675,7 +2675,7 @@ static void addtoresultlist(RESULT_LIST * l_rp, int filenum, int rank, int tfreq
 /* Checks if the next word is "="
 */
 
-int     isMetaNameOpNext(struct swline *searchWord)
+SWINT_T     isMetaNameOpNext(struct swline *searchWord)
 {
     if (searchWord == NULL)
         return 0;
@@ -2744,7 +2744,7 @@ static void    freeresult(RESULT * rp)
 /* 01/2001 Jose Ruiz */
 /* Compare RESULTS using RANK */
 /* This routine is used by qsort */
-static int     compResultsByFileNum(const void *s1, const void *s2)
+static SWINT_T     compResultsByFileNum(const void *s1, const void *s2)
 {
     return ((*(RESULT * const *) s1)->filenum - (*(RESULT * const *) s2)->filenum);
 }
@@ -2758,7 +2758,7 @@ Used for faster "and" and "phrase" of results
 */
 static RESULT_LIST *sortresultsbyfilenum(RESULT_LIST * l_rp)
 {
-    int     i,
+    SWINT_T     i,
             j;
     RESULT **ptmp;
     RESULT *rp;
@@ -2810,7 +2810,7 @@ static RESULT_LIST *notresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, R
 {
     RESULT *rp, *r1, *r2;
     RESULT_LIST *new_results_list = NULL;
-    int     res = 0;
+    SWINT_T     res = 0;
 
     if (!l_r1)
         return NULL;
@@ -2860,9 +2860,9 @@ static RESULT_LIST *notresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, R
 
 /* Compare two positions as stored in posdata */
 /* This routine is used by qsort */
-static int     icomp_posdata(const void *s1, const void *s2)
+static SWINT_T     icomp_posdata(const void *s1, const void *s2)
 {
-    return (GET_POSITION(*(unsigned int *) s1) - GET_POSITION(*(unsigned int *) s2));
+    return (GET_POSITION(*(SWUINT_T *) s1) - GET_POSITION(*(SWUINT_T *) s2));
 }
 
 
@@ -2888,7 +2888,7 @@ static RESULT_LIST *mergeresulthashlist(DB_RESULTS *db_results, RESULT_LIST *l_r
            *start,
            *newnode = NULL;
     RESULT_LIST *new_results_list = NULL;
-    int    i,
+    SWINT_T    i,
            tot_frequency,
            pos_off,
            filenum;
@@ -2946,14 +2946,14 @@ static RESULT_LIST *mergeresulthashlist(DB_RESULTS *db_results, RESULT_LIST *l_r
                 /* Start of new block, coalesce previous results */
                 if(filenum)
                 {
-                    int result_size;
+                    SWINT_T result_size;
                     
                     for(tmp = start, tot_frequency = 0; tmp!=rp; tmp = tmp->next)
                     {
                         tot_frequency += tmp->frequency;                        
                     }
 
-                    result_size = sizeof(RESULT) + ((tot_frequency - 1) * sizeof(int));
+                    result_size = sizeof(RESULT) + ((tot_frequency - 1) * sizeof(SWINT_T));
                     newnode = (RESULT *) Mem_ZoneAlloc(results->resultSearchZone, result_size );
                     memset( newnode, 0, result_size );
                     
@@ -2981,7 +2981,7 @@ static RESULT_LIST *mergeresulthashlist(DB_RESULTS *db_results, RESULT_LIST *l_r
                     }
                     addResultToList(new_results_list,newnode);
                     /* Sort positions */
-                    swish_qsort(newnode->posdata,newnode->frequency,sizeof(int),&icomp_posdata);
+                    swish_qsort(newnode->posdata,newnode->frequency,sizeof(SWINT_T),&icomp_posdata);
                 }
                 if(rp)
                     filenum = rp->filenum;

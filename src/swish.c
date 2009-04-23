@@ -82,7 +82,7 @@ extern struct _indexing_data_source_def *data_sources[];
 typedef struct
 {
     char   *name;
-    unsigned int bit;
+    SWUINT_T bit;
     char   *description;
 }
 DEBUG_MAP;
@@ -121,24 +121,24 @@ typedef struct
 
     /* Search related params */
     char        *query;             /* Query string */
-    int          PhraseDelimiter;   /* Phrase delimiter char */
-    int          structure;         /* Structure for limiting to HTML tags */
+    SWINT_T          PhraseDelimiter;   /* Phrase delimiter char */
+    SWINT_T          structure;         /* Structure for limiting to HTML tags */
     struct swline *sort_params;     /* sort properties */
     LIMIT_PARAMS *limit_params;     /* for storing -L command line settings */
 
-    int         query_len;          /* length of buffer */
+    SWINT_T         query_len;          /* length of buffer */
 
     struct swline *disp_props;      /* extra display props */
-    int         beginhits;          /* starting hit number */
-    int         maxhits;            /* total hits to display */
+    SWINT_T         beginhits;          /* starting hit number */
+    SWINT_T         maxhits;            /* total hits to display */
 
 
     struct swline *conflist;        /* Configuration file list */
 
-    int         hasverbose;         /* flag if -v was used */
+    SWINT_T         hasverbose;         /* flag if -v was used */
 
-    int         index_read_only;    /* flag to not allow indexing or merging */
-    int         swap_mode;
+    SWINT_T         index_read_only;    /* flag to not allow indexing or merging */
+    SWINT_T         swap_mode;
 
     char       *merge_out_file;     /* the output file for merge */
 }
@@ -152,22 +152,22 @@ static CMDPARAMS *new_swish_params(void);
 static void printTime(double time);
 static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params );
 static void free_command_line_params( CMDPARAMS *params );
-static unsigned int isDebugWord(char *word, CMDPARAMS *params );
+static SWUINT_T isDebugWord(char *word, CMDPARAMS *params );
 static void printversion();
 static void usage();
-static int check_readonly_mode( char * );
+static SWINT_T check_readonly_mode( char * );
 
 static void cmd_dump( SWISH *sw, CMDPARAMS *params );
 static void cmd_index( SWISH *sw, CMDPARAMS *params );
 static void cmd_merge( SWISH *sw, CMDPARAMS *params );
 static void cmd_search( SWISH *sw, CMDPARAMS *params );
 static void cmd_keywords( SWISH *sw, CMDPARAMS *params );
-static void write_index_file( SWISH *sw, int process_stopwords, double elapsedStart, double cpuStart, int merge);
+static void write_index_file( SWISH *sw, SWINT_T process_stopwords, double elapsedStart, double cpuStart, SWINT_T merge);
 
 static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, char switch_char );
 static char **fetch_indexing_params(SWISH *sw, char **argv, CMDPARAMS *params, char switch_char );
 static void display_result_headers( RESULTS_OBJECT *results );
-static void swline_header_out( SWISH *sw, int v, char *desc, struct swline *sl );
+static void swline_header_out( SWISH *sw, SWINT_T v, char *desc, struct swline *sl );
 
 static SWISH  *swish_new();
 static void    swish_close(SWISH * sw);
@@ -226,7 +226,7 @@ int     main(int argc, char **argv)
 
 
         default:
-            progerr("Invalid operation mode '%d'", (int)params->run_mode);
+            progerr("Invalid operation mode '%lld'", (SWINT_T)params->run_mode);
     }
 
     free_command_line_params( params );
@@ -246,19 +246,19 @@ int     main(int argc, char **argv)
 
 static void printTime(double time)
 {
-    int     hh,
+    SWINT_T     hh,
             mm,
             ss;
-    int     delta;
+    SWINT_T     delta;
 
-    delta = (int) (time + 0.5);
+    delta = (SWINT_T) (time + 0.5);
 
     ss = delta % 60;
     delta /= 60;
     hh = delta / 60;
     mm = delta % 60;
 
-    printf("%02d:%02d:%02d", hh, mm, ss);
+    printf("%02lld:%02lld:%02lld", hh, mm, ss);
 }
 
 /* Prints the SWISH usage.
@@ -387,7 +387,7 @@ static SWISH  *swish_new()
     /* Additional modules needed for indexin (which we are not sure about yet... */
     initModule_ResultSort(sw);
     initModule_Filter(sw);
-    initModule_Entities(sw);  /* used only by the old HTML parser -- not long to live */
+    initModule_Entities(sw);  /* used only by the old HTML parser -- not SWINT_T to live */
     initModule_Index(sw);
     initModule_FS(sw);
     initModule_HTTP(sw);
@@ -456,9 +456,9 @@ static void    swish_close(SWISH * sw)
 *
 **************************************************************************/
 
-static unsigned int isDebugWord(char *word, CMDPARAMS *params)
+static SWUINT_T isDebugWord(char *word, CMDPARAMS *params)
 {
-    int     i,
+    SWINT_T     i,
             help;
 
     help = strcasecmp(word, "help") == 0;
@@ -466,7 +466,7 @@ static unsigned int isDebugWord(char *word, CMDPARAMS *params)
     if (help)
         printf("\nAvailable debugging options for swish-e:\n");
 
-    for (i = 0; i < (int)(sizeof(debug_map) / sizeof(debug_map[0])); i++)
+    for (i = 0; i < (SWINT_T)(sizeof(debug_map) / sizeof(debug_map[0])); i++)
         if (help)
             printf("  %20s => %s\n", debug_map[i].name, debug_map[i].description);
         else if (strcasecmp(debug_map[i].name, word) == 0)
@@ -579,10 +579,10 @@ static char *next_param( char ***argv )
 }
 
 
-static int get_param_number(char ***argv, char c )
+static SWINT_T get_param_number(char ***argv, char c )
 {
     char *badchar;
-    long  num;
+    SWINT_T  num;
     char *string = next_param( argv );
 
     if ( !string )
@@ -597,7 +597,7 @@ static int get_param_number(char ***argv, char c )
         progerr("Invalid char '%c' found in argument to '-%c %s'", badchar[0], c, string);
 
 
-    return (int) num;
+    return (SWINT_T) num;
 }
 
 
@@ -626,7 +626,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
     char c;
     char *w;
 #if defined(_WIN32) || defined(__CYGWIN__)
-    volatile unsigned int DEBUG_MASK_HACK;
+    volatile SWUINT_T DEBUG_MASK_HACK;
 #endif
 
 
@@ -766,7 +766,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
             {
                 while ( (w = next_param( &argv )) )
                 {
-                    unsigned int bit;
+                    SWUINT_T bit;
 
                     if ((bit = isDebugWord( w, params) ))
                         DEBUG_MASK |= bit;
@@ -823,7 +823,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
                 progerr("Must compile swish-e with --enable-incremental to use -%c option",c);
 #else
             {
-                int mode = ( 'u' == c )
+                SWINT_T mode = ( 'u' == c )
                         ? MODE_UPDATE
                         : MODE_REMOVE;
 
@@ -1024,7 +1024,7 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
                 if (w[0] == '\0')
                     continue;
 
-                if ((int)( strlen(params->query) + strlen(" ") + strlen(w) ) >= params->query_len)
+                if ((SWINT_T)( strlen(params->query) + strlen(" ") + strlen(w) ) >= params->query_len)
                 {
                     params->query_len = strlen(params->query) + strlen(" ") + strlen(w) + 200;
                     params->query = (char *) erealloc(params->query, params->query_len + 1);
@@ -1061,7 +1061,7 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
             if ( !(w = next_param( &argv )) )
                 progerr("'-P' requires a phrase delimiter.");
 
-            params->PhraseDelimiter = (int) w[0];
+            params->PhraseDelimiter = (SWINT_T) w[0];
             break;
         }
 
@@ -1199,10 +1199,10 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
                 strcpy( sw->ResultOutput->stdResultFieldDelimiter, "\"" );
             else
             {
-                int     i,j;
-                int     backslash = 0;
+                SWINT_T     i,j;
+                SWINT_T     backslash = 0;
 
-                for ( j=0, i=0; i < (int)strlen( w ); i++ )
+                for ( j=0, i=0; i < (SWINT_T)strlen( w ); i++ )
                 {
                     if ( !backslash )
                     {
@@ -1279,7 +1279,7 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
 *   offers no real security
 *
 **************************************************************************/
-static int check_readonly_mode( char *prog )
+static SWINT_T check_readonly_mode( char *prog )
 {
     char   *tmp = prog + strlen(prog) - strlen("swish-search");
 
@@ -1321,8 +1321,8 @@ static void cmd_dump( SWISH *sw, CMDPARAMS *params )
 
 static void cmd_index( SWISH *sw, CMDPARAMS *params )
 {
-    int     hasdir = (sw->dirlist == NULL) ? 0 : 1;
-    int     hasindex = (sw->indexlist == NULL) ? 0 : 1;
+    SWINT_T     hasdir = (sw->dirlist == NULL) ? 0 : 1;
+    SWINT_T     hasindex = (sw->indexlist == NULL) ? 0 : 1;
     double  elapsedStart = TimeElapsed();
     double  cpuStart = TimeCPU();
     struct swline *tmpswline;
@@ -1361,7 +1361,7 @@ static void cmd_index( SWISH *sw, CMDPARAMS *params )
     /* Check for UPDATE_MODE jmruiz 2002/03 */
     if ( MODE_UPDATE == params->run_mode || MODE_REMOVE == params->run_mode )
 #ifndef USE_BTREE
-        progerr("Invalid operation mode '%d': Update mode only supported with USE_BTREE feature", (int)params->run_mode);
+        progerr("Invalid operation mode '%lld': Update mode only supported with USE_BTREE feature", (SWINT_T)params->run_mode);
 #else
     {
         /* Set update_mode */
@@ -1489,7 +1489,7 @@ static void cmd_keywords( SWISH *sw, CMDPARAMS *params )
     if (!sw->indexlist)
         addindexfile(sw, INDEXFILE);
 
-    OutputKeyChar(sw, (int) (unsigned char) params->keychar);
+    OutputKeyChar(sw, (SWINT_T) (unsigned char) params->keychar);
 }
 
 
@@ -1573,7 +1573,7 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
 
     if (results->total_results > 0)
     {
-        resultHeaderOut(sw, 1, "# Number of hits: %d\n", results->total_results);
+        resultHeaderOut(sw, 1, "# Number of hits: %lld\n", results->total_results);
 
         elapsedEnd = TimeElapsed();
         resultHeaderOut(sw, 1, "# Search time: %0.3f seconds\n", elapsedEnd - elapsedSearchStart);
@@ -1604,10 +1604,10 @@ static void cmd_search( SWISH *sw, CMDPARAMS *params )
 *
 **************************************************************************/
 
-static void write_index_file( SWISH *sw, int process_stopwords, double elapsedStart, double cpuStart, int merge)
+static void write_index_file( SWISH *sw, SWINT_T process_stopwords, double elapsedStart, double cpuStart, SWINT_T merge)
 {
-    int totalfiles = getfilecount(sw->indexlist) - sw->indexlist->header.removedfiles;  /* just for display */
-    int stopwords = 0;
+    SWINT_T totalfiles = getfilecount(sw->indexlist) - sw->indexlist->header.removedfiles;  /* just for display */
+    SWINT_T stopwords = 0;
     struct swline *cur_line;
 
         /* Coalesce all remaining locations */
@@ -1636,7 +1636,7 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
                     sw->indexlist->header.totalwords = 0;
 
                 /* Same as "stopwords" */
-                printf("%d words removed by IgnoreLimit:\n", stopwords);
+                printf("%lld words removed by IgnoreLimit:\n", stopwords);
 
                 for (cur_line = sw->Index->IgnoreLimitWords; cur_line; cur_line = cur_line->next )
                     printf("%s, ", cur_line->line);
@@ -1690,7 +1690,7 @@ static void write_index_file( SWISH *sw, int process_stopwords, double elapsedSt
 
     if (sw->verbose)
     {
-        int totalwords = sw->indexlist->header.totalwords;
+        SWINT_T totalwords = sw->indexlist->header.totalwords;
         printf("%s unique word%s indexed.\n", comma_long( totalwords ), (totalwords == 1) ? "" : "s");
     }
 
@@ -1785,7 +1785,7 @@ static void display_result_headers( RESULTS_OBJECT *results )
 
 
 
-static void swline_header_out( SWISH *sw, int v, char *desc, struct swline *sl )
+static void swline_header_out( SWISH *sw, SWINT_T v, char *desc, struct swline *sl )
 {
     resultHeaderOut(sw, v, desc);
 

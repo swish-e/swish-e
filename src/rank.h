@@ -36,9 +36,9 @@ karman Mon Aug 30 07:01:31 CDT 2004
 #include "mem.h"
 #include "search.h"
 
-int getrank( RESULT *r );
-int getrankDEF( RESULT *r );
-int getrankIDF( RESULT *r );
-int scale_word_score( int score );
+SWINT_T getrank( RESULT *r );
+SWINT_T getrankDEF( RESULT *r );
+SWINT_T getrankIDF( RESULT *r );
+SWINT_T scale_word_score( SWINT_T score );
 
 #endif

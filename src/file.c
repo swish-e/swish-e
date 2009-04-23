@@ -103,7 +103,7 @@ get_libexec(void){
 	char *fn;
 #if defined(_WIN32) && !defined(__CYGWIN__)
 	char *tr;
-	int pos;
+	SWINT_T pos;
 
 	fn = emalloc(MAX_PATH+1);
 	/* get the full name of the executable */
@@ -148,7 +148,7 @@ get_libexec(void){
 /* Flip any backslashes to forward slashes, and remove trailing slash */
 void normalize_path(char *path)
 {
-    int     len = strlen( path );
+    SWINT_T     len = strlen( path );
     char    *c;
 
     /* For windows users */
@@ -179,7 +179,7 @@ void normalize_path(char *path)
 /* Is a file a directory?
 */
 
-int     isdirectory(char *path)
+SWINT_T     isdirectory(char *path)
 {
     struct stat stbuf;
 
@@ -191,7 +191,7 @@ int     isdirectory(char *path)
 /* Is a file a regular file?
 */
 
-int     isfile(char *path)
+SWINT_T     isfile(char *path)
 {
     struct stat stbuf;
 
@@ -203,7 +203,7 @@ int     isfile(char *path)
 /* Is a file a link?
 */
 
-int     islink(char *path)
+SWINT_T     islink(char *path)
 {
 #ifdef HAVE_LSTAT
     struct stat stbuf;
@@ -220,7 +220,7 @@ int     islink(char *path)
 ** Return -1 if there's a problem.
 */
 
-int     getsize(char *path)
+SWINT_T     getsize(char *path)
 {
     struct stat stbuf;
 
@@ -252,15 +252,15 @@ void    indexpath(SWISH * sw, char *path)
 /* maybe some day this could be chunked reading? */
 /* no, maybe some day this will go away... */
 
-char   *read_stream(SWISH *sw, FileProp *fprop, int is_text)
+char   *read_stream(SWISH *sw, FileProp *fprop, SWINT_T is_text)
 {
-    long    c,
+    SWINT_T    c,
             offset;
-    long    bufferlen;
+    SWINT_T    bufferlen;
     unsigned char *buffer, *tmp = NULL;
     size_t  bytes_read;
-    long    filelen     = fprop->fsize;   /* Number of bytes we think we need to read */
-    long    max_size    = sw->truncateDocSize; 
+    SWINT_T    filelen     = fprop->fsize;   /* Number of bytes we think we need to read */
+    SWINT_T    max_size    = sw->truncateDocSize; 
 
 
     if ( filelen && !fprop->hasfilter )
@@ -281,9 +281,9 @@ char   *read_stream(SWISH *sw, FileProp *fprop, int is_text)
         /* JFP - substitute null chars, VFC record may have null char in reclen word, try to discard them */
         if ( !fprop->index_no_content && is_text && strlen( (char *)buffer ) < bytes_read )
         {
-            int i;
-            int j = 0;
-            int i_bytes_read = (int)bytes_read;
+            SWINT_T i;
+            SWINT_T j = 0;
+            SWINT_T i_bytes_read = (SWINT_T)bytes_read;
             
             for (i = 0; i < i_bytes_read; ++i) {
                 if (buffer[i] == '\0') {
@@ -293,12 +293,12 @@ char   *read_stream(SWISH *sw, FileProp *fprop, int is_text)
             }
 
             if ( j )
-                progwarn("Substituted %d embedded null character(s) in file '%s' with a newline\n", j, fprop->real_path);
+                progwarn("Substituted %lld embedded null character(s) in file '%s' with a newline\n", j, fprop->real_path);
         }
 
 
-        /* Reset length of buffer -- fsize is used by the parsers to say how long the buffer is */
-        fprop->fsize = (long)bytes_read;  /* should be the same as strlen if in text mode */
+        /* Reset length of buffer -- fsize is used by the parsers to say how SWINT_T the buffer is */
+        fprop->fsize = (SWINT_T)bytes_read;  /* should be the same as strlen if in text mode */
 
         return (char *) buffer;
 
@@ -366,7 +366,7 @@ char   *read_stream(SWISH *sw, FileProp *fprop, int is_text)
 void flush_stream( FileProp *fprop )
 {
     static char tmpbuf[4096];
-    int  read;
+    SWINT_T  read;
 
 
     while ( fprop->bytes_read < fprop->fsize )
@@ -488,7 +488,7 @@ FileProp *file_properties(char *real_path, char *work_file, SWISH * sw)
 
     if (!stat(fprop->work_path, &stbuf))
     {
-        fprop->fsize = (long) stbuf.st_size;
+        fprop->fsize = (SWINT_T) stbuf.st_size;
         fprop->source_size = fprop->fsize;  /* to report the size of the original file */
         fprop->mtime = stbuf.st_mtime;
     }
@@ -501,8 +501,8 @@ FileProp *file_properties(char *real_path, char *work_file, SWISH * sw)
 
 
 #ifdef DEBUG
-    fprintf(stderr, "file_properties: path=%s, (workpath=%s), fsize=%ld, last_mod=%ld Doctype: %d Filter: %p\n",
-            fprop->real_path, fprop->work_path, (long) fprop->fsize, (long) fprop->mtime, fprop->doctype, fprop->filterprog);
+    fprintf(stderr, "file_properties: path=%s, (workpath=%s), fsize=%lld, last_mod=%lld Doctype: %lld Filter: %p\n",
+            fprop->real_path, fprop->work_path, (SWINT_T) fprop->fsize, (SWINT_T) fprop->mtime, fprop->doctype, fprop->filterprog);
 #endif
 
     return fprop;
@@ -553,13 +553,13 @@ static char *temp_file_template = "XXXXXX";
 *
 ***********************************************************************/
 
-FILE *create_tempfile(SWISH *sw, const char *f_mode, char *prefix, char **file_name_buffer, int remove_file_name )
+FILE *create_tempfile(SWISH *sw, const char *f_mode, char *prefix, char **file_name_buffer, SWINT_T remove_file_name )
 {
-    int         temp_fd;
+    SWINT_T         temp_fd;
     mode_t      old_mode;
     FILE        *temp_file;
     char        *file_name;
-    int         file_name_len;
+    SWINT_T         file_name_len;
     struct MOD_Index *idx = sw->Index;
     char        *tmpdir = NULL;
     file_name_len = (prefix ? strlen(prefix) : 0) + strlen( temp_file_template ) + strlen( TEMP_FILE_PREFIX );

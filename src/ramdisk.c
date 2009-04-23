@@ -62,8 +62,8 @@ struct ramdisk
 {
    sw_off_t cur_pos;
    sw_off_t end_pos;
-   unsigned int n_buffers;
-   unsigned int buf_size;
+   SWUINT_T n_buffers;
+   SWUINT_T buf_size;
    unsigned char **buffer;
    MEM_ZONE *zone;
 };
@@ -114,17 +114,17 @@ struct ramdisk *rd = (struct ramdisk *)fp;
 /* Writes to the ramdisk - The parameters are identical to those in fwrite */
 size_t ramdisk_write(const void *buffer,size_t sz1, size_t sz2, FILE *fp)
 {
-unsigned int lenbuf=(unsigned int)(sz1 *sz2);
+SWUINT_T lenbuf=(SWUINT_T)(sz1 *sz2);
 struct ramdisk *rd = (struct ramdisk *)fp;
 unsigned char *buf = (unsigned char *)buffer;
-unsigned int num_buffer,start_pos;
-unsigned int avail;
+SWUINT_T num_buffer,start_pos;
+SWUINT_T avail;
 
-    num_buffer = (unsigned int)(rd->cur_pos / (sw_off_t)rd->buf_size);
-    start_pos = (unsigned int)(rd->cur_pos % (sw_off_t)rd->buf_size);
+    num_buffer = (SWUINT_T)(rd->cur_pos / (sw_off_t)rd->buf_size);
+    start_pos = (SWUINT_T)(rd->cur_pos % (sw_off_t)rd->buf_size);
 
     avail = rd->buf_size - start_pos;
-    while(avail<=(unsigned int)lenbuf)
+    while(avail<=(SWUINT_T)lenbuf)
     {
         if(avail)
             memcpy(rd->buffer[num_buffer]+start_pos,buf,avail);
@@ -181,23 +181,23 @@ struct ramdisk *rd = (struct ramdisk *)fp;
 size_t ramdisk_read(void *buf, size_t sz1, size_t sz2, FILE *fp)
 {
 struct ramdisk *rd = (struct ramdisk *)fp;
-unsigned long len = (unsigned long) (sz1 * sz2);
+SWUINT_T len = (SWUINT_T) (sz1 * sz2);
 unsigned char *buffer = (unsigned char *)buf;
-unsigned int avail, num_buffer, start_pos, buffer_offset;
+SWUINT_T avail, num_buffer, start_pos, buffer_offset;
 
     if(rd->cur_pos >= rd->end_pos)
     return 0;
     if((rd->cur_pos + (sw_off_t)len) > rd->end_pos)
     {
-        len = (unsigned long)(rd->end_pos - rd->cur_pos);
+        len = (SWUINT_T)(rd->end_pos - rd->cur_pos);
     }
-    num_buffer = (unsigned int)(rd->cur_pos / (sw_off_t)rd->buf_size);
-    start_pos = (unsigned int)(rd->cur_pos % (sw_off_t)rd->buf_size);
+    num_buffer = (SWUINT_T)(rd->cur_pos / (sw_off_t)rd->buf_size);
+    start_pos = (SWUINT_T)(rd->cur_pos % (sw_off_t)rd->buf_size);
 
     buffer_offset = 0;
 
     avail = rd->buf_size - start_pos;
-    while(avail < (unsigned int)len)
+    while(avail < (SWUINT_T)len)
     {
         memcpy(buffer+buffer_offset,rd->buffer[num_buffer]+start_pos,avail);
         buffer_offset += avail;
@@ -220,7 +220,7 @@ int ramdisk_getc(FILE *fp)   // no rw64
 unsigned char c;
 
     ramdisk_read((void *)&c, 1, 1, fp);
-    return (int) ((unsigned char)c);
+    return (SWINT_T) ((unsigned char)c);
 }
 
 int ramdisk_putc(int c, FILE *fp)    // no rw64

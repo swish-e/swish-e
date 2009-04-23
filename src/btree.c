@@ -53,7 +53,7 @@ $Id$
 /* Round in BTREE_MinPageSize */
 #define BTREE_RoundPageSize(n) (sw_off_t)(((sw_off_t)(n) + (sw_off_t)(BTREE_MinPageSize - 1)) & (~(sw_off_t)(BTREE_MinPageSize - 1)))
 
-#define BTREE_PageHeaderSize (2 * sizeof(sw_off_t) + 4 * sizeof(unsigned int)) 
+#define BTREE_PageHeaderSize (2 * sizeof(sw_off_t) + 4 * sizeof(SWUINT_T)) 
 
 #define BTREE_PageData(pg) ((pg)->data + BTREE_PageHeaderSize)
 #define BTREE_EndData(pg) ((pg)->data + (pg)->data_end)
@@ -61,26 +61,26 @@ $Id$
 #define BTREE_KeyDataOffset(pg,i) ((*(BTREE_KeyIndexOffset((pg->data),(i))) <<8) + *(BTREE_KeyIndexOffset((pg->data),(i)) + 1))
 #define BTREE_KeyData(pg,i) ((pg)->data + BTREE_KeyDataOffset((pg),(i)))
 
-#define BTREE_SetNextPage(pg,num) ( *(int *)((pg)->data + 0 * sizeof(sw_off_t)) = PACKFILEOFFSET(num))
-#define BTREE_SetPrevPage(pg,num) ( *(int *)((pg)->data + 1 * sizeof(sw_off_t)) = PACKFILEOFFSET(num))
-#define BTREE_SetSize(pg,num)     ( *(int *)((pg)->data + 2 * sizeof(sw_off_t) + 0 * sizeof(unsigned int)) = PACKLONG(num))
-#define BTREE_SetNumKeys(pg,num)  ( *(int *)((pg)->data + 2 * sizeof(sw_off_t) + 1 * sizeof(unsigned int)) = PACKLONG(num))
-#define BTREE_SetFlags(pg,num)    ( *(int *)((pg)->data + 2 * sizeof(sw_off_t) + 2 * sizeof(unsigned int)) = PACKLONG(num))
-#define BTREE_SetDataEnd(pg,num)  ( *(int *)((pg)->data + 2 * sizeof(sw_off_t) + 3 * sizeof(unsigned int)) = PACKLONG(num))
+#define BTREE_SetNextPage(pg,num) ( *(SWINT_T *)((pg)->data + 0 * sizeof(sw_off_t)) = PACKFILEOFFSET(num))
+#define BTREE_SetPrevPage(pg,num) ( *(SWINT_T *)((pg)->data + 1 * sizeof(sw_off_t)) = PACKFILEOFFSET(num))
+#define BTREE_SetSize(pg,num)     ( *(SWINT_T *)((pg)->data + 2 * sizeof(sw_off_t) + 0 * sizeof(SWUINT_T)) = PACKLONG(num))
+#define BTREE_SetNumKeys(pg,num)  ( *(SWINT_T *)((pg)->data + 2 * sizeof(sw_off_t) + 1 * sizeof(SWUINT_T)) = PACKLONG(num))
+#define BTREE_SetFlags(pg,num)    ( *(SWINT_T *)((pg)->data + 2 * sizeof(sw_off_t) + 2 * sizeof(SWUINT_T)) = PACKLONG(num))
+#define BTREE_SetDataEnd(pg,num)  ( *(SWINT_T *)((pg)->data + 2 * sizeof(sw_off_t) + 3 * sizeof(SWUINT_T)) = PACKLONG(num))
 
-#define BTREE_GetNextPage(pg,num) ( (num) = UNPACKFILEOFFSET(*(int *)((pg)->data + 0 * sizeof(sw_off_t))))
-#define BTREE_GetPrevPage(pg,num) ( (num) = UNPACKFILEOFFSET(*(int *)((pg)->data + 1 * sizeof(sw_off_t))))
-#define BTREE_GetSize(pg,num)     ( (num) = UNPACKLONG(*(int *)((pg)->data + 2 * sizeof(sw_off_t) + 0 * sizeof(unsigned int))))
-#define BTREE_GetNumKeys(pg,num)  ( (num) = UNPACKLONG(*(int *)((pg)->data + 2 * sizeof(sw_off_t) + 1 * sizeof(unsigned int))))
-#define BTREE_GetFlags(pg,num)    ( (num) = UNPACKLONG(*(int *)((pg)->data + 2 * sizeof(sw_off_t) + 2 * sizeof(unsigned int))))
-#define BTREE_GetDataEnd(pg,num)  ( (num) = UNPACKLONG(*(int *)((pg)->data + 3 * sizeof(sw_off_t) + 2 * sizeof(unsigned int))))
+#define BTREE_GetNextPage(pg,num) ( (num) = UNPACKFILEOFFSET(*(SWINT_T *)((pg)->data + 0 * sizeof(sw_off_t))))
+#define BTREE_GetPrevPage(pg,num) ( (num) = UNPACKFILEOFFSET(*(SWINT_T *)((pg)->data + 1 * sizeof(sw_off_t))))
+#define BTREE_GetSize(pg,num)     ( (num) = UNPACKLONG(*(SWINT_T *)((pg)->data + 2 * sizeof(sw_off_t) + 0 * sizeof(SWUINT_T))))
+#define BTREE_GetNumKeys(pg,num)  ( (num) = UNPACKLONG(*(SWINT_T *)((pg)->data + 2 * sizeof(sw_off_t) + 1 * sizeof(SWUINT_T))))
+#define BTREE_GetFlags(pg,num)    ( (num) = UNPACKLONG(*(SWINT_T *)((pg)->data + 2 * sizeof(sw_off_t) + 2 * sizeof(SWUINT_T))))
+#define BTREE_GetDataEnd(pg,num)  ( (num) = UNPACKLONG(*(SWINT_T *)((pg)->data + 3 * sizeof(sw_off_t) + 2 * sizeof(SWUINT_T))))
 
 /* Flags */
 #define BTREE_ROOT_NODE 0x1
 #define BTREE_LEAF_NODE 0x2
 
 
-int BTREE_WritePageToDisk(FILE *fp, BTREE_Page *pg)
+SWINT_T BTREE_WritePageToDisk(FILE *fp, BTREE_Page *pg)
 {
     BTREE_SetNextPage(pg,pg->next);
     BTREE_SetPrevPage(pg,pg->prev);
@@ -92,9 +92,9 @@ int BTREE_WritePageToDisk(FILE *fp, BTREE_Page *pg)
     return sw_fwrite(pg->data,pg->size,1,fp);
 }
 
-int BTREE_WritePage(BTREE *b, BTREE_Page *pg)
+SWINT_T BTREE_WritePage(BTREE *b, BTREE_Page *pg)
 {
-int hash = (int)(pg->page_number % (sw_off_t)BTREE_CACHE_SIZE);
+SWINT_T hash = (SWINT_T)(pg->page_number % (sw_off_t)BTREE_CACHE_SIZE);
 BTREE_Page *tmp;
     pg->modified =1;
     if((tmp = b->cache[hash]))
@@ -113,9 +113,9 @@ BTREE_Page *tmp;
     return 0;
 }
 
-int BTREE_FlushCache(BTREE *b)
+SWINT_T BTREE_FlushCache(BTREE *b)
 {
-int i;
+SWINT_T i;
 BTREE_Page *tmp, *next;
     for(i = 0; i < BTREE_CACHE_SIZE; i++)
     {
@@ -148,9 +148,9 @@ BTREE_Page *tmp, *next;
     return 0;
 }
 
-int BTREE_CleanCache(BTREE *b)
+SWINT_T BTREE_CleanCache(BTREE *b)
 {
-int i;
+SWINT_T i;
 BTREE_Page *tmp,*next;
     for(i = 0; i < BTREE_CACHE_SIZE; i++)
     {
@@ -189,7 +189,7 @@ BTREE_Page *pg = (BTREE_Page *)emalloc(sizeof(BTREE_Page) + BTREE_MinPageSize);
 
 BTREE_Page *BTREE_ReadPage(BTREE *b, sw_off_t page_number)
 {
-int hash = (int)(page_number % (sw_off_t)BTREE_CACHE_SIZE);
+SWINT_T hash = (SWINT_T)(page_number % (sw_off_t)BTREE_CACHE_SIZE);
 BTREE_Page *tmp;
     if((tmp = b->cache[hash]))
     {
@@ -211,12 +211,12 @@ BTREE_Page *tmp;
     return tmp;
 }
 
-BTREE_Page *BTREE_NewPage(BTREE *b, unsigned int size, unsigned int flags)
+BTREE_Page *BTREE_NewPage(BTREE *b, SWUINT_T size, SWUINT_T flags)
 {
 BTREE_Page *pg;
 sw_off_t offset;
 FILE *fp = b->fp;
-int hash;
+SWINT_T hash;
     /* Round up size */
     size = BTREE_RoundPageSize(size);
 
@@ -258,7 +258,7 @@ int hash;
     /* add to cache */
     pg->modified = 1;
     pg->in_use = 1;
-    hash = (int) (pg->page_number % (sw_off_t)BTREE_CACHE_SIZE);
+    hash = (SWINT_T) (pg->page_number % (sw_off_t)BTREE_CACHE_SIZE);
     pg->next_cache = b->cache[hash];
     b->cache[hash] = pg;
     return pg;
@@ -266,7 +266,7 @@ int hash;
 
 void BTREE_FreePage(BTREE *b, BTREE_Page *pg)
 {
-int hash = (int)(pg->page_number % (sw_off_t)BTREE_CACHE_SIZE);
+SWINT_T hash = (SWINT_T)(pg->page_number % (sw_off_t)BTREE_CACHE_SIZE);
 BTREE_Page *tmp;
 
     tmp = b->cache[hash];
@@ -292,9 +292,9 @@ BTREE_Page *tmp;
     }
 }
 
-int BTREE_CompareKeys(unsigned char *key1, int key_len1, unsigned char *key2, int key_len2)
+SWINT_T BTREE_CompareKeys(unsigned char *key1, SWINT_T key_len1, unsigned char *key2, SWINT_T key_len2)
 {
-int rc;
+SWINT_T rc;
 
     if(key_len1 > key_len2)
         rc = memcmp(key1,key2,key_len2);
@@ -308,10 +308,10 @@ int rc;
 }
 
 
-int BTREE_GetPositionForKey(BTREE_Page *pg, unsigned char *key, int key_len, int *comp)
+SWINT_T BTREE_GetPositionForKey(BTREE_Page *pg, unsigned char *key, SWINT_T key_len, SWINT_T *comp)
 {
-int i,j,k,isbigger=-1;
-int key_len_k;
+SWINT_T i,j,k,isbigger=-1;
+SWINT_T key_len_k;
 unsigned char *key_k;
     /* Use binary search for adding key */
     /* Look for the position to insert using a binary search */
@@ -336,14 +336,14 @@ unsigned char *key_k;
     return k;
 }
 
-sw_off_t BTREE_GetKeyFromPage(BTREE *b, BTREE_Page *pg, unsigned char *key, int key_len, unsigned char **found, int *found_len)
+sw_off_t BTREE_GetKeyFromPage(BTREE *b, BTREE_Page *pg, unsigned char *key, SWINT_T key_len, unsigned char **found, SWINT_T *found_len)
 {
-int k,comp = 0;
+SWINT_T k,comp = 0;
 sw_off_t data_pointer;
 
     k = BTREE_GetPositionForKey(pg, key, key_len, &comp);
 
-    if(comp > 0 && k == (int) pg->n && k)
+    if(comp > 0 && k == (SWINT_T) pg->n && k)
         k--;
 
     if(comp < 0 && k) 
@@ -369,13 +369,13 @@ sw_off_t data_pointer;
 
 }
 
-int BTREE_AddKeyToPage(BTREE_Page *pg, int position, unsigned char *key, int key_len, sw_off_t data_pointer)
+SWINT_T BTREE_AddKeyToPage(BTREE_Page *pg, SWINT_T position, unsigned char *key, SWINT_T key_len, sw_off_t data_pointer)
 {
 unsigned char buffer[BTREE_MaxPageSize];
-int j,k;
+SWINT_T j,k;
 unsigned char *p;
 unsigned char *new_key_start, *new_key_end;
-int new_entry_len , tmp;
+SWINT_T new_entry_len , tmp;
 
     data_pointer = PACKFILEOFFSET(data_pointer);
 
@@ -389,7 +389,7 @@ int new_entry_len , tmp;
 
     p += (pg->n - k + 1) * SizeInt16;
 
-    if(k == (int)pg->n)
+    if(k == (SWINT_T)pg->n)
     {
         if(k)
         {
@@ -415,7 +415,7 @@ int new_entry_len , tmp;
     new_key_end = p;
     new_entry_len = new_key_end - new_key_start;
 
-    if(k < (int) pg->n)
+    if(k < (SWINT_T) pg->n)
     {
         memcpy(p,BTREE_KeyData(pg,k), BTREE_EndData(pg) - BTREE_KeyData(pg,k));
         p += BTREE_EndData(pg) - BTREE_KeyData(pg,k);
@@ -428,7 +428,7 @@ int new_entry_len , tmp;
         *(BTREE_KeyIndexOffset(buffer,j) + 1) = (unsigned char) (tmp & 0xff);
     }
 
-    for(j = (int)(pg->n - 1) ; j >=k; j--)
+    for(j = (SWINT_T)(pg->n - 1) ; j >=k; j--)
     {
         tmp = BTREE_KeyDataOffset(pg,j) + new_entry_len + SizeInt16;
         *(BTREE_KeyIndexOffset(buffer,j + 1)) =  (unsigned char)((tmp & 0xff00) >>8);
@@ -446,13 +446,13 @@ int new_entry_len , tmp;
     return k;
 }
 
-int BTREE_DelKeyInPage(BTREE_Page *pg, int pos)
+SWINT_T BTREE_DelKeyInPage(BTREE_Page *pg, SWINT_T pos)
 {
 unsigned char buffer[BTREE_MaxPageSize];
 unsigned char *p, *q;
 unsigned char *del_key_start, *del_key_end;
-int del_entry_len , tmp;
-int j, k = pos;
+SWINT_T del_entry_len , tmp;
+SWINT_T j, k = pos;
 
 
 
@@ -463,7 +463,7 @@ int j, k = pos;
     memcpy(p,pg->data,BTREE_KeyIndexOffset(pg->data,k) - pg->data);
        p += BTREE_KeyIndexOffset(pg->data,k) - pg->data;
 
-    if((k + 1) < (int)pg->n)
+    if((k + 1) < (SWINT_T)pg->n)
     {
         memcpy(p,BTREE_KeyIndexOffset(pg->data,k + 1), BTREE_KeyIndexOffset(pg->data,pg->n) - BTREE_KeyIndexOffset(pg->data,k + 1));
           p += BTREE_KeyIndexOffset(pg->data,pg->n) - BTREE_KeyIndexOffset(pg->data,k + 1);
@@ -475,7 +475,7 @@ int j, k = pos;
         memcpy(p,BTREE_KeyData(pg,0),BTREE_KeyData(pg,k) - BTREE_KeyData(pg,0));
         p += BTREE_KeyData(pg,k) - BTREE_KeyData(pg,0);
     }
-    if((k + 1) < (int)pg->n)
+    if((k + 1) < (SWINT_T)pg->n)
     {
         memcpy(p,BTREE_KeyData(pg,k + 1),BTREE_EndData(pg) - BTREE_KeyData(pg,k + 1));
         p += BTREE_EndData(pg) - BTREE_KeyData(pg,k + 1);
@@ -495,7 +495,7 @@ int j, k = pos;
         *(BTREE_KeyIndexOffset(buffer,j) + 1) = (unsigned char) (tmp & 0xff);
     }
 
-    for(j = (int)(pg->n - 1) ; j >k; j--)
+    for(j = (SWINT_T)(pg->n - 1) ; j >k; j--)
     {
         tmp = BTREE_KeyDataOffset(pg,j) - del_entry_len - SizeInt16;
         *(BTREE_KeyIndexOffset(buffer,j - 1)) =  (unsigned char)((tmp & 0xff00) >>8);
@@ -509,10 +509,10 @@ int j, k = pos;
     return k;
 }
 
-BTREE *BTREE_New(FILE *fp, unsigned int size)
+BTREE *BTREE_New(FILE *fp, SWUINT_T size)
 {
 BTREE *b;
-int i;
+SWINT_T i;
     b = (BTREE *) emalloc(sizeof(BTREE));
     b->page_size = size;
     b->fp = fp;
@@ -522,7 +522,7 @@ int i;
     return b;
 }
 
-BTREE *BTREE_Create(FILE *fp, unsigned int size)
+BTREE *BTREE_Create(FILE *fp, SWUINT_T size)
 {
 BTREE *b;
 BTREE_Page *root;
@@ -544,7 +544,7 @@ BTREE_Page *root;
 }
 
 
-BTREE *BTREE_Open(FILE *fp, int size, sw_off_t root_page)
+BTREE *BTREE_Open(FILE *fp, SWINT_T size, sw_off_t root_page)
 {
 BTREE *b;
     /* Round up size */
@@ -570,13 +570,13 @@ sw_off_t root_page = bt->root_page;
 }
 
 
-BTREE_Page *BTREE_Walk(BTREE *b, unsigned char *key, int key_len)
+BTREE_Page *BTREE_Walk(BTREE *b, unsigned char *key, SWINT_T key_len)
 {
 BTREE_Page *pg = BTREE_ReadPage(b, b->root_page);
-unsigned int i = 0;
+SWUINT_T i = 0;
 sw_off_t next_page;
 unsigned char *found;
-unsigned int found_len;
+SWUINT_T found_len;
 sw_off_t father_page;
 
     b->tree[i++] = 0;  /* No father for root */    
@@ -597,10 +597,10 @@ sw_off_t father_page;
 BTREE_Page *BTREE_SplitPage(BTREE *b, BTREE_Page *pg)
 {
 BTREE_Page *new_pg = BTREE_NewPage(b, pg->size, pg->flags);
-int         i,n;
+SWINT_T         i,n;
 unsigned char *key_data, *p, *q, *start;
-int key_len;
-int tmp;
+SWINT_T key_len;
+SWINT_T tmp;
 
     n=pg->n / 2;
 
@@ -625,7 +625,7 @@ int tmp;
 
     pg->n -= n;
     p = BTREE_KeyIndexOffset(pg->data, pg->n);
-    for(i = 0; i < (int)pg->n ; i++)
+    for(i = 0; i < (SWINT_T)pg->n ; i++)
     {
         key_data = start = BTREE_KeyData(pg,i);
         key_len = uncompress2(&key_data);
@@ -643,13 +643,13 @@ int tmp;
 }
 
 
-int BTREE_InsertInPage(BTREE *b, BTREE_Page *pg, unsigned char *key, int key_len, sw_off_t data_pointer, int level, int update)
+SWINT_T BTREE_InsertInPage(BTREE *b, BTREE_Page *pg, unsigned char *key, SWINT_T key_len, sw_off_t data_pointer, SWINT_T level, SWINT_T update)
 {
 BTREE_Page *new_pg, *next_pg, *root_page, *father_pg, *tmp_pg;
-unsigned int free_space, required_space;
-int key_pos, key_len0;
+SWUINT_T free_space, required_space;
+SWINT_T key_pos, key_len0;
 unsigned char *key_data0;
-int comp;
+SWINT_T comp;
 
     required_space = MAXINTCOMPSIZE + key_len + sizeof(sw_off_t);
 
@@ -794,7 +794,7 @@ int comp;
 }
 
 
-int BTREE_Insert(BTREE *b, unsigned char *key, int key_len, sw_off_t data_pointer)
+SWINT_T BTREE_Insert(BTREE *b, unsigned char *key, SWINT_T key_len, sw_off_t data_pointer)
 {
 BTREE_Page *pg = BTREE_Walk(b,key,key_len);
 
@@ -807,9 +807,9 @@ BTREE_Page *pg = BTREE_Walk(b,key,key_len);
     return BTREE_InsertInPage(b, pg, key, key_len, data_pointer, b->levels - 1, 0);
 }
 
-int BTREE_Update(BTREE *b, unsigned char *key, int key_len, sw_off_t new_data_pointer)
+SWINT_T BTREE_Update(BTREE *b, unsigned char *key, SWINT_T key_len, sw_off_t new_data_pointer)
 {
-int comp, k, key_len_k;
+SWINT_T comp, k, key_len_k;
 unsigned char *key_k;
 BTREE_Page *pg = BTREE_Walk(b,key,key_len);
 
@@ -843,13 +843,13 @@ BTREE_Page *pg = BTREE_Walk(b,key,key_len);
 }
 
 
-sw_off_t BTREE_Search(BTREE *b, unsigned char *key, int key_len, unsigned char **found, int *found_len, int exact_match)
+sw_off_t BTREE_Search(BTREE *b, unsigned char *key, SWINT_T key_len, unsigned char **found, SWINT_T *found_len, SWINT_T exact_match)
 {
 BTREE_Page *pg = BTREE_ReadPage(b, b->root_page);
-unsigned int i = 0;
+SWUINT_T i = 0;
 sw_off_t next_page;
 unsigned char *key_k;
-unsigned int key_len_k;
+SWUINT_T key_len_k;
 sw_off_t father_page;
 sw_off_t data_pointer;
 
@@ -884,13 +884,13 @@ sw_off_t data_pointer;
     return data_pointer;
 }
 
-sw_off_t BTREE_Next(BTREE *b, unsigned char **found, int *found_len)
+sw_off_t BTREE_Next(BTREE *b, unsigned char **found, SWINT_T *found_len)
 {
 BTREE_Page *pg = BTREE_ReadPage(b, b->current_page);
 sw_off_t next_page;
 sw_off_t data_pointer;
 unsigned char *key_k;
-int key_len_k;
+SWINT_T key_len_k;
     b->current_position++;
     if(pg->n == b->current_position)
     {
@@ -906,7 +906,7 @@ int key_len_k;
     *found_len = key_len_k = uncompress2(&key_k);
     *found = emalloc(key_len_k);
     memcpy(*found,key_k,key_len_k);
-    data_pointer = UNPACKFILEOFFSET(*(unsigned long *) (key_k + key_len_k));
+    data_pointer = UNPACKFILEOFFSET(*(SWUINT_T *) (key_k + key_len_k));
 
     BTREE_FreePage(b,pg);
 
@@ -932,11 +932,11 @@ int main()
 FILE *fp;
 BTREE *bt;
 unsigned char buffer[20];
-int i;
-static int nums[N_TEST];
+SWINT_T i;
+static SWINT_T nums[N_TEST];
 sw_off_t root_page;
 unsigned char *found;
-int found_len;
+SWINT_T found_len;
     srand(time(NULL));
 
     goto test2;
@@ -955,7 +955,7 @@ printf("\n\nIndexing\n\n");
         nums[i]=i;
 
 
-        sprintf(buffer,"%d",nums[i]);
+        sprintf(buffer,"%lld",nums[i]);
 //        sprintf(buffer,"%.12d",nums[i]);
         BTREE_Insert(bt,buffer,strlen(buffer),nums[i]);
         if(nums[i]!= BTREE_Search(bt,buffer,strlen(buffer),&found,&found_len,1))
@@ -963,7 +963,7 @@ printf("\n\nIndexing\n\n");
         if(!(i%1000))
         {
             BTREE_FlushCache(bt);
-            printf("%d             \r",i);
+            printf("%lld             \r",i);
         }
     }
 
@@ -978,13 +978,13 @@ printf("\n\nSearching\n\n");
 
     for(i=0;i<N_TEST;i++)
     {
-        sprintf(buffer,"%d",nums[i]);
+        sprintf(buffer,"%lld",nums[i]);
 //        sprintf(buffer,"%.12d",nums[i]);
 
         if(nums[i] != BTREE_Search(bt,buffer,strlen(buffer),&found,&found_len,1))
             printf("\n\nmal %s\n\n",buffer);
         if(!(i%1000))
-            printf("%d             \r",i);
+            printf("%lld             \r",i);
     }
 
     sw_fclose(fp);
@@ -1005,7 +1005,7 @@ printf("\n\nIndexing\n\n");
     {
 //        nums[i] = rand();
         nums[i]=i;
-        sprintf(buffer,"%d",nums[i]);
+        sprintf(buffer,"%lld",nums[i]);
 //        sprintf(buffer,"%.12d",nums[i]);
         BTREE_Insert(bt,buffer,strlen(buffer),nums[i]);
         if(nums[i]!= BTREE_Search(bt,buffer,strlen(buffer),&found,&found_len,1))
@@ -1013,7 +1013,7 @@ printf("\n\nIndexing\n\n");
         if(!(i%1000))
         {
             BTREE_FlushCache(bt);
-            printf("%d            \r",i);
+            printf("%lld            \r",i);
         }
     }
 
@@ -1027,11 +1027,11 @@ printf("\n\nSearching\n\n");
 
     for(i=0;i<N_TEST;i++)
     {
-        sprintf(buffer,"%d",nums[i]);
+        sprintf(buffer,"%lld",nums[i]);
         if(nums[i] != BTREE_Search(bt,buffer,strlen(buffer),&found,&found_len,1))
             printf("\n\nmal %s\n\n",buffer);
         if(!(i%1000))
-            printf("%d            \r",i);
+            printf("%lld            \r",i);
     }
 
 

@@ -41,12 +41,12 @@ $Id$
 struct MOD_HTTP
 {
         /* spider directory for index (HTTP method) */
-    int     lenspiderdirectory;
+    SWINT_T     lenspiderdirectory;
     char   *spiderdirectory;
 
         /* http system specific configuration parameters */
-    int     maxdepth;
-    int     delay;
+    SWINT_T     maxdepth;
+    SWINT_T     delay;
     struct multiswline *equivalentservers;
 
     struct url_info *url_hash[BIGHASHSIZE];
@@ -54,13 +54,13 @@ struct MOD_HTTP
 
 void initModule_HTTP (SWISH *);
 void freeModule_HTTP (SWISH *);
-int  configModule_HTTP (SWISH *, StringList *);
+SWINT_T  configModule_HTTP (SWISH *, StringList *);
 
 
-char *url_method ( char *url, int *plen );
-char *url_serverport (char *url, int *plen);
-char *url_uri (char *url, int *plen);
-int get(SWISH * sw, char *contenttype_or_redirect, time_t *last_modified, time_t * plastretrieval, char *file_prefix, char *url);
+char *url_method ( char *url, SWINT_T *plen );
+char *url_serverport (char *url, SWINT_T *plen);
+char *url_uri (char *url, SWINT_T *plen);
+SWINT_T get(SWISH * sw, char *contenttype_or_redirect, time_t *last_modified, time_t * plastretrieval, char *file_prefix, char *url);
 int cmdf (int (*cmd)(const char *), char *fmt, char *,pid_t pid);       // no rw64. This is passed unlink()
 char *readline (FILE *fp);
 pid_t lgetpid ();

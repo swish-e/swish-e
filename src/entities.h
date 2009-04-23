@@ -47,7 +47,7 @@ struct MOD_Entities {
    /* none */
    
    /* private: don't use outside this module! */
-   int   convertEntities;
+   SWINT_T   convertEntities;
 };
 
 
@@ -56,11 +56,11 @@ struct MOD_Entities {
 
 void initModule_Entities (SWISH *sw);
 void freeModule_Entities (SWISH *sw);
-int  configModule_Entities (SWISH *sw, StringList *sl);
+SWINT_T  configModule_Entities (SWISH *sw, StringList *sl);
 
 unsigned char *sw_ConvHTMLEntities2ISO(SWISH *sw, unsigned char *s);
 unsigned char *strConvHTMLEntities2ISO (unsigned char *buf);
-int charEntityDecode (unsigned char *buf, unsigned char **end);
+SWINT_T charEntityDecode (unsigned char *buf, unsigned char **end);
 
 
 #endif

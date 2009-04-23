@@ -78,7 +78,7 @@ FUZZY_WORD *soundex( FUZZY_OBJECT *fi, const char *inword)
         char word[MAXWORDLEN+1];
 	/* Misc Stuff  */
 	char u, l ;
-	int i, j, n;
+	SWINT_T i, j, n;
 	/* Resultant Sound Code  */
 	char soundCode[5] = "0000\0";
 	/* Group Number Lookup Table  */
@@ -129,7 +129,7 @@ FUZZY_WORD *soundex( FUZZY_OBJECT *fi, const char *inword)
 #endif
 
 	/* Make sure it actually starts with a letter  */
-	if(!isalpha((int)((unsigned char)word[0]))) 
+	if(!isalpha((SWINT_T)((unsigned char)word[0]))) 
         {
             fw->error = STEM_NOT_ALPHA;
             return fw;
@@ -141,7 +141,7 @@ FUZZY_WORD *soundex( FUZZY_OBJECT *fi, const char *inword)
 #endif
 	
 	/* Get string length and make sure its at least 3 characters  */
-	if((n = (int)strlen(word)) < 3) 
+	if((n = (SWINT_T)strlen(word)) < 3) 
         {
             fw->error = STEM_TOO_SMALL;
             return fw;
@@ -157,10 +157,10 @@ FUZZY_WORD *soundex( FUZZY_OBJECT *fi, const char *inword)
          * The source is suppose to not be soundex, so this doesn't make a lot of sense.  - moseely */
 #ifdef skip_section
         
-        if((n = (int)strlen(word)) == 4){
-                if( isdigit( (int)(unsigned char)word[1] ) 
-                 && isdigit( (int)(unsigned char)word[2] ) 
-                 && isdigit( (int)(unsigned char)word[3] ) )
+        if((n = (SWINT_T)strlen(word)) == 4){
+                if( isdigit( (SWINT_T)(unsigned char)word[1] ) 
+                 && isdigit( (SWINT_T)(unsigned char)word[2] ) 
+                 && isdigit( (SWINT_T)(unsigned char)word[3] ) )
                        return STEM_OK;  /* Hum, probably not right */
         }
 #endif
@@ -194,7 +194,7 @@ FUZZY_WORD *soundex( FUZZY_OBJECT *fi, const char *inword)
 
 		if (u != l) {
 			if (u != 0) {
-				soundCode[(int) j++] = u;
+				soundCode[(SWINT_T) j++] = u;
 			}
 			l = u;
 		}
