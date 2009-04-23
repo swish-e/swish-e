@@ -35,23 +35,22 @@ sub main {
         "backup!" => \$backup,
     ) or die Usage();
 
-    # just altering these four globs doesn't work.
-    my @globs = qw ( src/swish.[ch] src/swish2.[ch] src/rank.[ch] src/db_read.[ch] );
+    my @globs = qw ( src/*.[ch] src/snowball/*.[ch] );
     
     my $rewrite = "./rewrite-swish-src.pl";
     $rewrite .= " --verbose" if $verbose;
-    # --refresh means get the code anew. So we get rewrite... to refetch the code but not alter it for 64bit
+    
+    if ($backup) {
+        mysystem( "cd ..; cp -rp swish-e2.4 swish-e-portable.`date +'%Y%m%d-%H%M%S'`" );
+    }
+
+    # --refresh means get the code anew. So we get rewrite-swish-src.pl 
+    # to refetch the code but not alter it for 64bit
     if ($refresh) {
         mysystem( "$rewrite -refresh -no-alter" );
     }
 
-    if ($backup) {
-        #mysystem( "cd ..; tar -zcf swish-e-portable.`date +'%Y%m%d-%H%M%S'`.tar.gz swish-e2.4" );
-        mysystem( "cd ..; cp -rp swish-e2.4 swish-e-portable.`date +'%Y%m%d-%H%M%S'`" );
-    }
-    for (@globs) {
-        mysystem( "$rewrite $_" );
-    }
+    mysystem( "$rewrite @globs" );
 }
 
 sub mysystem {
@@ -60,8 +59,6 @@ sub mysystem {
     unless( $dry ) {
         system( $cmd ) && die "$prog: Failed: $cmd: $!\n";
     }
-
-
 }
 
 =pod
