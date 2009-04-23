@@ -145,7 +145,7 @@ $Id$
 /* DEFAULT_HTTP_DELAY is the default delay when using swishspider -S http */
 
 
-#define DATE_FORMAT_STRING "%Y-%m-%d %H:%M:%S %Z"
+#define DATE_FORMAT_STRING "%Y-%m-%d %H:%M:%S %Z"   /* no rw64 - %d is for strftime() */
 /* default format string for dates */
 
 
