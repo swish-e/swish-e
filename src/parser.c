@@ -175,14 +175,14 @@ typedef struct {
 } PARSE_DATA;
 
 
-/* Prototypes */
-static void start_hndl(void *data, const char *el, const char **attr);
-static void end_hndl(void *data, const char *el);
-static void char_hndl(void *data, const char *txt, int txtlen);
-static void Whitespace(void *data, const xmlChar *txt, int txtlen);
+/* Prototypes, some for *SAXFunc function pointers */
+static void start_hndl(void *data, const char *el, const char **attr);     // no rw64. libxml2 callback
+static void end_hndl(void *data, const char *el);                          // no rw64. libxml2 callback
+static void char_hndl(void *data, const char *txt, int txtlen);            // no rw64. libxml2 callback
+static void Whitespace(void *data, const xmlChar *txt, int txtlen);        // no rw64. libxml2 callback
 static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen );
 static void flush_buffer( PARSE_DATA  *parse_data, int clear );
-static void comment_hndl(void *data, const char *txt);
+static void comment_hndl(void *data, const char *txt);                     // no rw64. libxml2 callback
 static char *isIgnoreMetaName(SWISH * sw, char *tag);
 static void error(void *data, const char *msg, ...);
 static void warning(void *data, const char *msg, ...);
@@ -601,7 +601,7 @@ static void free_parse_data( PARSE_DATA *parse_data )
 *********************************************************************/
 
 
-static void start_hndl(void *data, const char *el, const char **attr)
+static void start_hndl(void *data, const char *el, const char **attr)   // no rw64
 {
     PARSE_DATA *parse_data = (PARSE_DATA *)data;
     char        tag[MAXSTRLEN + 1];
@@ -703,7 +703,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
 *********************************************************************/
 
 
-static void end_hndl(void *data, const char *el)
+static void end_hndl(void *data, const char *el)    // no rw64
 {
     PARSE_DATA *parse_data = (PARSE_DATA *)data;
     char        tag[MAXSTRLEN + 1];
@@ -754,7 +754,7 @@ static void end_hndl(void *data, const char *el)
 *
 *********************************************************************/
 
-static void char_hndl(void *data, const char *txt, int txtlen)
+static void char_hndl(void *data, const char *txt, int txtlen)  // no rw64
 {
     PARSE_DATA         *parse_data = (PARSE_DATA *)data;
 
@@ -1668,7 +1668,7 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
 *       Can't use DontBump with comments.  Might need a config variable for that.
 *
 *********************************************************************/
-static void comment_hndl(void *data, const char *txt)
+static void comment_hndl(void *data, const char *txt)   // no rw64
 {
     PARSE_DATA  *parse_data = (PARSE_DATA *)data;
     SWISH       *sw = parse_data->sw;
