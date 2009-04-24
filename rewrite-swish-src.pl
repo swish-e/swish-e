@@ -54,10 +54,6 @@ sub main {
      # reglob since we might have deleted and refetched files.
      @files = get_files(@ARGV);
 
-     unless ($alter) {
-         print "$prog: Alter mode disabled, stopping\n";
-         exit(0);
-     }
 
     # 1) INSERTS: LINES TO BE INSERTED
      # alter swish.h to contain SWINT_T and SWUINT_T typedefs.
@@ -145,20 +141,22 @@ sub main {
      # 5) DO THE REPLACEMENTS
      # 5A) WE FIRST INSERT ANY LINES WE NEED.
      #  # we should check that the file mentioned in get_files()...
-     for my $insert (@inserts) {
-         insert_at_line_unless_has_regex( @$insert );   # NOTE: does not use @exceptions !
-     }
-     # 5B) DO ALL THE OTHER MODIFICATIONS
-     FILE:
-     for my $file (@files) {
-         #print "$file\n";
-         # optimization: decide which exceptions apply to this file.
-         my @file_exceptions = grep { $file =~ /$_->{f}/ } @exceptions;
-         unless ($file =~ m/\.([ch]|xs)$/) {
-            print "$prog: not altering $file\n" if $verbose;
-            next FILE;
+     if ($alter) {
+         for my $insert (@inserts) {
+             insert_at_line_unless_has_regex( @$insert );   # NOTE: does not use @exceptions !
          }
-         rewrite_file( $file, \@regexes, \@file_exceptions, \@replacements );
+         # 5B) DO ALL THE OTHER MODIFICATIONS
+         FILE:
+         for my $file (@files) {
+             #print "$file\n";
+             # optimization: decide which exceptions apply to this file.
+             my @file_exceptions = grep { $file =~ /$_->{f}/ } @exceptions;
+             unless ($file =~ m/\.([ch]|xs)$/) {
+                print "$prog: not altering $file\n" if $verbose;
+                next FILE;
+             }
+             rewrite_file( $file, \@regexes, \@file_exceptions, \@replacements );
+         }
      }
 
      # 6) if --debug or --grind is enabled, run the results under the debugger or valgrind.
