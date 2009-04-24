@@ -831,7 +831,7 @@ static void char_hndl(void *data, const char *txt, int txtlen)  // no rw64
 *
 *********************************************************************/
 
-static void Whitespace(void *data, const xmlChar *txt, int txtlen)
+static void Whitespace(void *data, const xmlChar *txt, int txtlen)      // no rw64
 {
     PARSE_DATA         *parse_data = (PARSE_DATA *)data;
 
