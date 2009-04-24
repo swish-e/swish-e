@@ -153,8 +153,8 @@ static void printTime(double time);
 static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params );
 static void free_command_line_params( CMDPARAMS *params );
 static unsigned int isDebugWord(char *word, CMDPARAMS *params );
-static void printversion();
-static void usage();
+static void printversion(void);
+static void usage(void);
 static int check_readonly_mode( char * );
 
 static void cmd_dump( SWISH *sw, CMDPARAMS *params );
@@ -169,7 +169,7 @@ static char **fetch_indexing_params(SWISH *sw, char **argv, CMDPARAMS *params, c
 static void display_result_headers( RESULTS_OBJECT *results );
 static void swline_header_out( SWISH *sw, int v, char *desc, struct swline *sl );
 
-static SWISH  *swish_new();
+static SWISH  *swish_new(void);
 static void    swish_close(SWISH * sw);
 
 
@@ -264,7 +264,7 @@ static void printTime(double time)
 /* Prints the SWISH usage.
 */
 
-static void    usage()
+static void    usage(void)
 {
     const char *defaultIndexingSystem = "";
 
@@ -356,7 +356,7 @@ static void    usage()
     exit(1);
 }
 
-static void    printversion()
+static void    printversion(void)
 {
     printf("SWISH-E %s\n", VERSION );
     exit(0);
@@ -378,7 +378,7 @@ static void    printversion()
 *
 **************************************************************************/
 
-static SWISH  *swish_new()
+static SWISH  *swish_new(void)
 
 {
     SWISH  *sw = SwishNew();
@@ -499,7 +499,7 @@ static unsigned int isDebugWord(char *word, CMDPARAMS *params)
 *
 **************************************************************************/
 
-static CMDPARAMS *new_swish_params()
+static CMDPARAMS *new_swish_params(void)
 {
     CMDPARAMS *params = (CMDPARAMS *)emalloc( sizeof( CMDPARAMS ) );
     memset( params, 0, sizeof( CMDPARAMS ) );
