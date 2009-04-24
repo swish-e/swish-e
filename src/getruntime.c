@@ -79,7 +79,7 @@ did not update license info here because
 #endif
 
 cpu_seconds 
-get_cpu_secs ()
+get_cpu_secs (void)
 {
 #if defined (HAVE_GETRUSAGE) && defined (HAVE_SYS_RESOURCE_H)
   struct rusage rusage;

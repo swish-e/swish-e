@@ -40,7 +40,7 @@ extern "C" {
 #endif
 
 typedef double cpu_seconds;
-cpu_seconds get_cpu_secs ();
+cpu_seconds get_cpu_secs (void);
 
 #ifdef __cplusplus
 }
