@@ -216,10 +216,17 @@ sub rewrite_file {
                  s/$e->{s}/$e->{r}/g;                       # do the search&replace, and continue.
              }
          }
-         for my $r (@$regexes) {
-             # $r should operate on $_ !
-             eval $r;   # operates on $_, which is the current line
-             die "$0: Error in regex: $r: $@" if $@;
+         if (1) {
+             # 20.23 seconds. ~30% faster than below.
+             eval( join( "; ", @$regexes) );   # apply all the regexes in one, big, happy statement
+             die "$0: Error in regexes: $@" if $@;
+         } else {
+             # 26.77 seconds.
+             for my $r (@$regexes) {
+                 # $r should operate on $_ !
+                 eval $r;   # operates on $_, which is the current line
+                 die "$0: Error in regex: $r: $@" if $@;
+             }
          }
          print $wfh "$_\n";
      }
