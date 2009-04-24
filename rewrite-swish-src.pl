@@ -14,18 +14,20 @@ use List::MoreUtils qw(any);
 my $prog = basename($0);
 my $verbose;
 my $debug;
+my $grind;
 my $refresh;
 my $alter = 1;
 
 # Usage() : returns usage information
 sub Usage {
-    "$prog [--verbose] [--debug] [--refresh] [--no-alter] [files]\n" . 
+    "$prog [--verbose] [--debug] [--refresh] [--no-alter] [--grind] [files]\n" . 
     "  Tries to convert source code to 64-bit friendly.\n" .
     "  Expects to be run the base SVN directory of a swish-e checkout.\n" .
-    "  --refresh removes and repulls files matching src/*.[ch] before rewrite\n" . 
-    "  --debug builds resulting source and tries to run it under debugger\n" .
+    "  --refresh removes and repulls files matching src/*.[ch] before rewrite.\n" . 
+    "  --debug builds resulting source and runs it under debugger.\n" .
+    "  --grind builds resulting source and runs it under valgrind.\n" .
     "  see 'perldoc $prog' for more.\n" . 
-    " If you don't pass [files] it uses src/*.[ch]\n";
+    " Note: If you don't pass [files], uses src/*.[ch]\n";
 }
 
 # call main()
@@ -36,6 +38,7 @@ sub main {
     GetOptions(
         "verbose!" => \$verbose,
         "debug!" => \$debug,
+        "grind!" => \$grind,
         "refresh!" => \$refresh,
         "alter!" => \$alter,
     ) or die Usage();
@@ -127,6 +130,9 @@ sub main {
          { f=>'src/compress\.[ch]$', s=>'(void|int)\s+(un)?compress.*\*f_(putc|getc)' },   # don't change f_getc/f_putc def
          { f=>"",              s=>'int.*_(put|get)c' },    # preserve anything that looks like 'getc/putc'
          { f=>"",              s=>'_(put|get)c.*int' },    # preserve anything that looks like 'getc/putc'
+
+         #{ f=>'src/parser.c', s=>'.' },                # preserve parser.c and .h
+         #{ f=>'src/parser.h', s=>'.' },                # preserve parser.c and .h
      );
 
 
@@ -146,29 +152,35 @@ sub main {
      FILE:
      for my $file (@files) {
          #print "$file\n";
+         # optimization: decide which exceptions apply to this file.
          my @file_exceptions = grep { $file =~ /$_->{f}/ } @exceptions;
-         unless ($file =~ m/\.[ch]$/) {
+         unless ($file =~ m/\.([ch]|xs)$/) {
             print "$prog: not altering $file\n" if $verbose;
             next FILE;
          }
          rewrite_file( $file, \@regexes, \@file_exceptions, \@replacements );
      }
 
-     # 6) if --debug is enabled, run the results under the debugger.
-     #  note that this clobbers any .gdbinit file in the working directory.
-     if ($debug) {
+     # 6) if --debug or --grind is enabled, run the results under the debugger or valgrind.
+     if ($debug || $grind) {
         # run under the debugger. 
+         #  note that this clobbers any .gdbinit file in the working directory.
         system( "make clean" );
         system( "make" ) && die "$prog: 'make' failed: $!\n";
-        write_file( ".gdbinit", "run -c tests/test.config -i tests -T PARSED_WORDS -T PARSED_TEXT" );
+    }
+     if ($debug) {
+        write_file( ".gdbinit", "break parser.c:776\n run -c tests/test.config -i tests -T PARSED_WORDS -T PARSED_TEXT" );
         exec( "gdb src/.libs/swish-e" );
+     } 
+     if($grind) {
+         exec( "valgrind src/.libs/swish-e -c tests/test.config -i tests -T PARSED_WORDS -T PARSED_TEXT" );
      }
 }
 
 #================================================================
 # rewrite_file( $file, $search_and_replace_regexes, $exceptions, $replacements )
-# backs up $file to $file.bak, and
-# applies supplied regexes to the lines of a file,
+#  backs up $file to $file.bak, and applies supplied regexes and 
+#  replacements to the lines of a file.
 sub rewrite_file {
      my ($file, $regexes, $exceptions, $replacements) = @_;
      # changes a file by applying the supplied regexes to each line
@@ -181,6 +193,8 @@ sub rewrite_file {
      #}
      LINE: while(<$rfh>) {
          chomp();
+
+         # first check if we pass lines through unaltered.
          if (m{//.*no rw64} || m{/\*.*no rw64}) {   # if it has a comment with 'no rw64'...
              print "$prog: Preserving line '$_' from $file\n";
              print $wfh "$_\n";
@@ -188,12 +202,15 @@ sub rewrite_file {
          }
          for my $e (@$exceptions) { # we only get ones relevant to our file
              #if ($file =~ m/$e->{f}/ && $_ =~ m/$e->{s}/) { # if the file and the regex match...
-			 if ($_ =~ m/$e->{s}/) { # if the file and the regex match...
+			 if ($_ =~ m/$e->{s}/) { # if the regex matches... 
 				 print "$prog: Preserving line '$_' from $file\n";
 				 print $wfh "$_\n";
 				 next LINE;
 			 }
 		 }
+
+         # then, to the replacements  (static search & replaces)
+         #  and the regex (which operate on $_ via eval() )
 		 for my $e (@$replacements) {
 			 if ($file =~ m/$e->{f}/) {                     # if the file matches...
                  s/$e->{s}/$e->{r}/g;                       # do the search&replace, and continue.
@@ -234,6 +251,7 @@ sub get_files {
         return @argv;
     }
     return glob( "src/*.c src/*.h src/snowball/*.[ch]");     # don't try to handle perl/API.xs yet 
+                                                             # nor the expat stuff (?)
 }
 
 =pod
@@ -302,12 +320,17 @@ Turns on/off verbose mode. (off by default)
 
 =item --debug/--nodebug
 
-Turns on/off debug mode, which builds and exe and runs in under gdb. 
+Turns on/off debug mode, which builds an exe and runs in under gdb. 
+(off by default)
+
+=item --grind/--nogrind 
+
+Turns on/off grind mode, which builds an exe and runs it under valgrind.
 (off by default)
 
 =item --refresh/--norefresh
 
-CAREFUL: Turns on/off 'refresh' mode, which deletes all files 
+Turns on/off 'refresh' mode, which _deletes_ all files 
 matching src/*.c and src/*.h, and refetches them from SVN before 
 performing 64bit alterations. (off by default)
 
@@ -320,14 +343,15 @@ that must retain machine-native 'int' types because they are used
 as callbacks (for example with libxml2), or for deep system calls 
 (like waitpid). 
 
-Just maybe, paying close attention to 'type mismatch' warnings
-is the key. 
+Close attention to 'type mismatch' warnings is clearly important.
+Perhaps some combo of gcc options would help --
+-Wall seems to report too little, and -pedantic reports too much.
 
 =head1 TO DO
 
-Note that while this will make indexes portable between current (linux) 32bit and 64bit 
+While this port will make indexes portable between current (linux) 32bit and 64bit 
 architectures, it's possible that some systems will implement a 
-'long long' type larger than 64bits  and thus not produce binary 
+'long long' type larger than 64bits and thus not produce binary 
 compatible indexes with 64bit int systems. It's intended that this
 be handled in a later port. 
 
