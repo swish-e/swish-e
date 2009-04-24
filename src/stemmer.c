@@ -277,7 +277,8 @@ FUZZY_OBJECT *set_fuzzy_mode(FUZZY_OBJECT *fi, char *param )
     for (i = 0; i < (int)(sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0])); i++)
         if ( 0 == strcasecmp(fuzzy_opts[i].name, param ) )
         {
-            if ( fuzzy_opts[i].name == "Stem" || fuzzy_opts[i].name == "Stemming_en" )
+            /* if ( fuzzy_opts[i].name == "Stem" || fuzzy_opts[i].name == "Stemming_en" ) */
+            if ( strcmp(fuzzy_opts[i].name, "Stem") == 0 || strcmp(fuzzy_opts[i].name, "Stemming_en" ) == 0 ) 
             {
                 fprintf(stderr, "*************\n");
                 fprintf(stderr, "  Old stemmer '%s' is no longer supported -- using Stemming_en1 instead.\n", fuzzy_opts[i].name);
