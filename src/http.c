@@ -390,7 +390,7 @@ static void run_program(char* prog, char** args)
         if ( WIFEXITED( status ) ) // exited normally if non-zero
             return;
 
-        progerr("%s exited with non-zero status (%d)", prog, WEXITSTATUS(status) );
+        progerr("%s exited with non-zero status (%d)", prog, (int)WEXITSTATUS(status) );
     }
 #endif /* HAVE_SYS_WAIT_H */
 
@@ -572,7 +572,7 @@ char   *readline(FILE * fp)
 /* A local version of getpid() so that we don't have to suffer
 ** a system call each time we need it.
 */
-pid_t   lgetpid()
+pid_t   lgetpid(void)
 {
     static pid_t pid = -1;
 
@@ -765,9 +765,9 @@ void    http_indexpath(SWISH * sw, char *url)
 
 
         /* Clean up the files left by swishspider */
-        cmdf(unlink, "%s/swishspider@%ld.response", idx->tmpdir, lgetpid());
-        cmdf(unlink, "%s/swishspider@%ld.contents", idx->tmpdir, lgetpid());
-        cmdf(unlink, "%s/swishspider@%ld.links", idx->tmpdir, lgetpid());
+        cmdf(unlink, "%s/swishspider@%ld.response", idx->tmpdir, lgetpid()); // no rw64, lgetpid returns pid_t
+        cmdf(unlink, "%s/swishspider@%ld.contents", idx->tmpdir, lgetpid()); // no rw64, lgetpid returns pid_t
+        cmdf(unlink, "%s/swishspider@%ld.links", idx->tmpdir, lgetpid());    // no rw64, lgetpid returns pid_t
     }
     efree(file_prefix);
 }
@@ -783,3 +783,4 @@ struct _indexing_data_source_def HTTPIndexingDataSource = {
     http_indexpath,
     configModule_HTTP
 };
+
