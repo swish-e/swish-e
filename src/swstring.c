@@ -178,9 +178,7 @@ static char   *getword(char **in_buf)
 ** Basically, anything in quotes or an argument to a variable.
 */
 
-char   *getconfvalue(line, var)
-     char   *line;
-     char   *var;
+char   *getconfvalue(char *line, char *var)
 {
     int     i;
     char   *c;
@@ -224,10 +222,7 @@ char   *getconfvalue(line, var)
 /* 05/00 Jose Ruiz 
 ** Totally rewritten
 */
-char   *replace(string, oldpiece, newpiece)
-     char   *string;
-     char   *oldpiece;
-     char   *newpiece;
+char   *replace(char *string, char *oldpiece, char *newpiece)
 {
     int     limit,
             curpos,
@@ -325,10 +320,7 @@ int     isoksuffix(char *filename, struct swline *rulelist)
 ** Returns the string copied
 ** [see als estrredup() and estrdup()]
 */
-char   *SafeStrCopy(dest, orig, initialsize)
-     char   *dest;
-     char   *orig;
-     int    *initialsize;
+char   *SafeStrCopy(char *dest, char *orig, int *initialsize)
 {
     int     len,
             oldlen;
@@ -479,12 +471,7 @@ void    freeStringList(StringList * sl)
 ** Reallocate memory if needed
 ** Returns the pointer to the new area
 */
-unsigned char *SafeMemCopy(dest, orig, off_dest, sz_dest, len)
-     unsigned char *dest;
-     unsigned char *orig;
-     int     off_dest;
-     int    *sz_dest;
-     int     len;
+unsigned char *SafeMemCopy(char *dest, char *orig, int off_dest, int *sz_dest, int len)
 {
     if (len > (*sz_dest - off_dest))
     {
