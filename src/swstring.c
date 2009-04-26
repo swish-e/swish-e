@@ -471,7 +471,7 @@ void    freeStringList(StringList * sl)
 ** Reallocate memory if needed
 ** Returns the pointer to the new area
 */
-unsigned char *SafeMemCopy(char *dest, char *orig, int off_dest, int *sz_dest, int len)
+unsigned char *SafeMemCopy(unsigned char *dest, unsigned char *orig, int off_dest, int *sz_dest, int len)
 {
     if (len > (*sz_dest - off_dest))
     {
