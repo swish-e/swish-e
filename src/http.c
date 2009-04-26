@@ -95,7 +95,7 @@
 void    initModule_HTTP(SWISH * sw)
 {
     struct MOD_HTTP *http;
-    SWINT_T     i;
+    int     i;
 
     char *execdir = get_libexec();
 
@@ -128,13 +128,13 @@ void    freeModule_HTTP(SWISH * sw)
     sw->HTTP = NULL;
 }
 
-SWINT_T     configModule_HTTP(SWISH * sw, StringList * sl)
+int     configModule_HTTP(SWISH * sw, StringList * sl)
 {
     struct MOD_HTTP *http = sw->HTTP;
     char   *w0 = sl->word[0];
-    SWINT_T     retval = 1;
+    int     retval = 1;
 
-    SWINT_T     i;
+    int     i;
     struct multiswline *list;
     struct swline *slist;
 
@@ -210,17 +210,17 @@ SWINT_T     configModule_HTTP(SWISH * sw, StringList * sl)
 typedef struct urldepth
 {
     char   *url;
-    SWINT_T     depth;
+    int     depth;
     struct urldepth *next;
 }
 urldepth;
 
 
-SWINT_T     http_already_indexed(SWISH * sw, char *url);
-urldepth *add_url(SWISH * sw, urldepth * list, char *url, SWINT_T depth, char *baseurl);
+int     http_already_indexed(SWISH * sw, char *url);
+urldepth *add_url(SWISH * sw, urldepth * list, char *url, int depth, char *baseurl);
 
 
-urldepth *add_url(SWISH * sw, urldepth * list, char *url, SWINT_T depth, char *baseurl)
+urldepth *add_url(SWISH * sw, urldepth * list, char *url, int depth, char *baseurl)
 {
     urldepth *item;
     struct MOD_HTTP *http = sw->HTTP;
@@ -288,11 +288,11 @@ urldepth *add_url(SWISH * sw, urldepth * list, char *url, SWINT_T depth, char *b
 ** or endless looping due to symbolic links.
 */
 
-SWINT_T     http_already_indexed(SWISH * sw, char *url)
+int     http_already_indexed(SWISH * sw, char *url)
 {
     struct url_info *p;
 
-    SWINT_T     len;
+    int     len;
     unsigned hashval;
     struct MOD_HTTP *http = sw->HTTP;
 
@@ -320,7 +320,7 @@ SWINT_T     http_already_indexed(SWISH * sw, char *url)
 }
 
 
-char   *url_method(char *url, SWINT_T *plen)
+char   *url_method(char *url, int *plen)
 {
     char   *end;
 
@@ -333,9 +333,9 @@ char   *url_method(char *url, SWINT_T *plen)
 }
 
 
-char   *url_serverport(char *url, SWINT_T *plen)
+char   *url_serverport(char *url, int *plen)
 {
-    SWINT_T     methodlen;
+    int     methodlen;
     char   *serverstart;
     char   *serverend;
 
@@ -360,7 +360,7 @@ char   *url_serverport(char *url, SWINT_T *plen)
 }
 
 
-char   *url_uri(char *url, SWINT_T *plen)
+char   *url_uri(char *url, int *plen)
 {
     if ((url = url_serverport(url, plen)) == 0)
     {
@@ -390,7 +390,7 @@ static void run_program(char* prog, char** args)
         if ( WIFEXITED( status ) ) // exited normally if non-zero
             return;
 
-        progerr("%s exited with non-zero status (%lld)", prog, (SWINT_T)WEXITSTATUS(status) );
+        progerr("%s exited with non-zero status (%d)", prog, (int)WEXITSTATUS(status) );
     }
 #endif /* HAVE_SYS_WAIT_H */
 
@@ -410,9 +410,9 @@ static void run_program(char* prog, char** args)
 *
 *************************************************************/
 
-SWINT_T get(SWISH * sw, char *contenttype_or_redirect, time_t *last_modified, time_t * plastretrieval, char *file_prefix, char *url)
+int get(SWISH * sw, char *contenttype_or_redirect, time_t *last_modified, time_t * plastretrieval, char *file_prefix, char *url)
 {
-    SWINT_T     code = 500;
+    int     code = 500;
     FILE   *fp;
     struct MOD_HTTP *http = sw->HTTP;
 
@@ -423,9 +423,9 @@ SWINT_T get(SWISH * sw, char *contenttype_or_redirect, time_t *last_modified, ti
     /* Sleep a little so we don't overwhelm the server */
     if (  *plastretrieval && (time(0) - *plastretrieval) < http->delay)
     {
-        SWINT_T     num_sec = http->delay - (time(0) - *plastretrieval);
+        int     num_sec = http->delay - (time(0) - *plastretrieval);
         if ( sw->verbose >= 3 )
-            printf("sleeping %lld seconds before fetching %s\n", num_sec, url);
+            printf("sleeping %d seconds before fetching %s\n", num_sec, url);
 #ifdef _WIN32
         _sleep(num_sec); 
 #else
@@ -442,7 +442,7 @@ SWINT_T get(SWISH * sw, char *contenttype_or_redirect, time_t *last_modified, ti
 #ifndef HAVE_WORKING_FORK
     /* Should be in autoconf or obsoleted by extprog. - DLN 2001-11-05  */
     {
-        SWINT_T     retval;
+        int     retval;
         char    commandline[] = "perl \"%s\" \"%s\" \"%s\"";
         char   *command = emalloc( strlen(commandline) + strlen(spider_prog) + strlen(file_prefix) + strlen(url) + 1 );
 
@@ -505,14 +505,14 @@ SWINT_T get(SWISH * sw, char *contenttype_or_redirect, time_t *last_modified, ti
     }
 
     if ( sw->verbose >= 3 ) 
-        printf("Status: %lld. %s\n", code, contenttype_or_redirect );
+        printf("Status: %d. %s\n", code, contenttype_or_redirect );
 
     return code;
 }
 
 int     cmdf(int (*cmd) (const char *), char *fmt, char *string, pid_t pid) // no rw64
 {
-    SWINT_T     rc;
+    int     rc; // no rw64, for return type
     char   *buffer;
 
     buffer = emalloc(strlen(fmt) + strlen(string) + sizeof(pid_t) * 8 + 1);
@@ -527,7 +527,7 @@ int     cmdf(int (*cmd) (const char *), char *fmt, char *string, pid_t pid) // n
 char   *readline(FILE * fp)
 {
     static char *buffer = 0;
-    static SWINT_T buffersize = 512;
+    static int buffersize = 512;
 
     if (buffer == 0)
     {
@@ -612,12 +612,12 @@ void    http_indexpath(SWISH * sw, char *url)
 {
     urldepth *urllist = 0;
     urldepth *item;
-    static SWINT_T lentitle = 0;
+    static int lentitle = 0;
     static char *title = NULL;
     char   *tmptitle;
-    static SWINT_T lencontenttype = 0;
+    static int lencontenttype = 0;
     static char *contenttype = NULL;
-    SWINT_T     code;
+    int     code;
     time_t  last_modified = 0;
 
     httpserverinfo *server;
@@ -635,7 +635,7 @@ void    http_indexpath(SWISH * sw, char *url)
 
 
     file_prefix = emalloc( strlen(idx->tmpdir) + MAXPIDLEN + strlen("/swishspider@.contents+fill") );
-    sprintf(file_prefix, "%s/swishspider@%lld", idx->tmpdir, (SWINT_T) lgetpid());
+    sprintf(file_prefix, "%s/swishspider@%ld", idx->tmpdir, (long) lgetpid());
     file_suffix = file_prefix + strlen( file_prefix );
     
 
@@ -664,7 +664,7 @@ void    http_indexpath(SWISH * sw, char *url)
 
         if (sw->verbose >= 2)
         {
-            printf("retrieving %s (%lld)...\n", item->url, item->depth);
+            printf("retrieving %s (%d)...\n", item->url, item->depth);
             fflush(stdout);
         }
 
@@ -759,7 +759,7 @@ void    http_indexpath(SWISH * sw, char *url)
                 urllist = add_url(sw, urllist, contenttype, item->depth, url);
             else
                 if (sw->verbose >= 3)
-                    printf("URL '%s' returned redirect code %lld without a Location.\n", url, code);
+                    printf("URL '%s' returned redirect code %d without a Location.\n", url, code);
         }
 
 
