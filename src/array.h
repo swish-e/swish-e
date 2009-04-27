@@ -37,7 +37,9 @@ typedef struct ARRAY_Page
 
     struct ARRAY_Page  *next_cache;
 
-    unsigned char data[0];        /* Page data */
+    /* unsigned char data[0]; */        /* Page data */
+    unsigned char * data;   /* ISO C forbids zero-size array 'data' */
+
 } ARRAY_Page;
 
 #define ARRAY_CACHE_SIZE 97
