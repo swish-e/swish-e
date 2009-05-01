@@ -82,7 +82,7 @@ sub main {
         #  specifically leave alone anything about chars or floats/doubles.
         #  optimizing these into big regexes shaved the runtime 33%
         q(s/ \b(
-                unsigned\s+long\s+long\s+int |
+               unsigned\s+long\s+long\s+int |
                long\s+long\s+unsigned\s+int |
                unsigned\s+long\s+int |
                unsigned\s+long |
