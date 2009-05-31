@@ -221,7 +221,7 @@ decode_header_value( swish_handle, header_value, header_type )
                 break;
 
             default:
-                croak(" Unknown header type '%d'\n", (int)header_type ); 
+                croak(" Unknown header type '%ld'\n", (long int)header_type ); 
                 /* constants used in cases above are enum-ed in headers.h */
 
         }
