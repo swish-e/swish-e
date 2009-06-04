@@ -129,6 +129,7 @@ sub main {
 
          #{ f=>'src/parser.c', s=>'.' },                # preserve parser.c and .h
          #{ f=>'src/parser.h', s=>'.' },                # preserve parser.c and .h
+         { f=>'src/parse_conffile', s=>'.'},        # presrve parse_conffile
      );
 
 
