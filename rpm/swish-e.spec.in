@@ -20,6 +20,7 @@ Obsoletes:      %{name}-doc
 Obsoletes:      swish
 Requires:       libxml2, pcre, zlib
 BuildRequires:  libxml2-devel, pcre-devel, zlib-devel, perl(ExtUtils::MakeMaker)
+AutoReq:	    0
 
 %description
 Swish-e is Simple Web Indexing System for Humans - Enhanced
@@ -39,6 +40,7 @@ Group:          Applications/Internet
 Provides:       %{name}-perl
 Requires:       %{name} = %{version}
 Requires:       %{name}-perl-api = %{version}
+AutoReq:        0
 
 %description    perl
 PERL SWISH-E language bindings and scripts.
@@ -51,6 +53,7 @@ Group:		Development/Libraries
 Provides:	%{name}-perl-api
 Provides:	perl-SWISH-API = 0.04
 Requires:	%{name} = %{version}
+AutoReq:    0
 
 %description	perl-api
 SWISH::API provides a Perl interface to the Swish-e search engine.
@@ -63,8 +66,9 @@ open when running multiple queries.  This results in increased search performanc
 Summary:	SWISH-E - Static libraries and header files.
 Group:		Development/Libraries
 Obsoletes:	swish-devel
-Provides:       %{name}-devel
+Provides:   %{name}-devel
 Requires:	%{name} = %{version}
+AutoReq:    0
 
 %description	devel
 Libraries and header files required for compiling applications based on the SWISH-E API.
