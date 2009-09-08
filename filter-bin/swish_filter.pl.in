@@ -2,11 +2,9 @@
 use strict;
 
 # This is set to where Swish-e's "make install" installed the helper modules.
-use lib ( '@@perlmoduledir@@' );
-
+use lib ('@@perlmoduledir@@');
 
 use SWISH::Filter;
-
 
 =pod
 
@@ -40,23 +38,25 @@ See SWISH-CONFIG documentation on Filtering for more information.
 
 =cut    
 
+my ( $work_path, $real_path ) = @ARGV;
+my $filter = SWISH::Filter->new;
 
-    my ( $work_path, $real_path ) = @ARGV;
-    my $filter = SWISH::Filter->new;
+my $doc = $filter->convert(
+    document => $work_path,
+    name     => $real_path,
+    content_type =>
+        \$real_path,    # use the real path to lookup the content type
+);
 
-    my $filtered = $filter->filter(
-        document => $work_path,
-        name     => $real_path,
-        content_type => \$real_path, # use the real path to lookup the content type
-    );
+exit unless $doc;       # empty doc, zero size, or no filters installed
 
-    print STDERR $filtered ? " - Filtered: $real_path\n" : " - Not filtered: $real_path ($work_path)\n";
+# Was the document converted by a filter?
+my $was_filtered = $doc->was_filtered;
 
-    print $filtered
-        ? ${$filter->fetch_doc}
-        : $real_path;
+print STDERR $was_filtered
+    ? " - Filtered: $real_path\n"
+    : " - Not filtered: $real_path ($work_path)\n";
 
-    
-
-
-
+print $was_filtered
+    ? ${ $doc->fetch_doc }
+    : $real_path;
