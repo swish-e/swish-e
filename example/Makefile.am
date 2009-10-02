@@ -60,7 +60,6 @@ search.cgi: search.cgi.in
 
 EXTRA_DIST = \
     README \
-    SWISH-Stemmer-0.05.tar.gz \
     swish.cgi.in \
     search.cgi.in \
     swish.gif \
