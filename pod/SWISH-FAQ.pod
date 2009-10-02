@@ -1258,9 +1258,8 @@ then you will also need to stem each word in your
 document before comparing with the "Parsed Words:" returned by Swish-e.
 
 The Swish-e stemming code is available either by using the Swish-e
-Perl module (SWISH::API) or the C library (included with the swish-e distribution),
-or by using the SWISH::Stemmer module available on CPAN.  Also on CPAN is
-the module Text::DoubleMetaphone.  Using SWISH::API probably provides the best
+Perl module (SWISH::API) or the C library (included with the swish-e distribution).
+Also on CPAN is the module Text::DoubleMetaphone.  Using SWISH::API probably provides the best
 stemming support.
 
 =head3 Do filters effect the performance during search?
