@@ -199,13 +199,12 @@ static int  is_directory(char *path)
 int compare_packed_long(DB *dbp, const DBT *a, const DBT *b)
 {
     return memcmp(a->data, b->data, sizeof(long)); 
-} 
-
+}
 
 DB * OpenBerkeleyFile(char *filename, DBTYPE db_type, u_int32_t db_flags, int dup)
 {
-DB *dbp;
-int db_ret;
+    DB *dbp;
+    int db_ret;
     if((db_ret = db_create(&dbp, NULL, 0)))
         progerrno("Couldn't create BERKELEY DB resource");
     if(dup)
@@ -214,7 +213,9 @@ int db_ret;
             progerrno("Couldn't set DB_DUPSORT in DB Berkeley file \"%s\": ", filename);
         if((db_ret = dbp->set_dup_compare(dbp,compare_packed_long)))
             progerrno("Couldn't set DB_DUPSORT_ROUTINE in DB Berkeley file \"%s\": ", filename);
-    }
+        if((db_ret = dbp->set_bt_compare(dbp,compare_packed_long)))
+            progerrno("Couldn't set DB_BTSORT_ROUTINE in DB Berkeley file \"%s\": ", filename);
+    }    
     if((db_ret = dbp->open(dbp,NULL,filename,NULL,db_type,db_flags,0)))
     {
         dbp->err(dbp,db_ret,"Database open failed: \"%s\"", filename);
@@ -1056,9 +1057,12 @@ long    _DB_ReadWordData(sw_off_t wordID, unsigned char **worddata, int *data_si
     memset(&data, 0, sizeof(data));
     key.data = &wordID;
     key.size = sizeof(wordID);
+    key.flags = 0;
     data.flags = DB_DBT_MALLOC;
 
-    ret = SW_DB->db_worddata->get(SW_DB->db_worddata,NULL,&key,&data,0);
+    fprintf(stderr, "trying to get() wordID %ld for worddata '%s' (size %d) (sizeof sw_off_t=%d sizeof off_t=%d\n", 
+        wordID, *worddata, key.size, sizeof(sw_off_t), sizeof(off_t));
+    ret = SW_DB->db_worddata->get(SW_DB->db_worddata, NULL, &key, &data, 0);
 
     if(ret == 0)
     {
@@ -1075,6 +1079,7 @@ long    _DB_ReadWordData(sw_off_t wordID, unsigned char **worddata, int *data_si
     }
     else
     {
+        fprintf(stderr, "%s: %s\n", __FILE__, db_strerror(ret));
         progerrno("Unexpected error from Berkeley worddata file \"%s\": ", SW_DB->cur_worddata_file);
     }
     return 0;

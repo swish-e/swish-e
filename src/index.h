@@ -105,11 +105,11 @@ struct MOD_Index
     /* Pointer to swap functions */
     sw_off_t    (*swap_tell) (FILE *);
             size_t(*swap_write) (const void *, size_t, size_t, FILE *);
-    int     (*swap_seek) (FILE *, sw_off_t, int);
+    int     (*swap_seek) (FILE *, sw_off_t, int);       // no rw64
             size_t(*swap_read) (void *, size_t, size_t, FILE *);
-    int     (*swap_close) (FILE *);
-    int     (*swap_putc) (int, FILE *);
-    int     (*swap_getc) (FILE *);
+    int     (*swap_close) (FILE *);                     // no rw64
+    int     (*swap_putc) (int, FILE *);                 // no rw64
+    int     (*swap_getc) (FILE *);                      // no rw64
 
     /* IgnoreLimit option values */
     int     plimit;

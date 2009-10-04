@@ -152,8 +152,8 @@ static void printTime(double time);
 static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params );
 static void free_command_line_params( CMDPARAMS *params );
 static unsigned int isDebugWord(char *word, CMDPARAMS *params );
-static void printversion();
-static void usage();
+static void printversion(void);
+static void usage(void);
 static int check_readonly_mode( char * );
 
 static void cmd_dump( SWISH *sw, CMDPARAMS *params );
@@ -168,7 +168,7 @@ static char **fetch_indexing_params(SWISH *sw, char **argv, CMDPARAMS *params, c
 static void display_result_headers( RESULTS_OBJECT *results );
 static void swline_header_out( SWISH *sw, int v, char *desc, struct swline *sl );
 
-static SWISH  *swish_new();
+static SWISH  *swish_new(void);
 static void    swish_close(SWISH * sw);
 
 
@@ -263,7 +263,7 @@ static void printTime(double time)
 /* Prints the SWISH usage.
 */
 
-static void    usage()
+static void    usage(void)
 {
     const char *defaultIndexingSystem = "";
 
@@ -272,7 +272,7 @@ static void    usage()
     printf("    swish -w word1 word2 ... [-f file1 file2 ...] \\\n");
     printf("          [-P phrase_delimiter] [-p prop1 ...] [-s sortprop1 [asc|desc] ...] \\\n");
     printf("          [-m num] [-t str] [-d delim] [-H (num)] [-x output_format] \\\n");
-    printf("          [-R rank_scheme] [-L prop low high]\n");
+    printf("          [-R rank_scheme] [-L prop low high] [-a]\n");
     printf("    swish -k (char|*) [-f file1 file2 ...]\n");
     printf("    swish -M index1 index2 ... outputfile\n");
     printf("    swish -N /path/to/compare/file\n");
@@ -280,6 +280,7 @@ static void    usage()
     putchar('\n');
     printf("options: defaults are in brackets\n");
 
+    printf("         -a : return raw (unscaled) rank scores in swishrank PropertyName\n");
     printf("         -b : begin results at this number\n");
     printf("         -c : configuration file(s) to use for indexing\n");
     printf("         -d : next param is delimiter.\n");
@@ -305,7 +306,7 @@ static void    usage()
     printf("         -N : index only files with a modification date newer than path supplied\n");
     printf("         -P : next param is Phrase delimiter.\n");
     printf("         -p : include these document properties in the output \"prop1 prop2 ...\"\n");
-    printf("         -R : next param is Rank Scheme number (0 to 1)  [0].\n");
+    printf("         -R : next param is Rank Scheme number (0 to 2)  [0].\n");
     printf("         -r : remove: remove files from index\n");
 
     printf("         -S : specify which indexing system to use.\n");
@@ -329,7 +330,7 @@ static void    usage()
     printf("              \"HBthec\" - in Head|Body|title|header|emphasized|comments\n");
     printf("         -u : update: adds files to existing index\n");
     printf("         -V : prints the current version\n");
-    printf("         -v : indexing verbosity level (0 to 3) [-v %d]\n", VERBOSE);
+    printf("         -v : indexing verbosity level (0 to 3) [-v %d]\n", VERBOSE);   // no rw64
     printf("         -w : search for words \"word1 word2 ...\"\n");
     printf("         -W : next param is ParserWarnLevel [-W 2]\n");
     printf("         -x : \"Extended Output Format\": Specify the output format.\n");
@@ -338,7 +339,7 @@ static void    usage()
     exit(1);
 }
 
-static void    printversion()
+static void    printversion(void)
 {
     printf("SWISH-E %s\n", VERSION );
     exit(0);
@@ -359,7 +360,7 @@ static void    printversion()
 *
 **************************************************************************/
 
-static SWISH  *swish_new()
+static SWISH  *swish_new(void)
 
 {
     SWISH  *sw = SwishNew();
@@ -476,7 +477,7 @@ static unsigned int isDebugWord(char *word, CMDPARAMS *params)
 *
 **************************************************************************/
 
-static CMDPARAMS *new_swish_params()
+static CMDPARAMS *new_swish_params(void)
 {
     CMDPARAMS *params = (CMDPARAMS *)emalloc( sizeof( CMDPARAMS ) );
     memset( params, 0, sizeof( CMDPARAMS ) );
@@ -650,6 +651,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
             case 'd':  /* old-style custom delimiter */
             case 'o':  /* don't use pre-sorted indexes */
             case 'R':  /* Ranking Scheme -- default is 1 */
+            case 'a':  /* return raw rank */
                 argv = fetch_search_params( sw, argv, params, c );
                 break;
 
@@ -1224,7 +1226,10 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
         case 'R':
             sw->RankScheme = get_param_number( &argv, switch_char );
             break;
-            
+           
+        case 'a':
+            sw->ReturnRawRank = 1;
+            break; 
 
         /* Ignore sorted indexes */
 

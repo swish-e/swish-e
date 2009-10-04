@@ -142,7 +142,6 @@ $Id$
 
 #include "rank.h"
 
-
 /* ------ static fucntions ----------- */
 static int init_sort_propIDs( DB_RESULTS *db_results, struct swline *sort_word, DB_RESULTS *last );
 static void query_index( DB_RESULTS *db_results );
@@ -175,11 +174,20 @@ static void make_db_res_and_free(RESULT_LIST *l_res);
 
 void SwishRankScheme(SWISH *sw, int scheme)
 {
-    
     sw->RankScheme = scheme;
-    
 }
 
+
+/*********************************************************************
+* SwishReturnRawRank -- return unscaled swishrank values
+* karman - Mon Mar 30 20:51:02 CDT 2009
+*
+*********************************************************************/
+
+void SwishReturnRawRank(SWISH *sw, int flag)
+{
+    sw->ReturnRawRank = flag;
+}
 
 
 
@@ -1632,7 +1640,7 @@ static RESULT_LIST *getfileinfo(DB_RESULTS *db_results, char *word, int metaID)
             return NULL;
         }
         else
-            strcpy(myWord, resultword);   // Remember the word
+            strcpy(myWord, (char*)resultword);   // Remember the word
             
         efree(resultword);   /* Do not need it */
     }
@@ -2327,7 +2335,9 @@ static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RE
            *tmp;
     RESULT_LIST *new_results_list = NULL;
     RESULTS_OBJECT *results = db_results->results;
-
+    /* TODO use to detect rank size overflow 
+    unsigned int max_rank_size = 256 ^ sizeof(int);
+    */
 
 
     /* If either list is empty, just return the other */

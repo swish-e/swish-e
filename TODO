@@ -47,4 +47,7 @@ but now it looks like it has been removed. Any ideas? It's marked as 95% complet
 ---------------------
 
 * does BDB allow us to flush data directly to db to avoid needing -e option?
+* sw_off_t is broken on 64bit osx 10.6. (probably others). Seems BDB requires max 32bit
+  size for wordID in get() worddata
+
 

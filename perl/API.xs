@@ -96,6 +96,15 @@ SwishRankScheme(self, scheme)
     int scheme
 
 #############################################
+# set ReturnRawRank
+# karman - 30 Mar 2009
+void 
+SwishReturnRawRank(self, flag)
+    SW_HANDLE self
+    int flag
+
+
+#############################################
 
 
 # added SwishFuzzy to give access directly from SW object
@@ -212,7 +221,9 @@ decode_header_value( swish_handle, header_value, header_type )
                 break;
 
             default:
-                croak(" Unknown header type '%d'\n", header_type );
+                croak(" Unknown header type '%ld'\n", (long int)header_type ); 
+                /* constants used in cases above are enum-ed in headers.h */
+
         }
 
 

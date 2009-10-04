@@ -50,8 +50,6 @@ $Id$
 // #define DEBUGSORT 1
 
 
-
-
 /*****************************************************************************
 * compare_results_single_index - qsort compare function
 *
@@ -450,18 +448,22 @@ int  sortresults(RESULTS_OBJECT *results)
     int         TotalResults = 0;
     DB_RESULTS *db_results = results->db_results;
 
-    while ( db_results )
-    {
+    while ( db_results ) {
         TotalResults += sort_single_index_results( db_results );
         db_results = db_results->next;
     }
 
     /* set rank scaling factor based on the largest rank found of all results */
 
-    if (results->bigrank)
+    if (results->bigrank) {
+        if ( DEBUG_RANK ) {
+            fprintf(stderr, "bigrank found: %d\n", results->bigrank );
+        }
         results->rank_scale_factor = 10000000 / results->bigrank;
-    else
+    }
+    else {
         results->rank_scale_factor = 10000;
+    }
 
 
     return TotalResults;

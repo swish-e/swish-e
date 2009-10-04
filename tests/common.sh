@@ -40,3 +40,5 @@ echo "=== Running test $progname"
 
 SWISH="${top_builddir}/src/swish-e"
 
+echo "using swish-e at $SWISH"
+

@@ -3,7 +3,8 @@ package SWISH::API;
 # $Id$
 
 use vars qw/ @ISA $VERSION /;
-$VERSION = '1.00';
+
+$VERSION = '0.04_01';
 
 # prefer XSLoader over DynaLoader
 eval {
@@ -214,9 +215,16 @@ The list of possible header names can be obtained from the Swishheader_names met
 
 =item $swish-E<gt>rank_scheme( 0|1 );
 
-Similar to the -R option with the swish-e command line tool. The default
+Like the -R option with the swish-e command line tool. The default
 ranking scheme is 0. Set it to 1 to experiment with other ranking features.
 See the SWISH-CONFIG documentation for more on ranking schemes.
+
+=item $swish-E<gt>return_raw_rank( 0|1 );
+
+Like the -a option with the swish-e command line tool. The default, 0,
+return ranks normalized to the range 0-1000. When enabled by setting to 1, 
+ranks are returned 'raw' (as computed by Swish-e internally during the search)
+and are only guaranteed to be non-negative.
 
 =back
 

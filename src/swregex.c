@@ -215,7 +215,7 @@ int match_regex_list( char *str, regex_list *regex, char *comment )
             : regexec(&regex->re, str, (size_t) 1, pmatch, 0) == 0;
 
         if ( DEBUG_MASK & DEBUG_REGEX )
-            printf("%s match %s %c~ m[%s] : %s\n", comment, str, (int)(regex->negate ? '!' : '='), regex->pattern, matched ? "matched" : "nope" );            
+            printf("%s match %s %c~ m[%s] : %s\n", comment, str, (int)(regex->negate ? '!' : '='), regex->pattern, matched ? "matched" : "nope" );  // no rw64, %c needs (int)
 
         if ( matched )
             return 1;

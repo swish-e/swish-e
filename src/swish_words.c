@@ -437,7 +437,7 @@ static int checkbuzzword(INDEXDATAHEADER *header, char *word )
         return 0;
 
 
-    return (int)is_word_in_hash_table( header->hashbuzzwordlist, word );
+    return is_word_in_hash_table( header->hashbuzzwordlist, word ) ? 1 : 0;
 }
 
 /* I hope this doesn't live too long */
@@ -917,7 +917,17 @@ static struct swline *ignore_words_in_query(DB_RESULTS *db_results, struct swlin
                 break;
             }
                     
-
+            /* 
+                is the token of an ok length to consider? 
+                treat min/max length like stopwords 
+            */
+            if (    strlen(cur_token->line) < indexf->header.minwordlimit
+                ||  strlen(cur_token->line) > indexf->header.maxwordlimit
+            ) {
+                db_results->removed_stopwords = addswline( db_results->removed_stopwords, cur_token->line );
+                stop_word_removed++;
+                remove = 1;
+            }
 
             /* Finally, is it a stop word? */
 

@@ -10,6 +10,13 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item yanked SWISH-Stemmer-0.05.tar.gz
+
+The tar file of SWISH::Stemmer in the example dir has been broken for years,
+but since the module itself is severely deprecated we haven't bothered with it.
+Till now. Because it was preventing the good people of the fedora project
+from building their RPMs.
+
 =item fix configure.in to require Berkeley DB
 
 Reported on mailing list by Gorka Lertxundi Osa.
@@ -35,11 +42,49 @@ The spider.pl script is now preferred in combination with -S prog.
 
 libxml2 parser is now required.
 
+=item Added ReturnRawRank for raw rank score
+
+Setting ReturnRawRank to a true value
+will return the rank score unscaled. Can be set with the -a command line
+option (mnemonic: "a"bsolute rank score).
+
+=item Yanked setenv feature introduced in 2.4.6
+
+The ranking debugging feature using setenv introduced in 2.4.6 was yanked.
+Some platforms (notably HP-UX and Windows) lack the setenv feature, and the
+convenience of setting the env var was not worth the limitations.
+
 =back
 
-=head2 Version 2.4.x - ?
+=head2 Version 2.4.6 - 10 March 2008
 
 =over 4
+
+=item MinWordLength respected in query parser
+
+Clark Vent reported that the query parser was not respecting MinWordLength
+settings.  See http://dev.swish-e.org/changeset/2145
+
+=item Patch to file.c.  
+
+The file.c patch was in response to
+http://swish-e.org/archive/2007-03/11321.html
+although that user never responded about that patch.
+
+=item SWISH_DEBUG_RANK env var now enables rank debugging
+
+Set SWISH_DEBUG_RANK to a true value to enable lots of rank debugging
+on stderr.
+
+=item Perl Makefile.PL patched to fix MakeMaker issue
+
+Recent versions of ExtUtils::MakeMaker revealed a bug in Makefile.PL.
+Patch from mschwern via RT, report by mpeters.
+
+=item LARGEFILE support detected automatically in configure
+
+jrobinson852@yahoo.com suggest LARGEFILE support be auto-detected since
+it is needed so often on Linux systems.
 
 =item New Snowball stemmers
 

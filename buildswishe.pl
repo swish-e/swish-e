@@ -85,6 +85,9 @@
 #
 #   0.12    Sat Nov 11 14:58:26 CST 2006
 #    fixed swish-e get src to respect explicit opt path
+#   
+#   0.13    Fri Jun 27 10:18:42 CDT 2008
+#    change from CVS to SVN (only a year+ late...)
 #
 ################################################################################
 
@@ -101,7 +104,7 @@ use File::Path qw( mkpath );
 use File::Spec;
 use FindBin qw( $Bin );
 
-my $Version = '0.12';
+my $Version = '0.13';
 
 my %URLs = (
 
@@ -119,8 +122,8 @@ my %URLs = (
 
 );
 
-my $swish_cvs = ':pserver:anonymous@swishe.cvs.sourceforge.net:/cvsroot/swishe';
-my $cvs_cmd   = "cvs -q -d$swish_cvs co swish-e";
+my $swish_svn = 'http://svn.swish-e.org/swish-e/trunk';
+my $svn_cmd   = "svn -q co ";
 
 my $defdir = '/usr/local/swish-e/latest';
 my $deftmp = $ENV{TMPDIR} || $ENV{TMP} || $ENV{CRAYDOC_TMP} || '/tmp';
@@ -132,7 +135,7 @@ my $usage_gutter = 25;
 my $allopts = {
 
     'quiet'     => "run non-interactively",
-    'cvs'       => "use latest CVS version of Swish-e",
+    'svn'       => "use latest Subversion trunk version of Swish-e",
     'swish-e=s' =>
       "use <X> as Swish-e source -- either URL, tar.gz or directory",
     'libxml2=s' =>
@@ -1295,17 +1298,17 @@ sub swishe
 {
 
     # --swishe trumps all
-    # else if we've specified --cvs, download latest.
+    # else if we've specified --svn, download latest.
     # else check if script was run from a src dir.
     # if all else fails, use the get_src() function to locate it.
 
     chdir($Bin);    # back to where we started
     print "we're in " . `pwd` if $opts->{debug};
 
-    if ($opts->{cvs})
+    if ($opts->{svn})
     {
 
-        # get latest cvs source and set dir
+        # get latest svn source and set dir
 
         chdir($tmpdir) or die "can't chdir $tmpdir: $!\n";
 
@@ -1314,10 +1317,10 @@ sub swishe
         {
 
             chdir('swish-e') or die "can't chdir swish-e: $!\n";
-            $cvs_cmd =~ s/co swish-e/update -dP/;
+            $svn_cmd =~ s/co /update /;
         }
 
-        system($cvs_cmd);
+        system("$svn_cmd $swish_svn swish-e");
         $swishdir = "$tmpdir/swish-e";
 
     }

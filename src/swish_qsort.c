@@ -50,7 +50,7 @@ static inline char	*med3 (char *, char *, char *, cmp_t *);
 static inline void	 swapfunc (char *, char *, int, int);
 
 #ifndef min
-#define min(a, b)	(a) < (b) ? a : b
+#define min(a, b)	((a) < (b) ? (a) : (b))
 #endif
 
 /*
@@ -71,9 +71,7 @@ static inline void	 swapfunc (char *, char *, int, int);
 	es % sizeof(long) ? 2 : es == sizeof(long)? 0 : 1;
 
 static inline void
-swapfunc(a, b, n, swaptype)
-	char *a, *b;
-	int n, swaptype;
+swapfunc(char *a, char *b, int n, int swaptype)
 {
 	if(swaptype <= 1)
 		swapcode(long, a, b, n)
@@ -92,9 +90,7 @@ swapfunc(a, b, n, swaptype)
 #define vecswap(a, b, n) 	if ((n) > 0) swapfunc(a, b, n, swaptype)
 
 static inline char *
-med3(a, b, c, cmp)
-	char *a, *b, *c;
-	cmp_t *cmp;
+med3(char *a, char *b, char *c, cmp_t *cmp)
 {
 	return cmp(a, b) < 0 ?
 	       (cmp(b, c) < 0 ? b : (cmp(a, c) < 0 ? c : a ))

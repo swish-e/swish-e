@@ -32,7 +32,7 @@ $Id$
 ** ** ** PATCHED 5/13/96, CJC
 **
 ** Added code to countwords and countwordstr to disreguard the last char
-** if requiered by the config.h
+** if required by the config.h
 ** G. Hill  3/12/97  ghill@library.berkeley.edu
 **
 ** Changed addentry, countwords, countwordstr, parsecomment, rintindex
@@ -1661,7 +1661,7 @@ void getPositionsFromIgnoreLimitWords(SWISH * sw)
 
             if (sw->verbose)
             {
-                printf("\r  Getting IgnoreLimit stopwords: %25s",ep->word);
+                printf("\r  Getting IgnoreLimit stopwords: %25s", ep->word);
                 fflush(stdout);
             }
 

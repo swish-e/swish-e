@@ -10,7 +10,7 @@ AM_CPPFLAGS = -Dlibexecdir=\"${libexecdir}\"  \
 		$(Z_CFLAGS) $(PCRE_CFLAGS) $(LIBXML2_CFLAGS) -Ireplace
 
 # Until can figure out how to use AM_AUTOMAKE_INIT([-Wall])
-AM_CFLAGS = -Wall
+AM_CFLAGS = -Wall @LARGEFILES_MACROS@
 
 
 bin_PROGRAMS = swish-e

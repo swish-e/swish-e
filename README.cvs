@@ -25,13 +25,14 @@ for these to work (autoconf, automake, libtool).
 Building with HTML docs
 =======================
 
-The cvs version does not included the HTML documentation.  The HTML docs are
-built from the swish_website module (also in cvs) using the same templates that
+The svn version does not included the HTML documentation.  The HTML docs are
+built from the swish_website module (also in svn) using the same templates that
 http://swish-e.org uses.  Links not pointing to the local documentation are
 adjusted in the distribuiton documentation to point to http://swish-e.org.
 
-The tools to build the HTML docs can also be fetched via cvs from SourceForge
-(see the swish_website cvs module).
+The tools to build the HTML docs can also be fetched via svn from the
+Swish-e SVN repository.
+(see the swish_website svn module).
 
 The swish_website module requires several Perl modules, including
 Template-Toolkit, Pod::POM and a few others.  Once you have swish_website
@@ -54,7 +55,7 @@ See the swish_website/README for more about the HTML documentation.
 Daily Builds
 ============
 
-The swish-daily.pl script can be used to build swish-e from cvs (or
+The swish-daily.pl script can be used to build swish-e from svn (or
 from tarball) via cron.  In a top-level build directory a dated sub-directory is
 created and the source is fetched, compiled and installed.  For example:
 
@@ -94,12 +95,12 @@ automates this process.
 Building the tarball
 --------------------
 
-1) Run "cvs -nq update" to make sure your copy is up-to-date.
+1) Run "svn update" to make sure your copy is up-to-date.
    Watch carefully for merge errors.
 
 2) Edit the pod/CHANGES.pod file to update the date of the release
 
-3) Edit the version in configure.in
+3) Edit the version in configure.in (also consider version in SWISH::API's API.pm)
 
 4) run ./bootstrap to create new Makefile.in with new version string
 
@@ -119,11 +120,13 @@ Building the tarball
 
 8) Check in the updated version Makefiles:
 
-  $ cvs ci
+  $ svn commit Makefile
+
+8A) Test the tarball using Swishetest.
 
 9) Tag the release.  For example:
 
-    $ cvs tag rel-2-4-0
+    $ cvs tag rel-2-4-0  (note- NEEDS UPDATING FOR SVN)
 
 10) Upload to swish-e site -- see "Update Site" below for details before doing this.
 
@@ -153,11 +156,11 @@ For example:
     develsrc -> /home/bmoseley/swish/swish_daily_build/latest_swish_build/source
 
 The daily builds are created with the swish-daily.pl script.  swish-daily.pl fetches the
-source via cvs (with daily builds) or via a URL (for releases), unpacks into the "source"
+source via svn (with daily builds) or via a URL (for releases), unpacks into the "source"
 directory and builds swish-e.  If all goes well a symlink is created to the
 "latest_swish_build".
 
-This same process can be used to build a release.  But, instead of fetching from cvs[1]
+This same process can be used to build a release.  But, instead of fetching from svn[1]
 you fetch a tarball built above and placed in some location to fetch by URL.
 
 The swish_website/Build_Release.sh script does this by running:
@@ -199,6 +202,8 @@ Say development has started on the next release but a bug is found in the last.
 Development has gone on too far to use the development version.
 
 -- Creating a Branch in CVS -
+
+## NOTE THAT THIS SECTION NEEDS REWRITING FOR SVN ##
 
 The first thing that is needed is to create a branch of the cvs tree.  This
 only needs to be done *once*, and there's more than one way to do it: you can

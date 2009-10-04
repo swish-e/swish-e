@@ -1027,6 +1027,21 @@ to the "summary" meta name.
     -w description=foo
     -w overview=foo
 
+B<Tip:> If you are using the XML2 (libxml2) parser and you want words
+to be searchable under both swishdefault and your custom MetaName,
+you can use MetaNameAlias like this:
+
+    MetaNameAlias swishdefault yourtag
+
+and then a doc like this:
+
+    <yourtag>foo</yourtag>
+
+can be found with either:
+
+    % swish-e -w swishdefault=foo
+    % swish-e -w yourtag=foo 
+
 =item MetaNamesRank integer *list of meta names*
 
 You can assign a bias to metanames that will affect how ranking is

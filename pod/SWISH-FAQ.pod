@@ -441,7 +441,7 @@ If spidering a website with the included F<spider.pl> program then add any
 necessary tests to the spider's configuration file.
 Type <perldoc spider.pl> in the C<prog-bin> directory for details or
 see the spider documentation on the Swish-e website.  Look for the section
-on L<callback functions|SWISH-FAQ/"callback_functions">.
+on L<callback functions|spider/"callback_functions">.
 
 If using the libxml2 library for parsing HTML (which you probably are), you may
 also use the Meta Robots Exclusion in your documents:

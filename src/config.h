@@ -144,7 +144,7 @@ $Id$
 */
 
 
-#define DATE_FORMAT_STRING "%Y-%m-%d %H:%M:%S %Z"
+#define DATE_FORMAT_STRING "%Y-%m-%d %H:%M:%S %Z"   /* no rw64 - %d is for strftime() */
 /* default format string for dates */
 
 
@@ -381,7 +381,7 @@ $Id$
 #define sw_fseek fseeko
 #define sw_ftell ftello
 #else
-#define sw_off_t long
+#define sw_off_t long       // no rw64
 #define sw_fseek fseek
 #define sw_ftell ftell
 #endif

@@ -28,6 +28,7 @@ $Id$
     
 */
 
+#include <stdlib.h>
 #include "swish.h"
 #include "sw_db.h"
 #include "rank.h"
@@ -291,7 +292,6 @@ static void build_struct_map( SWISH *sw )
     sw->structure_map_set = 1;  /* flag */
 }
 
-
 int
 getrank ( RESULT *r )
 {
@@ -299,15 +299,15 @@ getrank ( RESULT *r )
         IndexFILE  *indexf;
         int     scheme;
 
-
         indexf  = r->db_results->indexf;
         sw      = indexf->sw;
         scheme  = sw->RankScheme;
 
-#ifdef DEBUG_RANK
-    fprintf( stderr, "Ranking Scheme: %d \n", scheme );
-#endif
-
+    if( DEBUG_RANK )
+    {
+        fprintf( stderr, "-----------------------------------------------------------------\n");
+        fprintf( stderr, "Ranking Scheme: %d \n", scheme );
+    }
 
         switch ( scheme )
         {
@@ -344,7 +344,7 @@ getrank ( RESULT *r )
 **                from double to int that degrades performance search
 **                I have switched to integer computations.
 **
-**                To avoid the loss of precission I use rank *10000,
+**                To avoid the loss of precision I use rank *10000,
 **                reduction *10000, factor *10000, etc...
 */
 
@@ -367,11 +367,13 @@ getrankDEF( RESULT *r )
     SWISH      *sw;
     int         metaID;
     int         freq;
-#ifdef DEBUG_RANK
-    int        struct_tally[256];
-    for ( i = 0; i <= 255; i++ )
-        struct_tally[i] = 0;
-#endif
+    int         struct_tally[256];
+    
+    if( DEBUG_RANK )
+    {
+        for ( i = 0; i <= 255; i++ )
+            struct_tally[i] = 0;
+    }
 
     /* has rank already been calculated? */
     if ( r->rank >= 0 )
@@ -395,8 +397,9 @@ getrankDEF( RESULT *r )
     /* pre-build the structure map array */
     /* this maps a word's structure to a rank value */
     if ( !sw->structure_map_set )
+    {
         build_struct_map( sw );
-
+    }
 
 
     /* Add up the raw word values for each word found in the current document. */
@@ -404,7 +407,7 @@ getrankDEF( RESULT *r )
 
     /* Might also bias words with low position values, for example */
     /* Should really consider r->tfrequency, which is the number of files that have */
-    /*  this word.  If the word is not found in many files then it should be ranked higher */
+    /* this word.  If the word is not found in many files then it should be ranked higher */
 
     rank = 1;
     freq = r->frequency;
@@ -415,16 +418,17 @@ getrankDEF( RESULT *r )
     {
         /* GET_STRUCTURE must return value in range! */
         rank += sw->structure_map[ GET_STRUCTURE(posdata[i]) ] + meta_bias;
-#ifdef DEBUG_RANK
-        fprintf(stderr, "Word entry %d at position %d has struct %d\n", i,  GET_POSITION(posdata[i]),  GET_STRUCTURE(posdata[i]) );
-        struct_tally[ GET_STRUCTURE(posdata[i]) ]++;
-#endif
-
+        if( DEBUG_RANK > 1 )
+        {
+            fprintf(stderr, "Word entry %d at position %d has struct %d\n", i,  GET_POSITION(posdata[i]),  GET_STRUCTURE(posdata[i]) );
+            struct_tally[ GET_STRUCTURE(posdata[i]) ]++;
+        }
     }
 
-#ifdef DEBUG_RANK
-    fprintf( stderr, "File num: %d.  Raw Rank: %d.  Frequency: %d ", r->filenum, rank, r->frequency );
-#endif
+    if( DEBUG_RANK )
+    {
+        fprintf( stderr, "File num: %d.  Raw Rank: %d.  Frequency: %d ", r->filenum, rank, r->frequency );
+    }
 
     /* Ranks could end up less than zero -- but since the *final* rank is calcualted here */
     /* we can't know the *lowest* value to use an offset.  It might be better to track */
@@ -437,10 +441,12 @@ getrankDEF( RESULT *r )
     rank = scale_word_score( rank );
 
 
-#ifdef DEBUG_RANK
+    if( DEBUG_RANK > 1 )
+    {
      fprintf( stderr, "scaled rank: %d\n  Structure tally:\n", rank );
 
      for ( i = 0; i <= 255; i++ )
+     {
          if ( struct_tally[i] )
          {
              fprintf( stderr, "      struct 0x%x = count of %2d (", i, struct_tally[i] );
@@ -454,7 +460,8 @@ getrankDEF( RESULT *r )
             if ( i & IN_FILE ) fprintf(stderr," FILE");
             fprintf(stderr," ) x rank map of %d = %d\n\n",  sw->structure_map[i], sw->structure_map[i] *  struct_tally[i]);
          }
-#endif
+     }
+    }
 
 
 
@@ -476,7 +483,9 @@ getrankDEF( RESULT *r )
     {
         if(words >= 100000)   /* log10(10000) is 5 */
             reduction = 50000;    /* As it was in previous version (5 * 10000) */
-        else           /* rare case - do not overrun the static arrays (tehy only have 1000 entries) */
+        
+        /* rare case - do not overrun the static arrays (they only have 1000 entries) */
+        else           
             reduction = (int) (10000 * (floor(log10((double)words) + 0.5)));
     }
     else
@@ -488,11 +497,11 @@ getrankDEF( RESULT *r )
 }
 
 
-/* multiple ranking schemes allow for more fine-tuning as users' require.
+/* multiple ranking schemes allow for more fine-tuning as users require.
 
 Use the -R <num> command line option or RankScheme() API method.
 
-Default is to use getrank() -- the same as -R 0
+Default is to use getrankDEF() -- the same as -R 0
 
 IDF ranking uses the total word frequency across all searched indexes
 and a normalizing formula to negate effect of docs with different sizes.
@@ -531,12 +540,12 @@ getrankIDF( RESULT *r )
     int         total_word_freq;
     int         word_weight;
     int         word_score;
+    
     /* int density_magic        = 2; */
 
     /* the value named 'rank' in getrank() is here named 'word_score'.
     it's largely semantic, but helps emphasize that *docs* are ranked,
     but *words* are scored. The doc rank is calculated based on the accrued word scores.
-
 
     However, the hash key name 'rank' is preserved in the r (RESULT) object
     for compatibility with getrank()
@@ -545,12 +554,12 @@ getrankIDF( RESULT *r )
 
 /* this first part is identical to getrankDEF -- could be optimized as a single function */
 
-
-#ifdef DEBUG_RANK
     int        struct_tally[256];
-    for ( i = 0; i <= 255; i++ )
-        struct_tally[i] = 0;
-#endif
+    if( DEBUG_RANK )
+    {
+        for ( i = 0; i <= 255; i++ )
+            struct_tally[i] = 0;
+    }
 
 
     if ( r->rank >= 0 )
@@ -565,8 +574,10 @@ getrankIDF( RESULT *r )
     meta_bias = indexf->header.metaEntryArray[ metaID - 1 ]->rank_bias;
 
     if ( !sw->structure_map_set )
+    {
         build_struct_map( sw );
-
+    }
+    
 /* here we start to diverge */
 
 
@@ -574,9 +585,10 @@ getrankIDF( RESULT *r )
     freq        = r->frequency;
 
 
-#ifdef DEBUG_RANK
-    fprintf( stderr, "File num: %d  Word Score: %d  Frequency: %d  ", r->filenum, word_score, freq );
-#endif
+    if( DEBUG_RANK )
+    {
+        fprintf( stderr, "File num: %d  Word Score: %d  Frequency: %d  ", r->filenum, word_score, freq );
+    }
 
 
     /* don't do this here; let density calc do it
@@ -598,8 +610,7 @@ getrankIDF( RESULT *r )
     total_word_freq     = r->tfrequency;
     idf                 = (int) ( log( total_files / total_word_freq ) * 1000 );
 
-    /* take 3 significant digits of the IDF.
-    this helps create a wider spread
+    /*  *1000 helps create a wider spread
     between the most common words and the rest of the pack:
     "word frequencies in natural language obey a power-law distribution" -- Maciej Ceglowski
     */
@@ -607,13 +618,15 @@ getrankIDF( RESULT *r )
     if ( idf < 1 )
         idf = 1;
         /* only ubiquitous words like 'the' get idfs < 1.
-        these should probably be stopwords anyway... */
+           these should probably be stopwords anyway... 
+        */
 
 
-#ifdef DEBUG_RANK
+    if( DEBUG_RANK )
+    {
         fprintf(stderr, "Total files: %d   Total word freq: %d   IDF: %d  \n",
                  total_files, total_word_freq, idf );
-#endif
+    }
 
     /* calc word density. this normalizes document length so that longer docs
     don't rank higher out of sheer quantity. Hopefully this is a little more
@@ -625,10 +638,11 @@ getrankIDF( RESULT *r )
     total_words         = sw->TotalWordPos;
     average_words       = total_words / total_files;
 
-#ifdef DEBUG_RANK
-    fprintf(stderr, "Total words: %d   Average words: %d   Indexed words in this doc: %d  ",
+    if( DEBUG_RANK )
+    {
+        fprintf(stderr, "Total words: %d   Average words: %d   Indexed words in this doc: %d  ",
          total_words, average_words, words );
-#endif
+    }
 
 
 /* normalizing term density in a collection.
@@ -679,7 +693,7 @@ that something is awry. */
     }
 
 
-    density             = ( ( average_words * 100 ) / words ) * freq;
+    density             = ( ( average_words * 1000 ) / words ) * freq;
 
 /* minimum density  */
     if (density < 1)
@@ -690,9 +704,10 @@ that something is awry. */
     word_weight         = ( density * idf ) / 100;
 
 
-#ifdef DEBUG_RANK
-    fprintf(stderr, "Density: %d    Word Weight: %d   \n", density, word_weight );
-#endif
+    if( DEBUG_RANK )
+    {
+        fprintf(stderr, "Density: %d    Word Weight: %d   \n", density, word_weight );
+    }
 
 
     for(i = 0; i < freq; i++)
@@ -701,11 +716,12 @@ that something is awry. */
 
         word_score += word_weight * ( sw->structure_map[ GET_STRUCTURE(posdata[i]) ] + meta_bias );
 
-#ifdef DEBUG_RANK
-        fprintf(stderr, "Word entry %d at position %d has struct %d\n", i,  GET_POSITION(posdata[i]),  GET_STRUCTURE(posdata[i]) );
+        if( DEBUG_RANK > 1 )
+        {
+            fprintf(stderr, "Word entry %d at position %d has struct %d\n", i,  GET_POSITION(posdata[i]),  GET_STRUCTURE(posdata[i]) );
 
-        struct_tally[ GET_STRUCTURE(posdata[i]) ]++;
-#endif
+            struct_tally[ GET_STRUCTURE(posdata[i]) ]++;
+        }
 
     }
 
@@ -716,41 +732,42 @@ that something is awry. */
 
 
 
-#ifdef DEBUG_RANK
-        fprintf(stderr, "Rank after IDF weighting: %d  \n", word_score );
-#endif
+    if( DEBUG_RANK )
+    {
+        fprintf(stderr, "Raw score after IDF weighting: %d  \n", word_score );
+    }
 
-        /* scaling word_score?? */
+    word_score = scale_word_score( word_score );
 
-        /* Scale the rank - this was originally based on frequency */
-        /* Uses lookup tables for values <= 1000, otherwise calculate */
+    if( DEBUG_RANK > 1 )
+    {
+        fprintf( stderr, "scaled rank: %d\n  Structure tally:\n", word_score );
 
-        word_score = scale_word_score( word_score );
+        for ( i = 0; i <= 255; i++ )
+        {
+            if ( struct_tally[i] )
+            {
+                fprintf( stderr, "      struct 0x%x = count of %2d (", i, struct_tally[i] );
+                if ( i & IN_EMPHASIZED ) fprintf(stderr," EM");
+                if ( i & IN_HEADER ) fprintf(stderr," HEADING");
+                if ( i & IN_COMMENTS ) fprintf(stderr," COMMENT");
+                if ( i & IN_META ) fprintf(stderr," META");
+                if ( i & IN_BODY ) fprintf(stderr," BODY");
+                if ( i & IN_HEAD ) fprintf(stderr," HEAD");
+                if ( i & IN_TITLE ) fprintf(stderr," TITLE");
+                if ( i & IN_FILE ) fprintf(stderr," FILE");
+                fprintf(stderr," ) x rank map of %d = %d\n\n",  sw->structure_map[i], sw->structure_map[i] *  struct_tally[i]);
+            }
+        }
+    }
+    
+    if ( DEBUG_RANK )
+    {
+        fprintf(stderr, "Scaled score: %d \n", word_score );
+        
+    }
 
-
-
-#ifdef DEBUG_RANK
-     fprintf( stderr, "scaled rank: %d\n  Structure tally:\n", word_score );
-
-     for ( i = 0; i <= 255; i++ )
-         if ( struct_tally[i] )
-         {
-             fprintf( stderr, "      struct 0x%x = count of %2d (", i, struct_tally[i] );
-            if ( i & IN_EMPHASIZED ) fprintf(stderr," EM");
-            if ( i & IN_HEADER ) fprintf(stderr," HEADING");
-            if ( i & IN_COMMENTS ) fprintf(stderr," COMMENT");
-            if ( i & IN_META ) fprintf(stderr," META");
-            if ( i & IN_BODY ) fprintf(stderr," BODY");
-            if ( i & IN_HEAD ) fprintf(stderr," HEAD");
-            if ( i & IN_TITLE ) fprintf(stderr," TITLE");
-            if ( i & IN_FILE ) fprintf(stderr," FILE");
-            fprintf(stderr," ) x rank map of %d = %d\n\n",  sw->structure_map[i], sw->structure_map[i] *  struct_tally[i]);
-         }
-#endif
-
-
-        return ( r->rank = word_score / 100 );
-
+    return ( r->rank = word_score );
 }
 
 int

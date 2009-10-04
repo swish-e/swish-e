@@ -64,6 +64,8 @@ static void print_header_value( SW_HANDLE swish_handle, const char *name, SWISH_
 static void demo_stemming( SW_RESULTS results );
 static void stem_it( SW_RESULT r, char *word );
 
+static void test_compress();
+
 
 int     main(int argc, char **argv)
 {
@@ -75,8 +77,9 @@ int     main(int argc, char **argv)
     char   *index_file_list;
 
 
-
     SwishErrorsToStderr();      /* Send any errors or warnings to stderr (default is stdout) */
+
+    test_compress();
 
     /* Connect to the indexes specified */
 
@@ -88,6 +91,9 @@ int     main(int argc, char **argv)
     /* set ranking scheme. default is 0 */
     
     SwishRankScheme( swish_handle, 1 );
+
+    /* return raw values */
+    SwishReturnRawRank( swish_handle, 1 );
 
 
     /* Check for errors after every call */
@@ -537,5 +543,18 @@ static void stem_it( SW_RESULT r, char *word )
     printf("\n");
 
     SwishFuzzyWordFree( fw );
+}
+
+
+/* this was written to test compress3() by joshr */
+/* I believe it is written incorrectly */
+static void test_compress() 
+{
+    char buffer[10000] = {0}; // 10K
+    int i;
+    char * place = buffer;
+    for( i=0; i<1000; i++) {   // assume 10 bytes per number is enough :)
+        place = compress3( i, place );
+    }
 }
 

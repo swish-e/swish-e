@@ -1,6 +1,6 @@
 %define	name	@PACKAGE@
 %define	version	@VERSION@
-%define release 5
+%define release 6
 
 # SWISH::API definitions
 %define NVR %{name}-%{version}-%{release}
@@ -17,8 +17,9 @@ BuildRoot:      %{_tmppath}/%name-root
 Provides:       %{name}
 Obsoletes:      %{name}-doc
 Obsoletes:      swish
-Requires:       libxml2, pcre, zlib, db4
-BuildRequires:  libxml2-devel, pcre-devel, zlib-devel, db4-devel, perl(ExtUtils::MakeMaker)
+Requires:       libxml2, pcre, zlib
+BuildRequires:  libxml2-devel, pcre-devel, zlib-devel, perl(ExtUtils::MakeMaker)
+AutoReq:	    0
 
 %description
 Swish-e is Simple Web Indexing System for Humans - Enhanced
@@ -38,6 +39,7 @@ Group:          Applications/Internet
 Provides:       %{name}-perl
 Requires:       %{name} = %{version}
 Requires:       %{name}-perl-api = %{version}
+AutoReq:        0
 
 %description    perl
 PERL SWISH-E language bindings and scripts.
@@ -48,8 +50,9 @@ summary:	SWISH::API - Perl interface to the Swish-e C Library
 License:	Perl License
 Group:		Development/Libraries
 Provides:	%{name}-perl-api
-Provides:	perl-SWISH-API = 0.01
+Provides:	perl-SWISH-API = 0.04
 Requires:	%{name} = %{version}
+AutoReq:    0
 
 %description	perl-api
 SWISH::API provides a Perl interface to the Swish-e search engine.
@@ -62,8 +65,9 @@ open when running multiple queries.  This results in increased search performanc
 Summary:	SWISH-E - Static libraries and header files.
 Group:		Development/Libraries
 Obsoletes:	swish-devel
-Provides:       %{name}-devel
+Provides:   %{name}-devel
 Requires:	%{name} = %{version}
+AutoReq:    0
 
 %description	devel
 Libraries and header files required for compiling applications based on the SWISH-E API.
@@ -152,6 +156,8 @@ find %{buildroot}%{_prefix}             \
 %{_bindir}/swish-config
 
 %changelog
+* Sun Dec 07 2008 Josh Rabinowitz <joshr> 2.5.6-6
+- fix Source link to tarball, bump release to 6
 * Thu Dec 13 2007 David L Norris <dave@webaugur.com> 2.5.6
 - Lots of changes to make Fedora happy.
 - Remove SUSE specific stuff.

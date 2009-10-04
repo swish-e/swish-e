@@ -1,6 +1,6 @@
 /*
-**
-$Id$
+
+$Id: swish-e.h 2307 2009-04-09 16:14:41Z karpet $
 
     This file is part of Swish-e.
 
@@ -21,30 +21,48 @@ $Id$
     See the COPYING file that accompanies the Swish-e distribution for details
     of the GNU GPL and the special exception available for linking against
     the Swish-e library.
+
+    $Log$
     
-** Mon May  9 18:19:34 CDT 2005
-** added GPL
-
-
-**-------------------------------------------------------
-**
-**
 */
 
+/* this file added for experimental 64bit portable version by joshr */
 
-#ifndef GETRUNTIME_H
-#define GETRUNTIME_H 1
+#ifndef SWISHTYPES_H 
+#define SWISHTYPES_H 1
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef double cpu_seconds;
-cpu_seconds get_cpu_secs (void);
+
+
+// presence of 'no rw64' at start of comment tells rewriter not to touch this line
+//
+//
+// these two typedefs are the only code in this file.
+typedef long long          SWINT_T;  // no rw64 
+typedef unsigned long long SWUINT_T; // no rw64 
+
+// SET_POSDATA() and GET_POSITION() are still defined in swish.h
+
+#if 0
+// experimental replacements of SET_POSDATA and GET_POSITION macros.
+//#define SET_POSDATA(pos,str)  ((SWUINT_T)((SWUINT_T)(pos) << (SWUINT_T)8 | (SWUINT_T)(str)))
+//SWUINT_T SET_POSDATA( SWUINT_T pos, SWUINT_T str /* str for structure */ ) ;
+//#define GET_POSITION(pos)      ((SWINT_T)((SWUINT_T)(pos) >> (SWUINT_T)8))
+//SWUINT_T GET_POSITION( SWUINT_T pos);
+#endif
+
+
 
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
 
-#endif /* GETRUNTIME_H */
+
+#endif /* !SWISHTYPES_H */
+
+
+
 

@@ -974,9 +974,11 @@ typedef struct SWISH
     int     structure_map[256];
 
 
-        /* karman Mon Aug 30 07:54:10 CDT 2004 */
+    /* karman Mon Aug 30 07:54:10 CDT 2004 */
     int     RankScheme;         /* Ranking Scheme */
     int     TotalWordPos;
+
+    int     ReturnRawRank;
 
 
     void *ref_count_ptr;  /* pointer for use with SWISH::API */

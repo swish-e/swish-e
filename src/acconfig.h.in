@@ -1,4 +1,4 @@
-/* src/acconfig.h.in.  Generated from configure.in by autoheader.  */
+/* src/acconfig.h.in.  Generated from configure.ac by autoheader.  */
 
 /* Define to one of `_getb67', `GETB67', `getb67' for Cray-2 and Cray-YMP
    systems. This function is required for `alloca.c' support on those systems.
@@ -182,6 +182,10 @@
 /* Define to 1 if you have the <zlib.h> header file. */
 #undef HAVE_ZLIB_H
 
+/* Define to the sub-directory in which libtool stores uninstalled libraries.
+   */
+#undef LT_OBJDIR
+
 /* (developers only) checks for memory consistency on alloc/free using guards
    */
 #undef MEM_DEBUG
@@ -215,7 +219,7 @@
 
 /* If using the C implementation of alloca, define if you know the
    direction of stack growth for your system; otherwise it will be
-   automatically deduced at run-time.
+   automatically deduced at runtime.
 	STACK_DIRECTION > 0 => grows toward higher addresses
 	STACK_DIRECTION < 0 => grows toward lower addresses
 	STACK_DIRECTION = 0 => direction of growth unknown */
@@ -248,7 +252,7 @@
 /* Define to `int' if <sys/types.h> does not define. */
 #undef pid_t
 
-/* Define to `unsigned' if <sys/types.h> does not define. */
+/* Define to `unsigned int' if <sys/types.h> does not define. */
 #undef size_t
 
 /* Define to `int' if <sys/types.h> doesn't define. */
