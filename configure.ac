@@ -1,6 +1,7 @@
 AC_PREREQ(2.50)/
 AC_INIT(src/swish.c)
 AC_CONFIG_AUX_DIR(config)
+dnl AC_CONFIG_MACRO_DIR([m4])
 
 PACKAGE=swish-e
 
@@ -170,7 +171,7 @@ AC_FUNC_STRFTIME
 AC_FUNC_VPRINTF
 AC_FUNC_FORK
 AC_CHECK_FUNCS(waitpid kill)
-AC_CHECK_FUNCS(re_comp regcomp strdup strstr lstat setenv access)
+AC_CHECK_FUNCS(re_comp regcomp strdup strstr lstat access)
 AC_CHECK_FUNCS(strchr memcpy)
 AC_CHECK_FUNCS(clock times getrusage)
 AC_CHECK_LIB(m,log)
@@ -377,7 +378,7 @@ AC_SYS_LARGEFILE
 AC_MSG_NOTICE([fileoffset bits = ${ac_cv_sys_file_offset_bits}])
 if test "x${ac_cv_sys_file_offset_bits}" == "x64" ;
 then
-       LARGEFILES_MACROS="-D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=$ac_cv_sys_file_offset_bits"
+    LARGEFILES_MACROS="-D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=$ac_cv_sys_file_offset_bits"
 fi
 AC_SUBST(LARGEFILES_MACROS)
 
