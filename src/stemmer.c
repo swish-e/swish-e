@@ -271,11 +271,11 @@ FUZZY_OBJECT *set_fuzzy_mode(FUZZY_OBJECT *fi, char *param )
 {
     int     i;
 
-    for (i = 0; i < (int)(sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0])); i++)
-        if ( 0 == strcasecmp(fuzzy_opts[i].name, param ) )
-        {
+    for (i = 0; i < (int)(sizeof(fuzzy_opts) / sizeof(fuzzy_opts[0])); i++) {
+        if ( 0 == strcasecmp(fuzzy_opts[i].name, param ) ) {
             return create_fuzzy_struct( fi, &fuzzy_opts[i] );
         }
+    }
 
     return NULL;
 }
