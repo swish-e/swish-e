@@ -6,6 +6,17 @@ CHANGES - List of revisions
 
 This document contains list of bug fixes and feature additions to Swish-e.
 
+=head2 Version 2.4.8 - xxx
+
+=over 4
+
+=item yanked SWISH-Stemmer-0.05.tar.gz
+
+The tar file of SWISH::Stemmer in the example dir has been broken for years,
+but since the module itself is severely deprecated we haven't bothered with it.
+Till now. Because it was preventing the good people of the fedora project
+from building their RPMs.
+
 =head2 Version 2.4.7 - 4 April 2009
 
 =over 4
