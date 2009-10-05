@@ -261,7 +261,7 @@ SEARCH_OBJECT *New_Search_Object( SWISH *sw, char *query )
 }
 
 /****************************************************************
-* These three funtions return the swish object's ref_count_ptr
+* These three functions return the swish object's ref_count_ptr
 ****************************************************************/
 void *SwishSearch_parent ( SEARCH_OBJECT *srch )
 {
@@ -439,7 +439,7 @@ static RESULTS_OBJECT *New_Results_Object( SEARCH_OBJECT *srch )
         db_results->results     = results;      /* parent object */
         db_results->indexf      = indexf;
         db_results->index_num   = indexf_count++;
-    db_results->srch        = srch;        /* only valid during the search */
+        db_results->srch        = srch;        /* only valid during the search */
 
 
         if ( !last )
