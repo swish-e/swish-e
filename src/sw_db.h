@@ -45,7 +45,7 @@ DB_OPEN_MODE;
 /* a unique word can contain multiple wordID if update mode is used */
 /* There can be a wordID for each indexed chunk */
 typedef struct DB_WORDID {
-    sw_off_t  wordID;
+    SW_INT32  wordID;
     struct DB_WORDID *next;
 } DB_WORDID;
 
@@ -89,7 +89,7 @@ int     DB_ReadHeaderData(SWISH *sw, int *id, unsigned char **s, int *len, void 
 int     DB_EndReadHeader(SWISH *sw, void *DB);
 
 int     DB_InitWriteWords(SWISH *sw, void *DB);
-sw_off_t    DB_GetWordID(SWISH *sw, void *DB);
+SW_INT32    DB_GetWordID(SWISH *sw, void *DB);
 int     DB_WriteWord(SWISH *sw, char *word, sw_off_t wordID, void *DB);
 int     DB_WriteWordHash(SWISH *sw, char *word, sw_off_t wordID, void *DB);
 long    DB_WriteWordData(SWISH *sw, sw_off_t wordID, unsigned char *worddata, int data_size, int saved_bytes, void *DB);

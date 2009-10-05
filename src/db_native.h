@@ -49,7 +49,7 @@ struct Handle_DBNative
    sw_off_t last_sortedindex;
    sw_off_t next_sortedindex;
    
-   int worddata_counter;
+   SW_INT32 worddata_counter;
 
    int num_words;
 
@@ -126,15 +126,15 @@ int     _DB_InitReadHeader (void *db);
 int     _DB_ReadHeaderData (int *id, unsigned char **s, int *len, void *db);
 int     _DB_EndReadHeader (void *db);
 int     _DB_InitWriteWords (void *db);
-sw_off_t    _DB_GetWordID (void *db);
-int     _DB_WriteWord (char *word, sw_off_t wordID, void *db);
-long    _DB_WriteWordData (sw_off_t wordID, unsigned char *worddata, int data_size, int saved_bytes, void *db);
+SW_INT32    _DB_GetWordID (void *db);
+int     _DB_WriteWord (char *word, SW_INT32 wordID, void *db);
+long    _DB_WriteWordData (SW_INT32 wordID, unsigned char *worddata, int data_size, int saved_bytes, void *db);
 int     _DB_EndWriteWords (void *db);
 int     _DB_InitReadWords (void *db);
 int     _DB_ReadWord (char *word, DB_WORDID **wordID, void *db);
 int     _DB_ReadFirstWordInvertedIndex (char *word, char **resultword, DB_WORDID **wordID, void *db);
 int     _DB_ReadNextWordInvertedIndex (char *word, char **resultword, DB_WORDID **wordID, void *db);
-long    _DB_ReadWordData (sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *db);
+long    _DB_ReadWordData (SW_INT32 wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *db);
 int     _DB_EndReadWords (void *db);
 
 

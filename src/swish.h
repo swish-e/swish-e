@@ -82,6 +82,8 @@
 #include <string.h>
 #include <math.h>
 #include <sys/types.h>
+#include <stdint.h>
+#include <inttypes.h>
 #include <sys/stat.h>
 #include <locale.h>
 #include <ctype.h>
@@ -164,6 +166,8 @@ checked in db_native.c (DB_CheckHeader routine) */
 
 #define INDEXFILE "index.swish-e"
 
+/* always want a 32-bit int for certain BDB types. TODO make this db_recno_t ? */
+#define SW_INT32 uint32_t
 
 #define BASEHEADER 1
 #define INDEXHEADER "# SWISH format: " VERSION
@@ -463,7 +467,7 @@ typedef struct ENTRY
     /* this union is just for saving memory */
     struct
     {
-        sw_off_t    wordID;
+        SW_INT32    wordID;
         int     last_filenum;
     }
     u1;

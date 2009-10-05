@@ -231,6 +231,24 @@ unsigned long PACKLONG(unsigned long num)
     return num;
 }
 
+SW_INT32 PACK_INT32(SW_INT32 num)
+{
+    SW_INT32 tmp = 0L;
+    unsigned char *s;
+    int sz_long = sizeof(SW_INT32);  
+
+    if (num && LITTLE_ENDIAN)
+    {
+        s = (unsigned char *) &tmp;
+        while(sz_long)
+            *s++ = (unsigned char) ((num >> ((--sz_long)<<3)) & 0xFF);
+
+        return tmp;
+    }
+    return num;
+}
+
+
 /* Same routine - Packs long in buffer */
 void    PACKLONG2(unsigned long num, unsigned char *s)
 {
@@ -252,6 +270,21 @@ unsigned long UNPACKLONG(unsigned long num)
 {
     int sz_long = sizeof(unsigned long);
 	unsigned long tmp = 0;
+    unsigned char *s = (unsigned char *) &num;
+
+    if(LITTLE_ENDIAN)
+    {
+        while(sz_long)
+            tmp += *s++ << ((--sz_long)<<3);
+        return tmp;
+    }
+    return num;
+}
+
+SW_INT32 UNPACK_INT32(SW_INT32 num)
+{
+    int sz_long = sizeof(SW_INT32);
+	SW_INT32 tmp = 0;
     unsigned char *s = (unsigned char *) &num;
 
     if(LITTLE_ENDIAN)

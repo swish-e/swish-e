@@ -40,9 +40,11 @@ int uncompress2(unsigned char **buffer);
 
 
 unsigned long PACKLONG(unsigned long num);
+SW_INT32 PACK_INT32(SW_INT32 num);
 void PACKLONG2(unsigned long num, unsigned char *buffer);
 
 unsigned long UNPACKLONG(unsigned long num);
+SW_INT32 UNPACK_INT32(SW_INT32 num);
 unsigned long UNPACKLONG2(unsigned char *buffer);
 
 

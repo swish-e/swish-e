@@ -213,8 +213,6 @@ DB * OpenBerkeleyFile(char *filename, DBTYPE db_type, u_int32_t db_flags, int du
             progerrno("Couldn't set DB_DUPSORT in DB Berkeley file \"%s\": ", filename);
         if((db_ret = dbp->set_dup_compare(dbp,compare_packed_long)))
             progerrno("Couldn't set DB_DUPSORT_ROUTINE in DB Berkeley file \"%s\": ", filename);
-        if((db_ret = dbp->set_bt_compare(dbp,compare_packed_long)))
-            progerrno("Couldn't set DB_BTSORT_ROUTINE in DB Berkeley file \"%s\": ", filename);
     }    
     if((db_ret = dbp->open(dbp,NULL,filename,NULL,db_type,db_flags,0)))
     {
@@ -772,14 +770,14 @@ int     _DB_EndWriteWords(void *db)
     return 0;
 }
 
-sw_off_t    _DB_GetWordID(void *db)
+SW_INT32    _DB_GetWordID(void *db)
 {
     struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
 
-    return (sw_off_t) SW_DB->worddata_counter;
+    return SW_DB->worddata_counter;
 }
 
-int     _DB_WriteWord(char *word, sw_off_t wordID, void *db)
+int     _DB_WriteWord(char *word, SW_INT32 wordID, void *db)
 {
     struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
 
@@ -787,7 +785,7 @@ int     _DB_WriteWord(char *word, sw_off_t wordID, void *db)
     int ret;
 
     /*Berkeley DB stuff */
-    wordID = PACKLONG(wordID);
+    wordID = PACK_INT32(wordID);
     memset(&key,0,sizeof(DBT));
     memset(&data,0,sizeof(DBT));
     key.data = word;
@@ -806,7 +804,7 @@ int     _DB_WriteWord(char *word, sw_off_t wordID, void *db)
     return 0;
 }
 
-long    _DB_WriteWordData(sw_off_t wordID, unsigned char *worddata, int data_size, int saved_bytes, void *db)
+long    _DB_WriteWordData(SW_INT32 wordID, unsigned char *worddata, int data_size, int saved_bytes, void *db)
 {
     unsigned char stack_buffer[8192]; /* just to avoid emalloc,efree overhead */
     unsigned char *buf, *p;
@@ -868,7 +866,7 @@ int     _DB_EndReadWords(void *db)
 int     _DB_ReadWord(char *word, DB_WORDID **wordID, void *db)
 {
     struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-    sw_off_t dummy = 0;
+    SW_INT32 dummy = 0;
     DBT key,data;
     int ret, found = 0;
     DBC *dbcp;
@@ -878,7 +876,7 @@ int     _DB_ReadWord(char *word, DB_WORDID **wordID, void *db)
     if ((ret = SW_DB->db_btree->cursor(SW_DB->db_btree, NULL, &dbcp, 0)) != 0)
     {
         //dbp->err(SW_DB->db_btree, ret, "DB->cursor"); return (1);
-        *wordID = (sw_off_t)0;
+        *wordID = (SW_INT32)0;
     }
     else
     {
@@ -891,7 +889,7 @@ int     _DB_ReadWord(char *word, DB_WORDID **wordID, void *db)
         data.data = &dummy;
         data.ulen = sizeof(dummy); 
         data.flags = DB_DBT_USERMEM;
-   
+           
         /* Walk through the database and print out the key/data pairs. */
         ret = dbcp->c_get(dbcp, &key, &data, DB_SET);
         if (ret == 0)
@@ -900,7 +898,7 @@ int     _DB_ReadWord(char *word, DB_WORDID **wordID, void *db)
             while(ret == 0)
             {
                 tmp = (DB_WORDID *)emalloc(sizeof(DB_WORDID));
-                tmp->wordID = UNPACKLONG(dummy);
+                tmp->wordID = UNPACK_INT32(dummy);
                 tmp->next = NULL;
                 if(!head) head = tmp;
                 if(last) last->next = tmp;
@@ -921,7 +919,7 @@ int     _DB_ReadFirstWordInvertedIndex(char *word, char **resultword, DB_WORDID 
     DBC *dbcp;
     DBT key, data;
     int ret; 
-    sw_off_t dummy;
+    SW_INT32 dummy;
     DB_WORDID *tmp = NULL;
 
     /* Acquire a cursor for the database. */
@@ -943,11 +941,11 @@ int     _DB_ReadFirstWordInvertedIndex(char *word, char **resultword, DB_WORDID 
         data.data = &dummy;
         data.ulen = sizeof(dummy);
         data.flags = DB_DBT_USERMEM;
-       
+               
         /* Walk through the database and print out the key/data pairs. */ 
         ret = dbcp->c_get(dbcp, &key, &data, DB_SET_RANGE);
         if (ret == 0)
-        {
+        {        
             if((key.size < strlen(word)) || (strncmp(word,key.data,strlen(word))!=0))
             {
                 *resultword = NULL;
@@ -960,7 +958,7 @@ int     _DB_ReadFirstWordInvertedIndex(char *word, char **resultword, DB_WORDID 
                 *resultword = emalloc(key.size + 1);
                 memcpy(*resultword,key.data,key.size);
                 (*resultword)[key.size]='\0';
-                dummy = UNPACKLONG(dummy);
+                dummy = UNPACK_INT32(dummy);
                 tmp = (DB_WORDID *)emalloc(sizeof(DB_WORDID));
                 tmp->wordID = dummy;
                 tmp->next = NULL;
@@ -978,6 +976,10 @@ int     _DB_ReadFirstWordInvertedIndex(char *word, char **resultword, DB_WORDID 
             dbcp->c_close(dbcp);
             SW_DB->dbc_btree = NULL;
         }
+        else {
+            fprintf(stderr, "%s line %d: %s\n", __FILE__, __LINE__, db_strerror(ret));
+            progerrno("Unexpected error from Berkeley btree file \"%s\": ", SW_DB->cur_btree_file);
+        }
     }
 
     *wordID = tmp;
@@ -991,7 +993,7 @@ int     _DB_ReadNextWordInvertedIndex(char *word, char **resultword, DB_WORDID *
     DBC *dbcp = SW_DB->dbc_btree;
     DBT key, data;
     int ret;
-    sw_off_t dummy = 0;
+    SW_INT32 dummy = 0;
     DB_WORDID *tmp = NULL;
 
     *resultword = NULL;
@@ -1025,7 +1027,7 @@ int     _DB_ReadNextWordInvertedIndex(char *word, char **resultword, DB_WORDID *
                 *resultword = emalloc(key.size + 1);
                 memcpy(*resultword,key.data,key.size);
                 (*resultword)[key.size]='\0';
-                dummy = UNPACKLONG(dummy);
+                dummy = UNPACK_INT32(dummy);
                 tmp = (DB_WORDID *)emalloc(sizeof(DB_WORDID));
                 tmp->wordID = dummy;
                 tmp->next = NULL;
@@ -1045,7 +1047,7 @@ int     _DB_ReadNextWordInvertedIndex(char *word, char **resultword, DB_WORDID *
     return 0;
 }
 
-long    _DB_ReadWordData(sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *db)
+long    _DB_ReadWordData(SW_INT32 wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *db)
 {
     unsigned char *buf;
     struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
@@ -1077,7 +1079,7 @@ long    _DB_ReadWordData(sw_off_t wordID, unsigned char **worddata, int *data_si
     }
     else
     {
-        fprintf(stderr, "%s: %s\n", __FILE__, db_strerror(ret));
+        fprintf(stderr, "%s line %d: %s\n", __FILE__, __LINE__, db_strerror(ret));
         progerrno("Unexpected error from Berkeley worddata file \"%s\": ", SW_DB->cur_worddata_file);
     }
     return 0;
@@ -1121,10 +1123,10 @@ int ret;
 /* Routine to get filenum from path */
 int     _DB_ReadFileNum(unsigned char *filedata, void *db)
 {
-unsigned long filenum;
-struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-DBT key,data;
-int ret;
+    unsigned long filenum;
+    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+    DBT key,data;
+    int ret;
 
     /* Get it from the hash index */
     /*Berkeley DB stuff */
@@ -1260,9 +1262,9 @@ FILE *fp = SW_DB->fp_presorted;
 
 int     _DB_WriteSortedIndex(int propID, unsigned char *data, int sz_data,void *db)
 {
-sw_off_t tmp1,tmp2;
-struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-FILE *fp = SW_DB->fp_presorted;
+    sw_off_t tmp1,tmp2;
+    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+    FILE *fp = SW_DB->fp_presorted;
 
    sw_fseek(fp, SW_DB->next_sortedindex, SEEK_SET);
 
@@ -1297,10 +1299,10 @@ FILE *fp = SW_DB->fp_presorted;
 
 int     _DB_EndWriteSortedIndex(void *db)
 {
-struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-FILE *fp = SW_DB->fp_presorted;
+    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+    FILE *fp = SW_DB->fp_presorted;
 
-   printfileoffset(fp,(sw_off_t)0,sw_fwrite);  /* No next table mark - Useful if no presorted indexes */
+    printfileoffset(fp,(sw_off_t)0,sw_fwrite);  /* No next table mark - Useful if no presorted indexes */
          /* NULL meta id- Only useful if no presorted indexes  */
 
     if ( putc(0, fp) == EOF )
@@ -1329,11 +1331,11 @@ int     _DB_InitReadSortedIndex(void *db)
 
 int     _DB_ReadSortedIndex(int propID, unsigned char **data, int *sz_data,void *db)
 {
-sw_off_t next;
-long id, tmp;
-struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-FILE *fp = SW_DB->fp_presorted;
-unsigned long first_record = sizeof(unsigned long); /* jump swish magic number */
+    sw_off_t next;
+    long id, tmp;
+    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+    FILE *fp = SW_DB->fp_presorted;
+    unsigned long first_record = sizeof(unsigned long); /* jump swish magic number */
 
    /* seek to the first record */
    sw_fseek(fp,first_record,SEEK_SET);
@@ -1597,16 +1599,16 @@ void    _DB_WriteProperty( IndexFILE *indexf, FileRec *fi, int propID, char *buf
 *****************************************************************************/
 void _DB_WritePropPositions(IndexFILE *indexf, FileRec *fi, void *db)
 {
-struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-PROP_INDEX      *pindex = fi->prop_index;
-INDEXDATAHEADER *header = &indexf->header;
-int             count = header->property_count;
-int             index_size;
-int             i;
+    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+    PROP_INDEX      *pindex = fi->prop_index;
+    INDEXDATAHEADER *header = &indexf->header;
+    int             count = header->property_count;
+    int             index_size;
+    int             i;
 #ifdef DEBUG_PROP
-sw_off_t            start_seek;
+    sw_off_t            start_seek;
 #endif
-sw_off_t            seek_pos;
+    sw_off_t            seek_pos;
 
     /* Just in case there were no properties for this file */
     if ( !pindex )
@@ -1644,13 +1646,13 @@ sw_off_t            seek_pos;
 *****************************************************************************/
 void _DB_ReadPropPositions(IndexFILE *indexf, FileRec *fi, void *db)
 {
-struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-PROP_INDEX      *pindex = fi->prop_index;
-INDEXDATAHEADER *header = &indexf->header;
-int             count = header->property_count;
-int             index_size;
-sw_off_t        seek_pos;
-int             i;
+    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+    PROP_INDEX      *pindex = fi->prop_index;
+    INDEXDATAHEADER *header = &indexf->header;
+    int             count = header->property_count;
+    int             index_size;
+    sw_off_t        seek_pos;
+    int             i;
 
     if ( count <= 0 )
         return;
@@ -1690,15 +1692,15 @@ int             i;
 *****************************************************************************/
 char   *_DB_ReadProperty(IndexFILE *indexf, FileRec *fi, int propID, int *buf_len, int *uncompressed_len, void *db)
 {
-struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-PROP_INDEX      *pindex = fi->prop_index;
-INDEXDATAHEADER *header = &indexf->header;
-int             count = header->property_count;
-sw_off_t        seek_pos, prev_seek_pos;
-int             propIDX;
-PROP_LOCATION   *prop_loc;
-char            *buffer;
-int             saved_bytes;
+    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+    PROP_INDEX      *pindex = fi->prop_index;
+    INDEXDATAHEADER *header = &indexf->header;
+    int             count = header->property_count;
+    sw_off_t        seek_pos, prev_seek_pos;
+    int             propIDX;
+    PROP_LOCATION   *prop_loc;
+    char            *buffer;
+    int             saved_bytes;
 
     propIDX = header->metaID_to_PropIDX[propID];
 
@@ -1790,9 +1792,9 @@ void    _DB_Reopen_PropertiesForRead(void *db)
 
 int    _DB_WriteTotalWordsPerFile(SWISH *sw, int idx, int wordcount, void *db)
 {
-struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-unsigned long first_record = sizeof(unsigned long); /* jump swish magic number */
-long seek_pos;
+    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+    unsigned long first_record = sizeof(unsigned long); /* jump swish magic number */
+    long seek_pos;
 
     /* now calculate index */
     seek_pos = (sw_off_t)first_record + (sw_off_t) sizeof(long) * (sw_off_t)idx;
@@ -1805,9 +1807,9 @@ long seek_pos;
 
 int     _DB_ReadTotalWordsPerFile(SWISH *sw, int index, int *value, void *db)
 {
-struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
-unsigned long first_record = sizeof(unsigned long); /* jump swish magic number */
-long seek_pos;
+    struct Handle_DBNative *SW_DB = (struct Handle_DBNative *) db;
+    unsigned long first_record = sizeof(unsigned long); /* jump swish magic number */
+    long seek_pos;
 
     /* now calculate index */
     seek_pos = (sw_off_t)first_record + (sw_off_t) sizeof(long) * (sw_off_t)index;

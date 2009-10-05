@@ -162,7 +162,7 @@ void    write_header(SWISH *sw, int merged_flag )
 */
 void    write_word(SWISH * sw, ENTRY * ep, IndexFILE * indexf)
 {
-    sw_off_t    wordID;
+    SW_INT32    wordID;
 
     wordID = DB_GetWordID(sw, indexf->DB);
 
@@ -499,7 +499,7 @@ int     DB_InitWriteWords(SWISH *sw, void *DB)
    return _DB_InitWriteWords(DB);
 }
 
-sw_off_t    DB_GetWordID(SWISH *sw, void *DB)
+SW_INT32    DB_GetWordID(SWISH *sw, void *DB)
 {
    return _DB_GetWordID(DB);
 }
