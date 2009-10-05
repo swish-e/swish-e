@@ -1060,8 +1060,6 @@ long    _DB_ReadWordData(sw_off_t wordID, unsigned char **worddata, int *data_si
     key.flags = 0;
     data.flags = DB_DBT_MALLOC;
 
-    fprintf(stderr, "trying to get() wordID %ld for worddata '%s' (size %d) (sizeof sw_off_t=%d sizeof off_t=%d\n", 
-        wordID, *worddata, key.size, sizeof(sw_off_t), sizeof(off_t));
     ret = SW_DB->db_worddata->get(SW_DB->db_worddata, NULL, &key, &data, 0);
 
     if(ret == 0)
