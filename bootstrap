@@ -11,7 +11,7 @@ set -x
 
 # Mac OS X 10.6 no longer has libtoolize but glibtoolize instead
 LIBTOOLIZE=`which libtoolize`
-if [ "$LIBTOOLIZE" == "" ]; then
+if [ ! $LIBTOOLIZE ]; then
     LIBTOOLIZE=`which glibtoolize`
 fi
 
