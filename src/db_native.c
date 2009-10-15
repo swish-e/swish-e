@@ -1696,7 +1696,7 @@ char   *_DB_ReadProperty(IndexFILE *indexf, FileRec *fi, int propID, int *buf_le
     PROP_INDEX      *pindex = fi->prop_index;
     INDEXDATAHEADER *header = &indexf->header;
     int             count = header->property_count;
-    sw_off_t        seek_pos, prev_seek_pos;
+    SW_INT32        seek_pos, prev_seek_pos;
     int             propIDX;
     PROP_LOCATION   *prop_loc;
     char            *buffer;
@@ -1731,9 +1731,12 @@ char   *_DB_ReadProperty(IndexFILE *indexf, FileRec *fi, int propID, int *buf_le
     /* Preserve seek_pos */
     prev_seek_pos = sw_ftell(SW_DB->fp_prop);
 
-    if (sw_fseek(SW_DB->fp_prop, seek_pos, SEEK_SET) == -1)
+    if (sw_fseek(SW_DB->fp_prop, seek_pos, SEEK_SET) == -1) {
+        progwarn("sizeof(seek_pos) == %ld", sizeof(seek_pos));
         progerrno("Failed to seek to properties located at %ld for file number %d : ", seek_pos, fi->filenum);
 
+
+    }
 #ifdef DEBUG_PROP
     printf("Fetching filenum: %d propIDX: %d at seek: %ld\n", fi->filenum, propIDX, seek_pos);
 #endif
