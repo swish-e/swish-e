@@ -55,8 +55,8 @@ unsigned char *allocatePropIOBuffer(SWISH *sw, unsigned long buf_needed );
 
 propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int metaID, int max_size );
 propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue, int propLen, int preEncoded, int *error_flag );
-void addDocProperties( INDEXDATAHEADER *header, docProperties **docProperties, unsigned char *propValue, int propLen, char *filename );
-int addDocProperty (docProperties **, struct metaEntry * , unsigned char* ,int, int );
+void addDocProperties( SWISH *sw, INDEXDATAHEADER *header, docProperties **docProperties, unsigned char *propValue, int propLen, char *filename );
+int addDocProperty (docProperties **, struct metaEntry * , unsigned char* ,int, int, unsigned char);
 int Compare_Properties( struct metaEntry *meta_entry, propEntry *p1, propEntry *p2 );
 
 unsigned char *fetchDocProperties ( FileRec *, char * );
@@ -76,7 +76,7 @@ void    freeResultPropValue(PropValue *pv);
 
 void     WritePropertiesToDisk( SWISH *sw , FileRec *fi);
 propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, FileRec *fi, int metaID, int max_size );
-docProperties *ReadAllDocPropertiesFromDisk( IndexFILE *indexf, int filenum );
+docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int filenum );
 
 
 

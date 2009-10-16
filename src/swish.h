@@ -844,6 +844,7 @@ typedef struct SWISH
     unsigned char            *Prop_IO_Buf;      /* For compressing and uncompressing properties (static-like buffer) */
     unsigned long             PropIO_allocated;// total size of the structure
     int                       PropCompressionLevel;
+    unsigned char             PropDelimiter;    /* char to use when appending property values (default is space ' ') */
 
 
     /* Total words and files in all index files */

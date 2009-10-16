@@ -177,6 +177,15 @@ $Id$
 #include <zlib.h>
 #endif
 
+static propEntry 
+*append_property( 
+    struct metaEntry *meta_entry, 
+    propEntry *p, 
+    char *txt, 
+    int length, 
+    unsigned char prop_delim
+);
+
 /*******************************************************************
 *   Convert a propValue to a unsigned long
 *
@@ -915,7 +924,7 @@ propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue
 *   Will limit property length, if needed.
 *
 *******************************************************************/
-propEntry *append_property( struct metaEntry *meta_entry, propEntry *p, char *txt, int length )
+static propEntry *append_property( struct metaEntry *meta_entry, propEntry *p, char *txt, int length, unsigned char prop_delim )
 {
     int     newlen;
     int     add_a_space = 0;
@@ -956,7 +965,7 @@ propEntry *append_property( struct metaEntry *meta_entry, propEntry *p, char *tx
     p = (propEntry *) erealloc(p, sizeof(propEntry) + newlen);
 
     if ( add_a_space )
-        p->propValue[p->propLen++] = ' ';
+        p->propValue[p->propLen++] = prop_delim;
 
     memcpy( (void *)&(p->propValue[p->propLen]), str, length );
     p->propLen = newlen;
@@ -984,7 +993,7 @@ propEntry *append_property( struct metaEntry *meta_entry, propEntry *p, char *tx
 *
 *
 ********************************************************************/
-void addDocProperties( INDEXDATAHEADER *header, docProperties **docProperties, unsigned char *propValue, int propLen, char *filename )
+void addDocProperties( SWISH *sw, INDEXDATAHEADER *header, docProperties **docProperties, unsigned char *propValue, int propLen, char *filename )
 {
     struct metaEntry *m;
     int     i;
@@ -994,7 +1003,7 @@ void addDocProperties( INDEXDATAHEADER *header, docProperties **docProperties, u
         m = header->metaEntryArray[i];
 
         if ( (m->metaType & META_PROP) && m->in_tag )
-            if ( !addDocProperty( docProperties, m, propValue, propLen, 0 ) )
+            if ( !addDocProperty( docProperties, m, propValue, propLen, 0, sw->PropDelimiter ) )
                 progwarn("Failed to add property '%s' in file '%s'", m->metaName, filename );
     }
 }
@@ -1021,7 +1030,14 @@ void addDocProperties( INDEXDATAHEADER *header, docProperties **docProperties, u
 *
 ********************************************************************/
 
-int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry, unsigned char *propValue, int propLen, int preEncoded )
+int addDocProperty( 
+    docProperties **docProperties, 
+    struct metaEntry *meta_entry, 
+    unsigned char *propValue, 
+    int propLen, 
+    int preEncoded,
+    unsigned char prop_delim
+)
 {
     struct docProperties *dp = *docProperties;
     propEntry *docProp;
@@ -1062,7 +1078,7 @@ int addDocProperty( docProperties **docProperties, struct metaEntry *meta_entry,
     {
         if ( is_meta_string(meta_entry) )
         {
-            dp->propEntry[meta_entry->metaID] = append_property( meta_entry, dp->propEntry[meta_entry->metaID], (char *)propValue, propLen );
+            dp->propEntry[meta_entry->metaID] = append_property( meta_entry, dp->propEntry[meta_entry->metaID], (char *)propValue, propLen, prop_delim );
             return 1;
         }
         else // Will this come back and bite me?
@@ -1432,7 +1448,7 @@ propEntry *ReadSingleDocPropertiesFromDisk( IndexFILE *indexf, FileRec *fi, int 
 *   2001-09 jmruiz Modified to be used by merge.c
 *********************************************************************/
 
-docProperties *ReadAllDocPropertiesFromDisk( IndexFILE *indexf, int filenum )
+docProperties *ReadAllDocPropertiesFromDisk( SWISH *sw, IndexFILE *indexf, int filenum )
 {
     FileRec         fi;
     propEntry      *new_prop;
@@ -1472,7 +1488,7 @@ docProperties *ReadAllDocPropertiesFromDisk( IndexFILE *indexf, int filenum )
         // would be better if we didn't need to create a new property just to free one
         // this routine is currently only used by merge and dump.c
 
-        addDocProperty(&docProperties, &meta_entry, new_prop->propValue, new_prop->propLen, 1 );
+        addDocProperty(&docProperties, &meta_entry, new_prop->propValue, new_prop->propLen, 1, sw->PropDelimiter );
 
         efree( new_prop );
     }

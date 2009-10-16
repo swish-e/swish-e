@@ -90,7 +90,7 @@ void dump_index_file_list( SWISH *sw, IndexFILE *indexf, int filenum, int maxhit
 
 
         printf("ReadAllDocProperties:\n");
-        fi.docProperties =  ReadAllDocPropertiesFromDisk( indexf, filenum );
+        fi.docProperties =  ReadAllDocPropertiesFromDisk( sw, indexf, filenum );
         dump_file_properties( indexf, &fi );
 
         if ( words )

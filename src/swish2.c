@@ -93,6 +93,7 @@ SWISH  *SwishNew()
     sw->headerOutVerbose = 1;
     sw->DefaultDocType = NODOCTYPE;
     sw->ReturnRawRank = 0;
+    sw->PropDelimiter = ' ';
 
 #ifdef HAVE_ZLIB
     sw->PropCompressionLevel = Z_DEFAULT_COMPRESSION;
