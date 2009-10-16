@@ -2279,11 +2279,10 @@ static RESULT_LIST *andresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, R
 
             newRank = ((r1->rank * andLevel) + r2->rank) / (andLevel + 1);
 
-
-#ifdef DEBUG_RANK
-    fprintf( stderr, "\n----\nFile num: %d  1st score: %d  2nd score: %d  andLevel: %d  newRank:  %d\n----\n", r1->filenum, r1->rank, r2->rank, andLevel, newRank );
-#endif
-            
+            if ( DEBUG_RANK ) {
+                fprintf( stderr, "\n----\nFile num: %d  1st score: %d  2nd score: %d  andLevel: %d  newRank:  %d\n----\n", 
+                    r1->filenum, r1->rank, r2->rank, andLevel, newRank );
+            } 
 
             if(!new_results_list)
                 new_results_list = newResultsList(db_results);
@@ -2379,10 +2378,11 @@ static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RE
             rp->fi.filenum = rp->filenum = r1->filenum;
 
             rp->rank = ( r1->rank + r2->rank) * 2;  /* bump up the or terms */
-        
-#ifdef DEBUG_RANK
-    fprintf( stderr, "\n----\nFile num: %d  1st score: %d  2nd score: %d  newRank:  %d\n----\n", r1->filenum, r1->rank, r2->rank, rp->rank );
-#endif
+            
+            if ( DEBUG_RANK ) {    
+                fprintf( stderr, "\n----\nFile num: %d  1st score: %d  2nd score: %d  newRank:  %d\n----\n", 
+                    r1->filenum, r1->rank, r2->rank, rp->rank );
+            }
 
             rp->tfrequency = 0;
             rp->frequency = r1->frequency + r2->frequency;
