@@ -1624,14 +1624,14 @@ static void flush_buffer( PARSE_DATA  *parse_data, int clear )
                 indexstring( sw, c, parse_data->filenum, structure, 0, NULL, &(parse_data->word_pos) );
 
         /* Add the properties */
-        addDocProperties( parse_data->header, &(parse_data->thisFileEntry->docProperties), (unsigned char *)buf->buffer, buf->cur, parse_data->fprop->real_path );
+        addDocProperties( sw, parse_data->header, &(parse_data->thisFileEntry->docProperties), (unsigned char *)buf->buffer, buf->cur, parse_data->fprop->real_path );
 
 
         /* yuck - addDocProperties should do this.  Ok, add to summary, if active */
         {
             SUMMARY_INFO    *summary = &parse_data->summary;
             if ( summary->active )
-                addDocProperty( &(parse_data->thisFileEntry->docProperties), summary->meta, (unsigned char *)buf->buffer, buf->cur, 0 );
+                addDocProperty( &(parse_data->thisFileEntry->docProperties), summary->meta, (unsigned char *)buf->buffer, buf->cur, 0, sw->PropDelimiter );
         }
     }
 

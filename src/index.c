@@ -1444,7 +1444,7 @@ void    addCommonProperties( SWISH *sw, FileProp *fprop, FileRec *fi, char *titl
     /* Check if filename is internal swish metadata -- should be! */
 
     if ((q = getPropNameByName(header, AUTOPROPERTY_DOCPATH)))
-        addDocProperty( properties, q, (unsigned char *)filename, strlen(filename),0);
+        addDocProperty( properties, q, (unsigned char *)filename, strlen(filename), 0, sw->PropDelimiter);
 
 
     /* Perhaps we want it to be indexed ... */
@@ -1469,7 +1469,7 @@ void    addCommonProperties( SWISH *sw, FileProp *fprop, FileRec *fi, char *titl
     if ( title )
     {
         if ( (q = getPropNameByName(header, AUTOPROPERTY_TITLE)))
-            addDocProperty(properties, q, (unsigned char *)title, strlen(title),0);
+            addDocProperty(properties, q, (unsigned char *)title, strlen(title), 0, sw->PropDelimiter);
 
 
          /* Perhaps we want it to be indexed ... */
@@ -1487,7 +1487,7 @@ void    addCommonProperties( SWISH *sw, FileProp *fprop, FileRec *fi, char *titl
     if ( summary )
     {
         if ( (q = getPropNameByName(header, AUTOPROPERTY_SUMMARY)))
-            addDocProperty(properties, q, (unsigned char *)summary, strlen(summary),0);
+            addDocProperty(properties, q, (unsigned char *)summary, strlen(summary), 0, sw->PropDelimiter);
 
         
         if ( (q = getMetaNameByName(header, AUTOPROPERTY_SUMMARY)))
@@ -1511,7 +1511,7 @@ void    addCommonProperties( SWISH *sw, FileProp *fprop, FileRec *fi, char *titl
     {
         tmp = (unsigned long) fprop->mtime;
         tmp = PACKLONG(tmp);      /* make it portable */
-        addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp),1);
+        addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp), 1, sw->PropDelimiter);
     }
 
     if ( (q = getPropNameByName(header, AUTOPROPERTY_DOCSIZE)))
@@ -1519,7 +1519,7 @@ void    addCommonProperties( SWISH *sw, FileProp *fprop, FileRec *fi, char *titl
         /* Use the disk size, if available */
         tmp = (unsigned long) ( fprop->source_size ? fprop->source_size : fprop->fsize);
         tmp = PACKLONG(tmp);      /* make it portable */
-        addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp),1);
+        addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp), 1, sw->PropDelimiter);
     }
 
 
@@ -1527,7 +1527,7 @@ void    addCommonProperties( SWISH *sw, FileProp *fprop, FileRec *fi, char *titl
     {
         tmp = (unsigned long) start;
         tmp = PACKLONG(tmp);      /* make it portable */
-        addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp),1);
+        addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp), 1, sw->PropDelimiter);
     }
 
 }
@@ -1564,7 +1564,7 @@ static void index_path_parts( SWISH *sw, char *path, path_extract_list *list, IN
             indexstring(sw, str, sw->Index->filenum, IN_FILE, 1, &metaID, &positionMeta);
 
             if ((q = getPropNameByName(header, list->meta_entry->metaName )))
-                addDocProperty( properties, q, (unsigned char *)str, strlen(str),0);
+                addDocProperty( properties, q, (unsigned char *)str, strlen(str), 0, sw->PropDelimiter);
             
 
             efree( str );

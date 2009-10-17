@@ -881,7 +881,7 @@ static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_output 
 #endif
 
     /* read the properties and map them as needed */
-    d = ReadAllDocPropertiesFromDisk( cur_index, cur_index->filenum );
+    d = ReadAllDocPropertiesFromDisk( sw_output, cur_index, cur_index->filenum );
 
 
 #ifdef DEBUG_MERGE
@@ -898,7 +898,7 @@ static void add_file( FILE *filenum_map, IndexFILE *cur_index, SWISH *sw_output 
         if ( (tmp = d->propEntry[i]) )
         {
             meta_entry.metaID = cur_index->meta_map[ i ];
-            addDocProperty(&docProperties, &meta_entry, tmp->propValue, tmp->propLen, 1 );
+            addDocProperty(&docProperties, &meta_entry, tmp->propValue, tmp->propLen, 1, sw_output->PropDelimiter );
         }
 
 #ifdef DEBUG_MERGE

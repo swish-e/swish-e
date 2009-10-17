@@ -662,7 +662,7 @@ char    charDecode_C_Escape(char *s, char **se)
             s = --se2;
             break;
 
-        case '\0':             /* outch!! null after \ */
+        case '\0':             /* ouch!! null after \ */
             s--;                /* it's a "\"    */
         default:
             c = *s;             /* print the escaped character */

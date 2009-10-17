@@ -285,6 +285,7 @@ static void    usage(void)
     printf("         -b : begin results at this number\n");
     printf("         -c : configuration file(s) to use for indexing\n");
     printf("         -d : next param is delimiter.\n");
+    printf("         -D : next param is property delimiter.\n");
     printf("         -E : Append errors to file specified, or stderr if file not specified.\n");
     printf("         -e : \"Economic Mode\": The index proccess uses less RAM.\n");
     printf("         -f : index file to create or file(s) to search from [%s]\n", INDEXFILE);
@@ -679,6 +680,7 @@ static void get_command_line_params(SWISH *sw, char **argv, CMDPARAMS *params )
 
             /* Indexing options */
 
+            case 'D':  /* property delimiter */
             case 'i':  /* input files for indexing */
             case 'S':  /* data Source */
             case 'c':  /* config file */
@@ -974,7 +976,27 @@ static char **fetch_indexing_params(SWISH *sw, char **argv, CMDPARAMS *params, c
         case 'W':
             sw->parser_warn_level = get_param_number( &argv, switch_char );
             break;
+            
 
+        /* Set the property delimiter */
+        case 'D':
+        {
+            unsigned char c;
+            char *se;
+            
+            if ( !(w = next_param( &argv )) )
+                progerr("Property delimiter (-D) requires a single character argument.");
+
+            if (*w == '\\') {
+                c = charDecode_C_Escape(w, &se);
+            }
+            else {
+                c = w[0];
+            }
+            sw->PropDelimiter = c;
+
+            break;
+        }
 
 
         default:
@@ -1262,7 +1284,6 @@ static char **fetch_search_params(SWISH *sw, char **argv, CMDPARAMS *params, cha
         case 'o':
             sw->ResultSort->isPreSorted = 0;
             break;
-
 
         default:
             progerr("Invalid search switch option '%c'\n", switch_char );

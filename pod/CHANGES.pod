@@ -10,6 +10,18 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item added -D prop_delimiter option
+
+The new -D option at indexing time lets you specify an alternate char delimiter
+when property values are appended to one another at indexing time. The default
+value is the same as it always has been: a single space.
+
+To match the libswish3 behavior, pass the ETX (\x03) ascii control character like this:
+
+ swish-e -D '\x03'
+
+It's up to your search code to process the property values accordingly.
+
 =item yanked SWISH-Stemmer-0.05.tar.gz
 
 The tar file of SWISH::Stemmer in the example dir has been broken for years,

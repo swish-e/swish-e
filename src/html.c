@@ -242,7 +242,7 @@ static int parseMetaData(SWISH * sw, IndexFILE * indexf, char *tag, int filenum,
         /* If it is a property store it */
 
         if ((metaNameEntry = getPropNameByName(&indexf->header, parsed_tag)))
-            if (!addDocProperty(&thisFileEntry->docProperties, metaNameEntry, (unsigned char*)convtag, strlen(convtag), 0))
+            if (!addDocProperty(&thisFileEntry->docProperties, metaNameEntry, (unsigned char*)convtag, strlen(convtag), 0, sw->PropDelimiter))
                 progwarn("property '%s' not added for document '%s'\n", metaNameEntry->metaName, filename);
 
         if (temp)
@@ -868,7 +868,7 @@ int countwords_HTML(SWISH *sw, FileProp *fprop, FileRec *fi, char *buffer)
 
                                 remove_newlines(p);  /** why isn't this just done for the entire doc? */
 
-                                if (!addDocProperty(&thisFileEntry->docProperties, metaNameEntry, (unsigned char *)p, strlen(p), 0))
+                                if (!addDocProperty(&thisFileEntry->docProperties, metaNameEntry, (unsigned char *)p, strlen(p), 0, sw->PropDelimiter))
                                     progwarn("property '%s' not added for document '%s'\n", metaNameEntry->metaName, fprop->real_path);
 
 
