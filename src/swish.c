@@ -307,7 +307,7 @@ static void    usage(void)
     printf("         -N : index only files with a modification date newer than path supplied\n");
     printf("         -P : next param is Phrase delimiter.\n");
     printf("         -p : include these document properties in the output \"prop1 prop2 ...\"\n");
-    printf("         -R : next param is Rank Scheme number (0 to 2)  [0].\n");
+    printf("         -R : next param is Rank Scheme number (0 to 1)  [0].\n");
     printf("         -r : remove: remove files from index\n");
 
     printf("         -S : specify which indexing system to use.\n");
