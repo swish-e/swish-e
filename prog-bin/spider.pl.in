@@ -35,7 +35,7 @@ use HTML::LinkExtor;
 use HTML::Tagset;
 
 use vars '$VERSION';
-$VERSION = sprintf '%d.%02d', q$Revision$ =~ /: (\d+)\.(\d+)/;
+$VERSION = '1.0';
 
 use vars '$bit';
 use constant DEBUG_ERRORS   => $bit = 1;    # program errors
