@@ -280,7 +280,7 @@ static SWISH_HEADER_VALUE fetch_single_header( IndexFILE *indexf, HEADER_MAP *he
 
         case SWISH_NUMBER:
         case SWISH_BOOL:
-            value.number = *(unsigned long *) data_pointer;
+            value.number = *(unsigned int *) data_pointer;
 
             /* $$$ Ugly hack alert! */
             /* correct for removed files */
