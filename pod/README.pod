@@ -225,8 +225,7 @@ Any patches should be made against the C<.pod> files, not the C<.html> files.
 
 =head1 Swish-e Development
 
-Swish-e is currently being developed as an Open-Source project on
-SourceForge http://sourceforge.net.
+See http://swish-e.org/devel/ for development information..
 
 Contact the Swish-e list for questions about Swish-e development.
 
@@ -248,7 +247,5 @@ Swish-e Development Team.
 Each document in the Swish-e distribution contains this section.
 It refers only to the specific page it's located in, and not to the
 Swish-e program or the documentation as a whole.
-
-$Id$
 
 .
