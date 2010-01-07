@@ -331,7 +331,7 @@ void parse_integer_table_from_buffer(int table[], int table_size, char *buffer)
 int getTotalWordsInFile( IndexFILE *indexf, int filenum )
 {
     if ( filenum < 1 || filenum > indexf->header.totalfiles )
-        progerr("getTotalWordsInFile passed an invalied file number");
+        progerr("getTotalWordsInFile passed an invalid file number: %d", filenum);
 
     /* This is still one too many layers */
     return DB_CheckFileNum( indexf->sw, filenum, indexf->DB );
