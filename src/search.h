@@ -196,7 +196,7 @@ struct s_RESULTS_OBJECT
     int             search_words_found; /* flag that some search words were found in some index after parsing -- for error message */
     int             lasterror;          /* used to save errors while processing more than one index file */
     int             bigrank;            /* Largest rank found, for scaling */
-    int             rank_scale_factor;  /* for scaling each results rank when fetching with SwishNextResult */
+    double          rank_scale_factor;  /* for scaling each results rank when fetching with SwishNextResult */
     MEM_ZONE       *resultSearchZone;   /* pool for allocating results */
 
     MEM_ZONE       *resultSortZone;     /* pool for allocating sort keys for each result */

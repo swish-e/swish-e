@@ -2282,12 +2282,13 @@ static RESULT_LIST *andresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, R
 
             newRank = ((r1->rank * andLevel) + r2->rank) / (andLevel + 1);
 
-
+            /*
             if ( DEBUG_RANK )
             {
                 fprintf( stderr, "File num: %d  1st score: %d  2nd score: %d  andLevel: %d  newRank:  %d\n----\n", 
                     r1->filenum, r1->rank, r2->rank, andLevel, newRank );
             }
+            */
             
 
             if(!new_results_list)
@@ -2340,9 +2341,6 @@ static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RE
            *tmp;
     RESULT_LIST *new_results_list = NULL;
     RESULTS_OBJECT *results = db_results->results;
-    /* TODO use to detect rank size overflow 
-    unsigned int max_rank_size = 256 ^ sizeof(int);
-    */
 
     /* If either list is empty, just return the other */
     if (l_r1 == NULL)
@@ -2372,7 +2370,7 @@ static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RE
 
         else /* Matching file number */
         {
-            int result_size, r1rank, r2rank;
+            int result_size;
             
             /* Create a new RESULT - Should be a function to create this, I'd think */
 
@@ -2381,19 +2379,16 @@ static RESULT_LIST *orresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, RE
             memset( rp, 0, result_size );
 
             rp->fi.filenum = rp->filenum = r1->filenum;
-
-            /* TODO *2 breaks sort if rank > 2^32 */
-            
-            r1rank = r1->rank;
-            r2rank = r2->rank;
-                        
-            rp->rank = ( r1rank + r2rank );  /* bump up the or terms */
+                                    
+            rp->rank = ( r1->rank + r2->rank );  /* bump up the or terms */
 	    
+            /*
             if (DEBUG_RANK)
             {
                 fprintf( stderr, "----\nFile num: %d  1st score: %d  2nd score: %d  newRank:  %d\n", 
                     r1->filenum, r1->rank, r2->rank, rp->rank );
             }
+            */
 
             rp->tfrequency = 0;
             rp->frequency = r1->frequency + r2->frequency;

@@ -469,7 +469,10 @@ int  sortresults(RESULTS_OBJECT *results)
         if ( DEBUG_RANK ) {
             fprintf(stderr, "bigrank found: %d\n", results->bigrank );
         }
-        results->rank_scale_factor = 10000000 / results->bigrank;
+        results->rank_scale_factor = 1000 / (double)results->bigrank;
+        if ( DEBUG_RANK ) {
+            fprintf(stderr, "rank_scale_factor = %.5f\n", results->rank_scale_factor);
+        }
     }
     else
         results->rank_scale_factor = 10000;
