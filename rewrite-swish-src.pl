@@ -13,18 +13,18 @@ use List::MoreUtils qw(any);
 
 my $prog = basename($0);
 my $verbose;
-my $debug;
+my $debugger;
 my $grind;
 my $refresh;
 my $alter = 1;
 
 # Usage() : returns usage information
 sub Usage {
-    "$prog [--verbose] [--debug] [--refresh] [--no-alter] [--grind] [files]\n" . 
+    "$prog [--verbose] [--debugger] [--refresh] [--no-alter] [--grind] [files]\n" . 
     "  Tries to convert source code to 64-bit friendly.\n" .
     "  Expects to be run the base SVN directory of a swish-e checkout.\n" .
     "  --refresh removes and repulls files matching src/*.[ch] before rewrite.\n" . 
-    "  --debug builds resulting source and runs it under debugger.\n" .
+    "  --debugger builds resulting source and runs it under debugger.\n" .
     "  --grind builds resulting source and runs it under valgrind.\n" .
     "  see 'perldoc $prog' for more.\n" . 
     " Note: If you don't pass [files], uses src/*.[ch]\n";
@@ -37,7 +37,7 @@ main();
 sub main {
     GetOptions(
         "verbose!" => \$verbose,
-        "debug!" => \$debug,
+        "debugger!" => \$debugger,
         "grind!" => \$grind,
         "refresh!" => \$refresh,
         "alter!" => \$alter,
@@ -51,22 +51,22 @@ sub main {
          system( "rm -f @files" );
          system( "svn up" ); 
      }
-     # reglob since we might have deleted and refetched files.
+
+     # re-glob since we might have deleted and refetched files.
      @files = get_files(@ARGV);
 
+     # lines with 'no_rw' in comments don't have replacements done by @regexes below.
 
-    # 1) INSERTS: LINES TO BE INSERTED
+     # INSERTS: LINES TO BE INSERTED
      # alter swish.h to contain SWINT_T and SWUINT_T typedefs.
-     # lines with no_rw don't have replacements done by @regexes below.
      print "$prog: Inserting lines into files...\n";
      my @inserts = (
         # in file,       line,  unless file contains,   insert at mentioned line
-        #[ "src/swish.h",   78, 'typedef.*SWINT_T', qq{typedef long long SWINT_T; // no rw64 \ntypedef unsigned long long SWUINT_T; // no rw64 \n}, ],
-        [ "src/swish-e.h", 35, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
-        [ "src/swish.h",   78, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
-        [ "src/stemmer.h", 35, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
-        [ "src/mem.h",     53, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
-        [ "src/libtest.c", 43, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
+        [ "src/swish-e.h",      35, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
+        [ "src/swish.h",        78, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
+        [ "src/stemmer.h",      35, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
+        [ "src/mem.h",          53, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
+        [ "src/libtest.c",      43, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
         [ "src/snowball/api.h", 3, 'swishtypes\.h',         qq{#include "../swishtypes.h"\n}, ],
         [ "src/snowball/header.h", 5, 'swishtypes\.h',         qq{#include "../swishtypes.h"\n}, ],
 
@@ -76,7 +76,7 @@ sub main {
         #[ "perl/API.xs",    8,  'swishtypes\.h',   qq{#include "../src/swishtypes.h"\n}, ],
      );
 
-     # 2) REGEXES: do these searches and replaces
+     # REGEXES: do these searches and replaces on each line
      my @regexes = (
         #  replace everything that looks anything like a 'long' or an 'int'.
         #  specifically leave alone anything about chars or floats/doubles.
@@ -96,12 +96,14 @@ sub main {
                int\b            
                )\b                     /SWINT_T/gx),
 
-       # NO, you can't do this!
-       #q{s/ \b off_t \b  / SWUINT_T /gx },
+        # NO, you can't do this! You have to leave off_t alone.
+        #q{s/ \b off_t \b  / SWUINT_T /gx },
 
-        # format strings. All get converted to 'long long' versions.
-        # grouped regexes below speed up this script another 20%
-        q{s/ (%d|%ld)                   /%lld/gx },
+        # Format strings. All get converted to 'long long' versions.
+        # Grouped regexes below speed up this script another 20%
+        # Note: technically, 'long long' might not be supported everywhere. 
+        # Reports suggest that C99 introduced 'long long', so we're probably OK.
+        q{s/ (%d|%ld)                  /%lld/gx },
         q{s/ %(\d+)d                   /%$1lld/gx },
         q{s/ %lu                       /%llu/gx },
         q{s/ %x                        /%llx/gx   },
@@ -122,7 +124,7 @@ sub main {
          { f=>'\.c$',          s=>'int\s+main' },           # never replace main's return val
          { f=>'src/http\.c$',  s=>'int\s+status' },         # status must be int for wait()
          #{ f=>'',              s=>'waitpid\s*\(' },         # leave waitpid lines alone
-         { f=>"",              s=>'^\s+extern.*printf' },   # leave return codes of exern printfs alone.
+         { f=>"",              s=>'^\s+extern.*printf' },   # leave return codes of extern printfs alone.
          { f=>'src/compress\.[ch]$', s=>'(void|int)\s+(un)?compress.*\*f_(putc|getc)' },   # don't change f_getc/f_putc def
          { f=>"",              s=>'int.*_(put|get)c' },    # preserve anything that looks like 'getc/putc'
          { f=>"",              s=>'_(put|get)c.*int' },    # preserve anything that looks like 'getc/putc'
@@ -139,7 +141,7 @@ sub main {
          { f=>'src/swish_qsort.c', s=>'#include <stdlib\.h>', r=>'#include "swish.h"' },
      );
 
-     # 5) DO THE REPLACEMENTS
+     # 5) DO THE REPLACEMENTS if $alter is enabled (as it is by default).
      # 5A) WE FIRST INSERT ANY LINES WE NEED.
      #  # we should check that the file mentioned in get_files()...
      if ($alter) {
@@ -160,20 +162,20 @@ sub main {
          }
      }
 
-     # 6) if --debug or --grind is enabled, run the results under the debugger or valgrind.
-     if ($debug || $grind) {
+     # 6) if --debugger or --grind is enabled, run the results under the debugger or valgrind.
+     if ($debugger || $grind) {
         # run under the debugger. 
          #  note that this clobbers any .gdbinit file in the working directory.
         system( "make clean" );
         system( "make" ) && die "$prog: 'make' failed: $!\n";
     }
-     if ($debug) {
+    if ($debugger) {
         write_file( ".gdbinit", "break parser.c:776\n run -c tests/test.config -i tests -T PARSED_WORDS -T PARSED_TEXT" );
         exec( "gdb src/.libs/swish-e" );
-     } 
-     if($grind) {
-         exec( "valgrind src/.libs/swish-e -c tests/test.config -i tests -T PARSED_WORDS -T PARSED_TEXT" );
-     }
+    } 
+    if($grind) {
+        exec( "valgrind src/.libs/swish-e -c tests/test.config -i tests -T PARSED_WORDS -T PARSED_TEXT" );
+    }
 }
 
 #================================================================
@@ -208,7 +210,7 @@ sub rewrite_file {
 			 }
 		 }
 
-         # then, to the replacements  (static search & replaces)
+         # then, do the replacements (static search & replaces)
          #  and the regex (which operate on $_ via eval() )
 		 for my $e (@$replacements) {
 			 if ($file =~ m/$e->{f}/) {                     # if the file matches...
@@ -245,7 +247,7 @@ sub insert_at_line_unless_has_regex {
         print "$prog: not adding line(s) to $filename, contains $regex\n" if $verbose;
         return 0;     # has regex, leave alone
     }
-    print "$prog: inserting lines into $filename\n";
+    print "$prog: inserting lines into $filename\n" if $verbose;
     splice( @lines, $linenum-1, 0, @addlines );     # otherwise insert lines...
     write_file( $filename, @lines );                # and rewrite file
 }
