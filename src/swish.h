@@ -82,7 +82,6 @@
 #include <string.h>
 #include <math.h>
 #include <sys/types.h>
-#include <stdint.h>
 #include <inttypes.h>
 #include <sys/stat.h>
 #include <locale.h>

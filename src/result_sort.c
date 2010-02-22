@@ -456,10 +456,7 @@ int  sortresults(RESULTS_OBJECT *results)
     /* set rank scaling factor based on the largest rank found of all results */
 
     if (results->bigrank) {
-        if ( DEBUG_RANK ) {
-            fprintf(stderr, "bigrank found: %d\n", results->bigrank );
-        }
-        results->rank_scale_factor = 10000000 / results->bigrank;
+        results->rank_scale_factor = 1000 / (double)results->bigrank;
     }
     else {
         results->rank_scale_factor = 10000;

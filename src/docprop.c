@@ -373,7 +373,7 @@ propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int me
                 return CreateProperty( *meta_entry, (unsigned char *)&num, sizeof( num ), 1, &error_flag );
             }
 
-            int scale_factor = result->db_results->results->rank_scale_factor;
+            double scale_factor = result->db_results->results->rank_scale_factor;
             unsigned long rank_num;
 
             /* scale_factor is zero while sorting, so use the raw rank */
@@ -381,7 +381,7 @@ propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int me
 
             if ( scale_factor )
             {
-                rank_num = (unsigned long) (result->rank * scale_factor)/10000;
+                rank_num = (unsigned long) (result->rank * scale_factor); 
 
                 if ( rank_num >= 999)
                     rank_num = 1000;
