@@ -36,7 +36,7 @@ Mon May  9 10:57:22 CDT 2005 -- added GPL notice
 
 
 
-#include <limits.h>     // for ULONG_MAX
+#include <limits.h>     // for LONG_MIN / LONG_MAX
 #include "swish.h"
 #include "swstring.h"
 #include "mem.h"
