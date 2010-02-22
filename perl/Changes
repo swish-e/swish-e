@@ -2,7 +2,7 @@ Revision history for Perl extension SWISH::API
 
 ## $Id$ ##
 
-0.04_01  Thu Apr 09 11:59:04 CDT 2009
+0.05  21 Feb 2010
 
         return_raw_rank( 0 | 1 ) added and documented.
 

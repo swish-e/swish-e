@@ -3,7 +3,7 @@ package SWISH::API;
 # $Id$
 
 use vars qw/ @ISA $VERSION /;
-$VERSION = '0.04_01';
+$VERSION = '0.05';
 
 # prefer XSLoader over DynaLoader
 eval {
