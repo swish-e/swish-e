@@ -10,6 +10,12 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item fixed integer overflow issues
+
+Issues included:
+
+ * http://dev.swish-e.org/ticket/14
+
 =item added -D prop_delimiter option
 
 The new -D option at indexing time lets you specify an alternate char delimiter
