@@ -67,8 +67,8 @@ sub main {
         [ "src/stemmer.h",      35, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
         [ "src/mem.h",          53, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
         [ "src/libtest.c",      43, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
-        [ "src/snowball/api.h", 3, 'swishtypes\.h',         qq{#include "../swishtypes.h"\n}, ],
-        [ "src/snowball/header.h", 5, 'swishtypes\.h',         qq{#include "../swishtypes.h"\n}, ],
+        [ "src/snowball/api.h", 3, 'swishtypes\.h',          qq{#include "../swishtypes.h"\n}, ],
+        [ "src/snowball/header.h", 5, 'swishtypes\.h',       qq{#include "../swishtypes.h"\n}, ],
 
         # force crash if num goes large in compress3()
         #[ "src/compress.c",147, 'abort',           '   if (num > 10000000) {printf(" in compress3: num is %lld\n", num ); abort(); } ' . "\n", ], 
@@ -85,15 +85,13 @@ sub main {
                unsigned\s+long\s+long\s+int |
                long\s+long\s+unsigned\s+int |
                unsigned\s+long\s+int |
-               unsigned\s+long |
-               unsigned\s+int 
+               unsigned\s+long 
                )\b                     /SWUINT_T/gx),
         q(s/ \b(
                long\s+long\s+int\b  |
                long\s+long\b       |
                long\s+int\b       |
-               long\b            |
-               int\b            
+               long\b            
                )\b                     /SWINT_T/gx),
 
         # NO, you can't do this! You have to leave off_t alone.
@@ -103,10 +101,10 @@ sub main {
         # Grouped regexes below speed up this script another 20%
         # Note: technically, 'long long' might not be supported everywhere. 
         # Reports suggest that C99 introduced 'long long', so we're probably OK.
-        q{s/ (%d|%ld)                  /%lld/gx },
-        q{s/ %(\d+)d                   /%$1lld/gx },
+        q{s/ (%ld)                     /%lld/gx },
+        #q{s/ %(\d+)d                   /%$1lld/gx },
         q{s/ %lu                       /%llu/gx },
-        q{s/ %x                        /%llx/gx   },
+        #q{s/ %x                        /%llx/gx   },
         q{s/ (%lx|%lX)                 /%llux/gx },
         q{s/ %(\d+)X                   /%$1llX/gx },
 

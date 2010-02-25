@@ -35,14 +35,15 @@ $Id: swish-e.h 2307 2009-04-09 16:14:41Z karpet $
 extern "C" {
 #endif
 
-
+#include <inttypes.h>
+#include <sys/types.h>
 
 // presence of 'no rw64' at start of comment tells rewriter not to touch this line
 //
 //
 // these two typedefs are the only code in this file.
-typedef long long          SWINT_T;  // no rw64 
-typedef unsigned long long SWUINT_T; // no rw64 
+typedef int64_t          SWINT_T;  // no rw64 
+typedef uint64_t         SWUINT_T; // no rw64 
 
 // SET_POSDATA() and GET_POSITION() are still defined in swish.h
 
