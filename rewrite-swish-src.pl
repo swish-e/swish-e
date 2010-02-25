@@ -78,7 +78,7 @@ sub main {
 
      # REGEXES: do these searches and replaces on each line
      my @regexes = (
-        #  replace everything that looks anything like a 'long' or an 'int'.
+        #  replace everything that looks anything like a 'long' -- we leave 'ints' alone for now.
         #  specifically leave alone anything about chars or floats/doubles.
         #  optimizing these into big regexes shaved the runtime 33%
         q(s/ \b(
@@ -101,12 +101,20 @@ sub main {
         # Grouped regexes below speed up this script another 20%
         # Note: technically, 'long long' might not be supported everywhere. 
         # Reports suggest that C99 introduced 'long long', so we're probably OK.
-        q{s/ (%ld)                     /%lld/gx },
-        #q{s/ %(\d+)d                   /%$1lld/gx },
-        q{s/ %lu                       /%llu/gx },
-        #q{s/ %x                        /%llx/gx   },
-        q{s/ (%lx|%lX)                 /%llux/gx },
-        q{s/ %(\d+)X                   /%$1llX/gx },
+        #q{s/ (%ld)                     /%lld/gx },
+        q{s/ (%ld)                     /%" PRIi64 "/gx },   # fancy macro to match 64bit ints
+
+        #q{s/ %(\d+)d                   /%$1lld/gx },   # we leave actual 'ints' alone for now
+        #
+        #q{s/ %lu                       /%llu/gx },
+        q{s/ %lu                       /%" PRIu64 "/gx },   # fancy macro to match 64bit ints
+
+        #q{s/ %x                        /%llx/gx   },   # we leave actual 'ints' alone for now
+        #
+        #q{s/ (%lx|%lX)                 /%llux/gx },     # TODO: not sure how to handle 64bit unsigned hex portably
+        q{s/ (%lx|%lX)                 /%" PRIx64 "/gx },     # TODO: this seems to be how to handle 64bit unsigned hex portably. Doesn't happen in code.
+
+        #q{s/ %(\d+)X                   /%$1llX/gx },    # TODO: this converts an int to hex, so we leave alone
 
         # remove SET_POSDATA and GET_POSITION macros from swish.h
         # if you do this, make sure to alter files to include swishtypes.h as needed.
@@ -229,9 +237,9 @@ sub rewrite_file {
          }
          print $wfh "$_\n";
      }
-     close($rfh) || die "$0: Can't open $file: $!";
+     close($rfh) || die "$0: Can't close $file: $!";
      close($wfh) || die "$0: Can't close $tmpfile: $!";
-     rename( $file, "$file.bak" ) || die "$prog: Can't move $file to $file.bak: $!\n";;
+     rename( $file, "$file.bak" ) || die "$prog: Can't move $file to $file.bak: $!\n";
      rename( $tmpfile, $file ) || die "$0: Can't rename $tmpfile to $file: $!\n";
 }
 
