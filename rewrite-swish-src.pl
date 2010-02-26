@@ -59,7 +59,6 @@ sub main {
 
      # INSERTS: LINES TO BE INSERTED
      # alter swish.h to contain SWINT_T and SWUINT_T typedefs.
-     print "$prog: Inserting lines into files...\n";
      my @inserts = (
         # in file,       line,  unless file contains,   insert at mentioned line
         [ "src/swish-e.h",      35, 'swishtypes\.h',         qq{#include "swishtypes.h"\n}, ],
@@ -102,19 +101,19 @@ sub main {
         # Note: technically, 'long long' might not be supported everywhere. 
         # Reports suggest that C99 introduced 'long long', so we're probably OK.
         #q{s/ (%ld)                     /%lld/gx },
-        q{s/ (%ld)                     /%" PRIi64 "/gx },   # fancy macro to match 64bit ints
+        q{s/ (%ld)                     /%" SWINT_FORMAT "/gx },   # fancy macro to match 64bit ints
 
         #q{s/ %(\d+)d                   /%$1lld/gx },   # we leave actual 'ints' alone for now
         #
         #q{s/ %lu                       /%llu/gx },
-        q{s/ %lu                       /%" PRIu64 "/gx },   # fancy macro to match 64bit ints
+        q{s/ %lu                       /%" SWUINT_FORMAT "/gx },   # fancy macro to match 64bit ints
 
         #q{s/ %x                        /%llx/gx   },   # we leave actual 'ints' alone for now
         #
         #q{s/ (%lx|%lX)                 /%llux/gx },     # TODO: not sure how to handle 64bit unsigned hex portably
-        q{s/ (%lx|%lX)                 /%" PRIx64 "/gx },     # TODO: this seems to be how to handle 64bit unsigned hex portably. Doesn't happen in code.
+        q{s/ (%lx|%lX)                 /%" SWXINT_FORMAT "/gx },     
 
-        #q{s/ %(\d+)X                   /%$1llX/gx },    # TODO: this converts an int to hex, so we leave alone
+        #q{s/ %(\d+)X                   /%$1llX/gx },    # this converts an int to hex, so we leave alone
 
         # remove SET_POSDATA and GET_POSITION macros from swish.h
         # if you do this, make sure to alter files to include swishtypes.h as needed.
@@ -151,6 +150,7 @@ sub main {
      # 5A) WE FIRST INSERT ANY LINES WE NEED.
      #  # we should check that the file mentioned in get_files()...
      if ($alter) {
+         print "$prog: Inserting lines into files...\n";
          for my $insert (@inserts) {
              insert_at_line_unless_has_regex( @$insert );   # NOTE: does not use @exceptions !
          }
