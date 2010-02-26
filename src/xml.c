@@ -217,7 +217,7 @@ static void start_hndl(void *data, const char *el, const char **attr)
 
     if(strlen(el) >= MAXSTRLEN)  // easy way out
     {
-        progwarn("Warning: Tag found in %s is too SWINT_T: '%s'", parse_data->fprop->real_path, el );
+        progwarn("Warning: Tag found in %s is too long: '%s'", parse_data->fprop->real_path, el );  // no rw64
         return;
     }
 
@@ -292,7 +292,7 @@ static void end_hndl(void *data, const char *el)
 
     if(strlen(el) > MAXSTRLEN)
     {
-        progwarn("Warning: Tag found in %s is too SWINT_T: '%s'", parse_data->fprop->real_path, el );
+        progwarn("Warning: Tag found in %s is too long: '%s'", parse_data->fprop->real_path, el );  // no rw64
         return;
     }
 
