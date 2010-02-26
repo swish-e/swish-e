@@ -41,9 +41,13 @@ extern "C" {
 // presence of 'no rw64' at start of comment tells rewriter not to touch this line
 //
 //
-// these two typedefs are the only code in this file.
 typedef int64_t          SWINT_T;  // no rw64 
 typedef uint64_t         SWUINT_T; // no rw64 
+
+#define SWINT_FORMAT    PRIi64
+#define SWUINT_FORMAT   PRIu64
+#define SWXINT_FORMAT   PRIx64   /* lowercase 64bit hex */
+
 
 // SET_POSDATA() and GET_POSITION() are still defined in swish.h
 
