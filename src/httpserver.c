@@ -171,7 +171,7 @@ httpserverinfo *getserverinfo(SWISH *sw, char *url)
 
 
         file_prefix = emalloc( strlen(idx->tmpdir) + MAXPIDLEN + strlen("/swishspider@.contents+fill") );
-        sprintf(file_prefix, "%s/swishspider@%lld", idx->tmpdir, (SWINT_T) lgetpid());
+        sprintf(file_prefix, "%s/swishspider@%" SWINT_FORMAT "", idx->tmpdir, (SWINT_T) lgetpid());
 
 
 		if (get(sw,contenttype, &last_modified, &server->lastretrieval, file_prefix, buffer) == 200)
@@ -184,7 +184,7 @@ httpserverinfo *getserverinfo(SWISH *sw, char *url)
 				lenbuffer=strlen(idx->tmpdir)+MAXPIDLEN+30+200;
 				buffer=erealloc(buffer,lenbuffer+1);
 			}
-			sprintf(buffer, "%s/swishspider@%lld.contents", idx->tmpdir, (SWINT_T)lgetpid());
+			sprintf(buffer, "%s/swishspider@%" SWINT_FORMAT ".contents", idx->tmpdir, (SWINT_T)lgetpid());
 			fp = fopen(buffer, F_READ_TEXT);
 
 			filelen = getsize(buffer);
@@ -202,9 +202,9 @@ httpserverinfo *getserverinfo(SWISH *sw, char *url)
 		}
 		efree( file_prefix );
 		
-		cmdf(unlink, "%s/swishspider@%lld.response", idx->tmpdir, lgetpid());
-		cmdf(unlink, "%s/swishspider@%lld.contents", idx->tmpdir, lgetpid());
-		cmdf(unlink, "%s/swishspider@%lld.links", idx->tmpdir, lgetpid());
+		cmdf(unlink, "%s/swishspider@%" SWINT_FORMAT ".response", idx->tmpdir, lgetpid());
+		cmdf(unlink, "%s/swishspider@%" SWINT_FORMAT ".contents", idx->tmpdir, lgetpid());
+		cmdf(unlink, "%s/swishspider@%" SWINT_FORMAT ".links", idx->tmpdir, lgetpid());
     }
 	
     return server;

@@ -313,7 +313,7 @@ char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
         /* i=*(SWUINT_T *)prop->propValue; */ /* read binary */
         i = convPropValue2ULong(prop->propValue); /* read binary */
         i = UNPACKLONG(i);     /* Convert the portable number */
-        sprintf(s,"%llu",i);
+        sprintf(s,"%" SWUINT_FORMAT "",i);
         return s;
     }
 

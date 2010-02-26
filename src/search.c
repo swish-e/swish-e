@@ -2036,7 +2036,7 @@ static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, 
 
             if (maxneed > 0)
             {
-              fprintf(ofd,"  maxneed: %lld\n", maxneed);
+              fprintf(ofd,"  maxneed: %" SWINT_FORMAT "\n", maxneed);
               maxneed = 0; // reset for next to come
             }
 
@@ -2046,27 +2046,27 @@ static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, 
 
 #ifdef DUMP_NEAR_VALUES
             // make sure to skip the found entry if not within given proximity
-            fprintf(ofd, "file %lld (andLevel %lld)\n", r1->filenum, andLevel);
+            fprintf(ofd, "file %" SWINT_FORMAT " (andLevel %" SWINT_FORMAT ")\n", r1->filenum, andLevel);
 
             // Detects if there was already a "nearx" executed before, which
             // means there must be one or more "0" present in positions
             if (r1->bArea > 0)
-              fprintf(ofd,"  bArea1: %lld\n", r1->bArea);
+              fprintf(ofd,"  bArea1: %" SWINT_FORMAT "\n", r1->bArea);
             // This can never happen, as SWINT_T as no parenthesis/brackets
             // are supported; the complete query is parsed left to right
             // TODO: modify if priority brackets are going to be supported
             if (r2->bArea > 0)
-              fprintf(ofd,"  bArea2: %lld\n", r2->bArea);
+              fprintf(ofd,"  bArea2: %" SWINT_FORMAT "\n", r2->bArea);
 
-            fprintf(ofd,"  maxpos: %lld\n", maxpos);
+            fprintf(ofd,"  maxpos: %" SWINT_FORMAT "\n", maxpos);
             fprintf(ofd,"  %s: ", "term1");
             for (j = 0; j < r1->frequency; j++)
-              fprintf(ofd, "  %lld:", GET_POSITION(r1->posdata[j]));
+              fprintf(ofd, "  %" SWINT_FORMAT ":", GET_POSITION(r1->posdata[j]));
             fprintf(ofd,"\n");
 
             fprintf(ofd,"  %s: ", "term2");
             for (j = 0; j < r2->frequency; j++)
-              fprintf(ofd, "  %lld:", GET_POSITION(r2->posdata[j]));
+              fprintf(ofd, "  %" SWINT_FORMAT ":", GET_POSITION(r2->posdata[j]));
             fprintf(ofd,"\n");
 #endif
 
@@ -2145,7 +2145,7 @@ static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, 
 
 #ifdef DUMP_NEAR_VALUES
                   maxneed++;
-                  fprintf(ofd, "  hit %lld: (%lld - %lld): %lld\n", i, pos1, pos2, abs(pos1 - pos2));
+                  fprintf(ofd, "  hit %" SWINT_FORMAT ": (%" SWINT_FORMAT " - %" SWINT_FORMAT "): %" SWINT_FORMAT "\n", i, pos1, pos2, abs(pos1 - pos2));
 #endif
                   cnt1++;
                   cnt2++;
@@ -2231,7 +2231,7 @@ static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, 
 
 #ifdef DUMP_NEAR_VALUES
     if (maxneed > 0)
-      fprintf(ofd,"  maxneed: %lld\n", maxneed);
+      fprintf(ofd,"  maxneed: %" SWINT_FORMAT "\n", maxneed);
 
     fclose(ofd);
 #endif

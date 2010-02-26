@@ -1061,7 +1061,7 @@ const char *comma_long( SWUINT_T u )
 {
     char buf[60];
 
-    sprintf( buf, "%llu", u );
+    sprintf( buf, "%" SWUINT_FORMAT "", u );
     thousep( comma_buffer, buf );
     return comma_buffer;
 }

@@ -222,7 +222,7 @@ int FHASH_Search(FHASH *f, unsigned char *key, int key_len, unsigned char *data,
     {
         if ( 0 != sw_fseek(fp,next,SEEK_SET) )
             /* Will key be null terminated? */
-            progerrno( "Failed to seek to offset %lld looking for key '%s' :", next, key );
+            progerrno( "Failed to seek to offset %" SWINT_FORMAT " looking for key '%s' :", next, key );
 
         retval = sw_fread((unsigned char *)&tmp,1,sizeof(tmp),fp);
         if (feof(fp))

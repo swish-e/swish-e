@@ -1,4 +1,7 @@
 /*
+
+$Id$
+
     This file is part of Swish-e.
 
     Swish-e is free software; you can redistribute it and/or modify
@@ -22,10 +25,7 @@
 ** Mon May  9 18:19:34 CDT 2005
 ** added GPL
 
-** This file contains public API signatures for libswish-e.
-** Some data is duplicated from other internal .h files
-** so make sure if you change typedefs, etc., to keep this file
-** in sync. (And yes, we know this is not an ideal setup.)
+
 
 */
 
@@ -42,12 +42,12 @@ extern "C" {
 #endif
 
 /***********************************************************
- * This section also in swishtypes.h
- */
+* This section also in swishtypes.h
+*/
  
 /* presence of 'no rw64' at start of comment tells rewriter 
- * not to touch this line
- */
+* not to touch this line
+*/
 
 typedef int64_t          SWINT_T;  // no rw64 
 typedef uint64_t         SWUINT_T; // no rw64 
@@ -57,6 +57,8 @@ typedef uint64_t         SWUINT_T; // no rw64
 #define SWXINT_FORMAT   PRIx64   /* lowercase 64bit hex */
 
 /* end swishtypes.h section ****************/
+
+
 
 typedef void * SW_HANDLE;
 typedef void * SW_SEARCH;

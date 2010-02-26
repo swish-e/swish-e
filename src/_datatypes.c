@@ -120,7 +120,7 @@ char *datavalue2strfmt (SwDataValue *v, char *altfmt)
 
 	case DATE:
 		fmt = (altfmt) ? altfmt: "%Y-%m-%d %H:%M:%S";
-		if (!strcmp (fmt,"%lld")) {
+		if (!strcmp (fmt,"%" SWINT_FORMAT "")) {
 			/* special: Print date as serial int (for Bill) */
 		   n = sprintf (wordbuf,fmt, (SWINT_T) v->value.v_date);
 		} else {

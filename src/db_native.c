@@ -2224,7 +2224,7 @@ int     DB_InitWriteProperties_Native(void *db)
     DB->offsets[FILELISTPOS] = sw_ftell(DB->fp);
 
 #ifdef DEBUG_PROP
-    printf("InitWriteProperties: Start of property table in main index at offset: %lld\n", DB->offsets[FILELISTPOS] );
+    printf("InitWriteProperties: Start of property table in main index at offset: %" SWINT_FORMAT "\n", DB->offsets[FILELISTPOS] );
 #endif
 
 #endif
@@ -2329,10 +2329,10 @@ void    DB_WriteProperty_Native( IndexFILE *indexf, FileRec *fi, int propID, cha
 
 
 #ifdef DEBUG_PROP
-    printf("Write Prop: file %d  PropIDX %d  (meta %d) seek: %lld ",
+    printf("Write Prop: file %d  PropIDX %d  (meta %d) seek: %" SWINT_FORMAT " ",
                 fi->filenum, propIDX, propID, prop_loc->seek );
 
-    printf("data=[uncompressed_len: %d (%lld bytes), prop_data: (%lld bytes)]\n",
+    printf("data=[uncompressed_len: %d (%" SWINT_FORMAT " bytes), prop_data: (%" SWINT_FORMAT " bytes)]\n",
             uncompressed_len, prop_start_pos - prop_loc->seek, (SWINT_T)written_bytes);
 #endif
 }
@@ -2406,7 +2406,7 @@ void DB_WritePropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
         printfileoffset( DB->fp, prop_loc->seek, sw_fwrite );
 
 #ifdef DEBUG_PROP
-        printf("  PropIDX: %d  data=[seek: %lld]  main index location: %lld for %lld bytes (one print SWINT_T)\n",
+        printf("  PropIDX: %d  data=[seek: %" SWINT_FORMAT "]  main index location: %" SWINT_FORMAT " for %" SWINT_FORMAT " bytes (one print SWINT_T)\n",
                  i,  prop_loc->seek, start_seek, sw_ftell( DB->fp ) - start_seek );
 #endif
 
@@ -2458,12 +2458,12 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
 
     /* and seek to table */
     if (sw_fseek(DB->fp, seek_pos, SEEK_SET) == -1)
-        progerrno("Failed to seek to property index located at %lld for file number %d : ", seek_pos, fi->filenum);
+        progerrno("Failed to seek to property index located at %" SWINT_FORMAT " for file number %d : ", seek_pos, fi->filenum);
 
 
 #ifdef DEBUG_PROP
         printf("\nFetching seek positions for file %d\n", fi->filenum );
-        printf(" property index table at %lld, this file at %lld\n", DB->offsets[FILELISTPOS], seek_pos );
+        printf(" property index table at %" SWINT_FORMAT ", this file at %" SWINT_FORMAT "\n", DB->offsets[FILELISTPOS], seek_pos );
 #endif
 
 
@@ -2480,7 +2480,7 @@ void DB_ReadPropPositions_Native(IndexFILE *indexf, FileRec *fi, void *db)
         prop_loc->seek = readfileoffset( DB->fp, sw_fread );
 
 #ifdef DEBUG_PROP
-        printf("   PropIDX: %d  data[Seek: %lld] at seek %lld read %lld bytes (one readlong)\n", i, prop_loc->seek, seek_start, sw_ftell( DB->fp ) - seek_start  );
+        printf("   PropIDX: %d  data[Seek: %" SWINT_FORMAT "] at seek %" SWINT_FORMAT " read %" SWINT_FORMAT " bytes (one readlong)\n", i, prop_loc->seek, seek_start, sw_ftell( DB->fp ) - seek_start  );
 #endif
 
 
@@ -2558,10 +2558,10 @@ char   *DB_ReadProperty_Native(IndexFILE *indexf, FileRec *fi, int propID, int *
     prev_seek_pos = sw_ftell(DB->prop);
 
     if (sw_fseek(DB->prop, seek_pos, SEEK_SET) == -1)
-        progerrno("Failed to seek to properties located at %lld for file number %d : ", seek_pos, fi->filenum);
+        progerrno("Failed to seek to properties located at %" SWINT_FORMAT " for file number %d : ", seek_pos, fi->filenum);
 
 #ifdef DEBUG_PROP
-    printf("Fetching filenum: %d propIDX: %d at seek: %lld\n", fi->filenum, propIDX, seek_pos);
+    printf("Fetching filenum: %d propIDX: %d at seek: %" SWINT_FORMAT "\n", fi->filenum, propIDX, seek_pos);
 #endif
 
 
@@ -2579,7 +2579,7 @@ char   *DB_ReadProperty_Native(IndexFILE *indexf, FileRec *fi, int propID, int *
 
 
 #ifdef DEBUG_PROP
-    printf(" Fetched uncompressed length of %d (%lld bytes storage), now fetching %lld prop bytes from %lld\n",
+    printf(" Fetched uncompressed length of %d (%" SWINT_FORMAT " bytes storage), now fetching %" SWINT_FORMAT " prop bytes from %" SWINT_FORMAT "\n",
              *uncompressed_len, sw_ftell( DB->prop ) - seek_pos, *buf_len, sw_ftell( DB->prop ) );
 #endif
 
@@ -2589,7 +2589,7 @@ char   *DB_ReadProperty_Native(IndexFILE *indexf, FileRec *fi, int propID, int *
 
 
     if ( (int)sw_fread(buffer, 1, *buf_len, DB->prop) != *buf_len)
-        progerrno("Failed to read properties located at %lld for file number %d : ", seek_pos, fi->filenum);
+        progerrno("Failed to read properties located at %" SWINT_FORMAT " for file number %d : ", seek_pos, fi->filenum);
 
     /* Restore previous seek_pos */
     sw_fseek(DB->prop, prev_seek_pos,SEEK_SET);

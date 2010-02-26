@@ -501,7 +501,7 @@ FileProp *file_properties(char *real_path, char *work_file, SWISH * sw)
 
 
 #ifdef DEBUG
-    fprintf(stderr, "file_properties: path=%s, (workpath=%s), fsize=%lld, last_mod=%lld Doctype: %d Filter: %p\n",
+    fprintf(stderr, "file_properties: path=%s, (workpath=%s), fsize=%" SWINT_FORMAT ", last_mod=%" SWINT_FORMAT " Doctype: %d Filter: %p\n",
             fprop->real_path, fprop->work_path, (SWINT_T) fprop->fsize, (SWINT_T) fprop->mtime, fprop->doctype, fprop->filterprog);
 #endif
 

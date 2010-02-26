@@ -91,7 +91,7 @@ void *emalloc(size_t size)
     void *p;
 
     if ((p = malloc(size)) == NULL)
-        progerr("Ran out of memory (could not malloc %llu more bytes)!", size);
+        progerr("Ran out of memory (could not malloc %" SWUINT_FORMAT " more bytes)!", size);
 
     return p;
 }
@@ -103,7 +103,7 @@ void *erealloc(void *ptr, size_t size)
     void *p;
     
     if ((p = realloc(ptr, size)) == NULL)
-        progerr("Ran out of memory (could not reallocate %llu more bytes)!", size);
+        progerr("Ran out of memory (could not reallocate %" SWUINT_FORMAT " more bytes)!", size);
 
     return p;
 }
@@ -318,7 +318,7 @@ void * Mem_Alloc (size_t Size, char *file, int line)
     if (MemPtr == NULL)
     {
         printf("At file %s line %d:\n", file, line);
-        progerr("Ran out of memory (could not Mem_Alloc %llu more bytes)!", MemSize);
+        progerr("Ran out of memory (could not Mem_Alloc %" SWUINT_FORMAT " more bytes)!", MemSize);
     }
 
 
@@ -369,7 +369,7 @@ void * Mem_Alloc (size_t Size, char *file, int line)
     Header->Trace = AllocTrace(file, line, MemPtr, Size);
 #endif
 
-//    printf("Alloc: %s line %d: Addr: %08llX Size: %u\n", file, line, MemPtr, Size);
+//    printf("Alloc: %s line %d: Addr: %08X Size: %u\n", file, line, MemPtr, Size);
 
     return (MemPtr);
 }
@@ -422,26 +422,26 @@ void  Mem_Free (void *Address, char *file, int line)
     MemTail *Tail;
 
     if ( (SWINT_T)Address & (~(PointerAlignmentSize-1)) != 0 )
-        MEM_ERROR(("Address %08llX not longword aligned\n", (unsigned int)Address));
+        MEM_ERROR(("Address %08X not longword aligned\n", (unsigned int)Address));
 
     if (Address != Header->Start)
-        MEM_ERROR(("Already free: %08llX\n", (unsigned int)Address)); 
+        MEM_ERROR(("Already free: %08X\n", (unsigned int)Address)); 
         // Err_Signal (PWRK$_BUGMEMFREE, 1, Address);
 
     if (Header->Guard1 != GUARD)
-        MEM_ERROR(("Head Guard 1 overwritten: %08llX\n", (unsigned int)&Header->Guard1));
+        MEM_ERROR(("Head Guard 1 overwritten: %08X\n", (unsigned int)&Header->Guard1));
         // Err_Signal (PWRK$_BUGMEMGUARD1, 4, Address,
         //    Header->Guard1, 4, &Header->Guard1);
 
     if (Header->Guard2 != GUARD)
-        MEM_ERROR(("Head Guard 2 overwritten: %08llX\n", (unsigned int)&Header->Guard2));
+        MEM_ERROR(("Head Guard 2 overwritten: %08X\n", (unsigned int)&Header->Guard2));
         // Err_Signal (PWRK$_BUGMEMGUARD1, 4, Address,
         //    Header->Guard2, 4, &Header->Guard2);
 
     Tail = (MemTail *)((unsigned char *)Address + Header->Size);
 
     if (Tail->Guard != GUARD)
-        MEM_ERROR(("Tail Guard overwritten: %08llX\n", (unsigned int)&Tail->Guard));
+        MEM_ERROR(("Tail Guard overwritten: %08X\n", (unsigned int)&Tail->Guard));
         // Err_Signal (PWRK$_BUGMEMGUARD2, 4, Address,
         //    Tail->Guard, 4, &Tail->Guard);
 
@@ -454,7 +454,7 @@ void  Mem_Free (void *Address, char *file, int line)
     UserSize = Header->Size;
     MemSize = UserSize + MEM_OVERHEAD_SIZE;
 
-//    printf("Free: %s line %d: Addr: %08llX Size: %u\n", file, line, Address, UserSize);
+//    printf("Free: %s line %d: Addr: %08X Size: %u\n", file, line, Address, UserSize);
 
 #if MEM_TRACE
     Free = Header->Trace;
@@ -505,7 +505,7 @@ void *Mem_Realloc (void *Address, size_t Size, char *file, int line)
         Mem_Free(Address, file, line);
     }
 
-//    printf("Realloc: %s line %d: Addr: %08llX Size: %u to %u\n", file, line, Address, OldSize, Size);
+//    printf("Realloc: %s line %d: Addr: %08X Size: %u to %u\n", file, line, Address, OldSize, Size);
 
     return MemPtr;
 }
