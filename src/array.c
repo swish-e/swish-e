@@ -30,7 +30,7 @@ $Id$
 **
 **  Virtual Array Code. 
 **  11/2001 jmruiz - The intention of this routines is storing and reading
-**                   elemnts of arrays of SWINT_T numbers avoiding the 
+**                   elemnts of arrays of long numbers avoiding the         // no rw64
 **                   allocation in memory of the total array. In other words,
 **                   if we need to read only 10 elements of the array, we
 **                   will must try to make the minimal I/O memory and disk
