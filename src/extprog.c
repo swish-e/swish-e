@@ -227,10 +227,10 @@ static void    extprog_indexpath(SWISH * sw, char *prog)
     FILE   *fp;
     char   *ln;
     char   *real_path;
-    long    fsize;
+    SWINT_T    fsize;
     time_t  mtime;
     int     index_no_content;
-    long    truncate_doc_size;
+    SWINT_T    truncate_doc_size;
     int     docType = 0;
     int     original_update_mode = sw->Index->update_mode;
 

@@ -93,14 +93,14 @@ int     DB_UpdateWordID(SWISH *sw, char *word, sw_off_t wordID, void *DB);
 int     DB_DeleteWordData(SWISH *sw,sw_off_t wordID, void *DB);
 #endif
 int     DB_WriteWordHash(SWISH *sw, char *word, sw_off_t wordID, void *DB);
-long    DB_WriteWordData(SWISH *sw, sw_off_t wordID, unsigned char *worddata, int data_size, int saved_bytes, void *DB);
+SWINT_T    DB_WriteWordData(SWISH *sw, sw_off_t wordID, unsigned char *worddata, int data_size, int saved_bytes, void *DB);
 int     DB_EndWriteWords(SWISH *sw, void *DB);
 
 int     DB_InitReadWords(SWISH *sw, void *DB);
 int     DB_ReadWordHash(SWISH *sw, char *word, sw_off_t *wordID, void *DB);
 int     DB_ReadFirstWordInvertedIndex(SWISH *sw, char *word, char **resultword, sw_off_t *wordID, void *DB);
 int     DB_ReadNextWordInvertedIndex(SWISH *sw, char *word, char **resultword, sw_off_t *wordID, void *DB);
-long    DB_ReadWordData(SWISH *sw, sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *DB);
+SWINT_T    DB_ReadWordData(SWISH *sw, sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *DB);
 int     DB_EndReadWords(SWISH *sw, void *DB);
 
 
@@ -175,14 +175,14 @@ struct MOD_DB
     int    (*DB_DeleteWordData)(sw_off_t wordID, void *DB);
 #endif
     int    (*DB_WriteWordHash) (char *word, sw_off_t wordID, void *DB);
-    long   (*DB_WriteWordData) (sw_off_t wordID, unsigned char *worddata, int data_size, int saved_bytes, void *DB);
+    SWINT_T   (*DB_WriteWordData) (sw_off_t wordID, unsigned char *worddata, int data_size, int saved_bytes, void *DB);
     int    (*DB_EndWriteWords) (void *DB);
     
     int    (*DB_InitReadWords) (void *DB);
     int    (*DB_ReadWordHash) (char *word, sw_off_t *wordID, void *DB);
     int    (*DB_ReadFirstWordInvertedIndex) (char *word, char **resultword, sw_off_t *wordID, void *DB);
     int    (*DB_ReadNextWordInvertedIndex) (char *word, char **resultword, sw_off_t *wordID, void *DB);
-    long   (*DB_ReadWordData) (sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *DB);
+    SWINT_T   (*DB_ReadWordData) (sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *DB);
     int    (*DB_EndReadWords) (void *DB);
     
     

@@ -102,7 +102,7 @@ char *estrdup (char *str);
 char *estrndup (char *str, size_t n);
 char *estrredup (char *s1, char *s2);
 
-const char *comma_long( unsigned long u );
+const char *comma_long( SWUINT_T u );
 
 /* Make life easy for now */
 #include "swregex.h"

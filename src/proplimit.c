@@ -118,7 +118,7 @@ static void printfileprop( SWISH *sw, IndexFILE *indexf, int filenum, struct met
 typedef struct LOOKUP_TABLE
 {
     int filenum;
-    unsigned long   sort;
+    SWUINT_T   sort;
 } LOOKUP_TABLE;
 
 
@@ -614,7 +614,7 @@ static int create_lookup_array( IndexFILE *indexf, PROP_LIMITS *prop_limits, str
 #ifdef DEBUGLIMIT
     for (i = 0; i < size; i++)
     {
-        printf("%d File: %d Sort: %lu : ", i, sort_array[i].filenum, sort_array[i].sort );
+        printf("%d File: %d Sort: %llu : ", i, sort_array[i].filenum, sort_array[i].sort );
         printfileprop( sw, indexf, sort_array[i].filenum, meta_entry );
         printf("\n");
     }

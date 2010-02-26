@@ -1035,7 +1035,7 @@ int     icomp2(const void *s1, const void *s2)
 }
 
 
-/* Functions to format a long with commas. */
+/* Functions to format a SWINT_T with commas. */
 /* Should really do this with locales. */
 /* Maybe not the best file for this */
 
@@ -1057,11 +1057,11 @@ static void thousep(char *s1, const char *s2)
 
 char comma_buffer[100];
 
-const char *comma_long( unsigned long u )
+const char *comma_long( SWUINT_T u )
 {
     char buf[60];
 
-    sprintf( buf, "%lu", u );
+    sprintf( buf, "%llu", u );
     thousep( comma_buffer, buf );
     return comma_buffer;
 }

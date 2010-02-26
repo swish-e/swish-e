@@ -40,6 +40,7 @@ $Id$
 
 
 #include <stdio.h>
+#include "swishtypes.h"
 #include "swish-e.h"  /* use locally for testing */
 
 
@@ -270,7 +271,7 @@ static void display_results( SW_HANDLE swish_handle, SW_RESULTS results )
         /* SwishResultPropertyULong will return ULONG_MAX if the value cannot be returned */
         /* that could mean an error, or just that there was not a property assigned (which is not an error) */
 
-        printf("Path: %s\n  Rank: %lu\n  Size: %lu\n  Title: %s\n  Index: %s\n  Modified: %s\n  Record #: %lu\n  File   #: %lu\n\n",
+        printf("Path: %s\n  Rank: %llu\n  Size: %llu\n  Title: %s\n  Index: %s\n  Modified: %s\n  Record #: %llu\n  File   #: %llu\n\n",
             SwishResultPropertyStr   ( result, "swishdocpath" ),
             SwishResultPropertyULong ( result, "swishrank" ),
             SwishResultPropertyULong ( result, "swishdocsize" ),
@@ -371,7 +372,7 @@ static void print_header_value( SW_HANDLE swish_handle, const char *name, SWISH_
             return;
 
         case SWISH_NUMBER:
-            printf(" %lu\n", head_value.number );
+            printf(" %llu\n", head_value.number );
             return;
 
         case SWISH_BOOL:

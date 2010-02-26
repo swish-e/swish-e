@@ -130,21 +130,21 @@ int saved_bytes = 0;
 // $$$ to be rewritten as function = smaller code (rasc)
 
 #define parse_int_from_buffer(num,s) (num) = UNPACKLONG2((s))
-#define parse_int2_from_buffer(num1,num2,s) (num1) = UNPACKLONG2((s));(num2) = UNPACKLONG2((s+sizeof(long)))
-#define parse_int3_from_buffer(num1,num2,num3,s) (num1) = UNPACKLONG2((s));(num2) = UNPACKLONG2((s+sizeof(long))); (num3) = UNPACKLONG2((s+sizeof(long)+sizeof(long)))
+#define parse_int2_from_buffer(num1,num2,s) (num1) = UNPACKLONG2((s));(num2) = UNPACKLONG2((s+sizeof(SWINT_T)))
+#define parse_int3_from_buffer(num1,num2,num3,s) (num1) = UNPACKLONG2((s));(num2) = UNPACKLONG2((s+sizeof(SWINT_T))); (num3) = UNPACKLONG2((s+sizeof(SWINT_T)+sizeof(SWINT_T)))
 #define parse_int4_from_buffer(num1,num2,num3,num4,s) \
 { \
 	(num1) = UNPACKLONG2((s));\
-	(num2) = UNPACKLONG2((s+sizeof(long)));\
-	(num3) = UNPACKLONG2((s+sizeof(long)+sizeof(long))); \
-	(num4) = UNPACKLONG2((s+sizeof(long)+sizeof(long)+sizeof(long))); \
+	(num2) = UNPACKLONG2((s+sizeof(SWINT_T)));\
+	(num3) = UNPACKLONG2((s+sizeof(SWINT_T)+sizeof(SWINT_T))); \
+	(num4) = UNPACKLONG2((s+sizeof(SWINT_T)+sizeof(SWINT_T)+sizeof(SWINT_T))); \
 }
 
 void    read_header(SWISH *sw, INDEXDATAHEADER *header, void *DB)
 {
     int     id,
             len;
-    unsigned long    tmp, tmp1, tmp2, tmp3, tmp4;
+    SWUINT_T    tmp, tmp1, tmp2, tmp3, tmp4;
     unsigned char   *buffer;
 
     DB_InitReadHeader(sw, DB);
@@ -453,7 +453,7 @@ int     DB_ReadNextWordInvertedIndex(SWISH *sw, char *word, char **resultword, s
    return sw->Db->DB_ReadNextWordInvertedIndex(word, resultword, wordID, DB);
 }
 
-long    DB_ReadWordData(SWISH *sw, sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *DB)
+SWINT_T    DB_ReadWordData(SWISH *sw, sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *DB)
 {
    return sw->Db->DB_ReadWordData(wordID, worddata, data_size, saved_bytes, DB);
 }

@@ -415,7 +415,7 @@ void WORDDATA_Close(WORDDATA *bt)
 sw_off_t WORDDATA_PutBig(WORDDATA *b, unsigned int len, unsigned char *data)
 {
 sw_off_t offset;
-unsigned long p_len = (unsigned long)PACKLONG((unsigned long)len);
+SWUINT_T p_len = (SWUINT_T)PACKLONG((SWUINT_T)len);
 int size = WORDDATA_RoundPageSize(sizeof(p_len) + len);
 FILE *fp = b->fp;
 sw_off_t id;
@@ -514,7 +514,7 @@ WORDDATA_Page *last_page=NULL;
     required_length = WORDDATA_RoundBlockSize(required_length);
     if(required_length > WORDDATA_MaxDataSize)
     {
-        /* Store long record in file */
+        /* Store SWINT_T record in file */
         return WORDDATA_PutBig(b,len,data);
     }
 
@@ -622,7 +622,7 @@ WORDDATA_Page *last_page=NULL;
 unsigned char *WORDDATA_GetBig(WORDDATA *b, sw_off_t page_number, unsigned int *len)
 {
 sw_off_t offset = page_number * (sw_off_t)WORDDATA_PageSize;
-unsigned long p_len;
+SWUINT_T p_len;
 unsigned char *data;
     sw_fseek(b->fp, offset, SEEK_SET);
     sw_fread(&p_len,1,sizeof(p_len),b->fp);
@@ -684,7 +684,7 @@ unsigned char *data;
 void WORDDATA_DelBig(WORDDATA *b, sw_off_t page_number, unsigned int *len)
 {
 sw_off_t offset = page_number * (sw_off_t)WORDDATA_PageSize;
-unsigned long p_len;
+SWUINT_T p_len;
     sw_fseek(b->fp, offset, SEEK_SET);
     sw_fread(&p_len,1,sizeof(p_len),b->fp);
     *len = UNPACKLONG(p_len) + sizeof(p_len);
@@ -802,7 +802,7 @@ int main()
 FILE *fp;
 WORDDATA *bt;
 int i,len;
-static unsigned long nums[N_TEST];
+static SWUINT_T nums[N_TEST];
     srand(time(NULL));
 
 

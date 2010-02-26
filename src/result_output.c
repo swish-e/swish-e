@@ -713,7 +713,7 @@ static void printPropertyResultControl(FILE * f, char *propname, char *subfmt, R
 
 
     case PROP_ULONG:
-        fmt = (subfmt) ? subfmt : "%lu";
+        fmt = (subfmt) ? subfmt : "%llu";
         if (f)
             fprintf(f, fmt, pv->value.v_ulong);
         break;
@@ -740,11 +740,11 @@ static void printPropertyResultControl(FILE * f, char *propname, char *subfmt, R
 
     case PROP_DATE:
         fmt = (subfmt) ? subfmt : DATE_FORMAT_STRING;
-        if (!strcmp(fmt, "%ld"))
+        if (!strcmp(fmt, "%lld"))
         {
             /* special: Print date as serial int (for Bill) */
             if (f)
-                fprintf(f, fmt, (long) pv->value.v_date);
+                fprintf(f, fmt, (SWINT_T) pv->value.v_date);
         }
         else
         {

@@ -272,10 +272,10 @@ static int     fs_already_indexed(SWISH * sw, char *path)
 
     /* Create hash key:  string contains device and inode. */
     /* Avoid snprintf -> MAXKEYLEN is big enough for two longs
-       snprintf( key, MAXKEYLEN, "%lx/%lx", (unsigned long)buf.st_dev,
-       (unsigned long)buf.st_ino  );
+       snprintf( key, MAXKEYLEN, "%llux/%llux", (SWUINT_T)buf.st_dev,
+       (SWUINT_T)buf.st_ino  );
      */
-    sprintf(key, "%lx/%lx", (unsigned long) buf.st_dev, (unsigned long) buf.st_ino);
+    sprintf(key, "%llux/%llux", (SWUINT_T) buf.st_dev, (SWUINT_T) buf.st_ino);
 
     hashval = bighash(key);     /* Search hash for this file. */
     for (p = sw->Index->inode_hash[hashval]; p != NULL; p = p->next)

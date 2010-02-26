@@ -181,7 +181,7 @@ struct ramdisk *rd = (struct ramdisk *)fp;
 size_t ramdisk_read(void *buf, size_t sz1, size_t sz2, FILE *fp)
 {
 struct ramdisk *rd = (struct ramdisk *)fp;
-unsigned long len = (unsigned long) (sz1 * sz2);
+SWUINT_T len = (SWUINT_T) (sz1 * sz2);
 unsigned char *buffer = (unsigned char *)buf;
 unsigned int avail, num_buffer, start_pos, buffer_offset;
 
@@ -189,7 +189,7 @@ unsigned int avail, num_buffer, start_pos, buffer_offset;
     return 0;
     if((rd->cur_pos + (sw_off_t)len) > rd->end_pos)
     {
-        len = (unsigned long)(rd->end_pos - rd->cur_pos);
+        len = (SWUINT_T)(rd->end_pos - rd->cur_pos);
     }
     num_buffer = (unsigned int)(rd->cur_pos / (sw_off_t)rd->buf_size);
     start_pos = (unsigned int)(rd->cur_pos % (sw_off_t)rd->buf_size);

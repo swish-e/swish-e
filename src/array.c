@@ -30,7 +30,7 @@ $Id$
 **
 **  Virtual Array Code. 
 **  11/2001 jmruiz - The intention of this routines is storing and reading
-**                   elemnts of arrays of long numbers avoiding the 
+**                   elemnts of arrays of SWINT_T numbers avoiding the 
 **                   allocation in memory of the total array. In other words,
 **                   if we need to read only 10 elements of the array, we
 **                   will must try to make the minimal I/O memory and disk
@@ -56,10 +56,10 @@ $Id$
 **    Closes and frees memory. arr is the value returned by ARRAY_Create or
 **    ARRAY_Open. Returns the root page of the array. This value must be
 **
-**  int ARRAY_Put(ARRAY *arr, int index, unsigned long value)
+**  int ARRAY_Put(ARRAY *arr, int index, SWUINT_T value)
 **    Writes the array element arr[index]=value to the virtual array
 **
-**  unsigned long ARRAY_Get(ARRAY *arr, int index)
+**  SWUINT_T ARRAY_Get(ARRAY *arr, int index)
 **    Reads the array element index. Returns de value arr[index]
 **
 */
@@ -78,7 +78,7 @@ $Id$
 /* A ARRAY page size */
 #define ARRAY_PageSize 4096
 
-#define SizeOfElement sizeof(long)
+#define SizeOfElement sizeof(SWINT_T)
 
 /* Round to ARRAY_PageSize */
 #define ARRAY_RoundPageSize(n) (((sw_off_t)(n) + (sw_off_t)(ARRAY_PageSize - 1)) & (~(sw_off_t)(ARRAY_PageSize - 1)))
@@ -334,7 +334,7 @@ sw_off_t root_page = bt->root_page;
 }
 
 
-int ARRAY_Put(ARRAY *b, int index, unsigned long value)
+int ARRAY_Put(ARRAY *b, int index, SWUINT_T value)
 {
 sw_off_t next_page; 
 ARRAY_Page *root_page, *tmp = NULL, *prev; 
@@ -375,7 +375,7 @@ int i, hash, page_reads, page_index;
         prev = tmp;
         next_page = tmp->next;
     }
-    *(unsigned long *)ARRAY_Data(tmp,page_index) = PACKLONG(value);
+    *(SWUINT_T *)ARRAY_Data(tmp,page_index) = PACKLONG(value);
     ARRAY_WritePage(b,tmp);
     ARRAY_FreePage(b,tmp);
     ARRAY_FreePage(b,root_page);
@@ -384,10 +384,10 @@ int i, hash, page_reads, page_index;
 }
 
 
-unsigned long ARRAY_Get(ARRAY *b, int index)
+SWUINT_T ARRAY_Get(ARRAY *b, int index)
 {
 sw_off_t next_page;
-unsigned long value; 
+SWUINT_T value; 
 ARRAY_Page *root_page, *tmp;
 int i, hash, page_reads, page_index;
 
@@ -398,7 +398,7 @@ int i, hash, page_reads, page_index;
 
     root_page = ARRAY_ReadPage(b, b->root_page);
 /* $$$$ to be fixed $$$ */
-    next_page = UNPACKLONG(*(long *)ARRAY_Data(root_page, hash));
+    next_page = UNPACKLONG(*(SWINT_T *)ARRAY_Data(root_page, hash));
 
     tmp = NULL;
     for(i = 0; i <= page_reads; i++)
@@ -416,7 +416,7 @@ int i, hash, page_reads, page_index;
         }
         next_page = tmp->next;
     }
-    value = UNPACKLONG(*(unsigned long *)ARRAY_Data(tmp,page_index));
+    value = UNPACKLONG(*(SWUINT_T *)ARRAY_Data(tmp,page_index));
     ARRAY_FreePage(b,tmp);
     ARRAY_FreePage(b,root_page);
 
@@ -444,8 +444,8 @@ int main()
 FILE *fp;
 ARRAY *bt;
 int i;
-static unsigned long nums[N_TEST];
-unsigned long root_page;
+static SWUINT_T nums[N_TEST];
+SWUINT_T root_page;
     srand(time(NULL));
 
 

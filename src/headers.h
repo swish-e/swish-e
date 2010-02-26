@@ -60,7 +60,7 @@ typedef union
 {
     const char           *string;
     const char          **string_list;
-          unsigned long   number;
+          SWUINT_T   number;
           int             boolean;
 } SWISH_HEADER_VALUE;
 

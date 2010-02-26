@@ -553,7 +553,7 @@ static void print_header_value( SWISH *sw, const char *name, SWISH_HEADER_VALUE 
             return;
 
         case SWISH_NUMBER:
-            printf(" %lu\n", head_value.number );
+            printf(" %llu\n", head_value.number );
             return;
 
         case SWISH_BOOL:

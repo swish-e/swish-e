@@ -308,8 +308,8 @@ int *CreatePropSortArray(IndexFILE *indexf, struct metaEntry *m, FileRec *fi, in
                     k;
 
 
-    sort_array = emalloc( total_files * sizeof( long ) );
-    out_array  = emalloc( total_files * sizeof( long ) );
+    sort_array = emalloc( total_files * sizeof( SWINT_T ) );
+    out_array  = emalloc( total_files * sizeof( SWINT_T ) );
 
     /* First time called, create place to cache property positions */
     if ( !PropLookup )

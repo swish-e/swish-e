@@ -136,7 +136,7 @@ struct Handle_DBNative
    char    *cur_index_file;
    char    *cur_prop_file;
 
-   long     unique_ID;          /* just because it's called that doesn't mean it is! */
+   SWINT_T     unique_ID;          /* just because it's called that doesn't mean it is! */
 
 #ifdef USE_BTREE
    BTREE   *bt;
@@ -159,14 +159,14 @@ struct Handle_DBNative
    char    *cur_array_file;
 
    int      n_presorted_array;
-   unsigned long *presorted_root_node;
-   unsigned long *presorted_propid;
+   SWUINT_T *presorted_root_node;
+   SWUINT_T *presorted_propid;
    ARRAY  **presorted_array;
    FILE    *fp_presorted;
    int      tmp_presorted;
    char    *cur_presorted_file;
 
-   unsigned long cur_presorted_propid;
+   SWUINT_T cur_presorted_propid;
    ARRAY   *cur_presorted_array;
 
    ARRAY   *totwords_array;
@@ -205,14 +205,14 @@ int     DB_DeleteWordData_Native(sw_off_t wordID, void *db);
 #endif
 
 int     DB_WriteWordHash_Native(char *word, sw_off_t wordID, void *db);
-long    DB_WriteWordData_Native(sw_off_t wordID, unsigned char *worddata, int data_size, int saved_bytes, void *db);
+SWINT_T    DB_WriteWordData_Native(sw_off_t wordID, unsigned char *worddata, int data_size, int saved_bytes, void *db);
 int     DB_EndWriteWords_Native(void *db);
 
 int     DB_InitReadWords_Native(void *db);
 int     DB_ReadWordHash_Native(char *word, sw_off_t *wordID, void *db);
 int     DB_ReadFirstWordInvertedIndex_Native(char *word, char **resultword, sw_off_t *wordID, void *db);
 int     DB_ReadNextWordInvertedIndex_Native(char *word, char **resultword, sw_off_t *wordID, void *db);
-long    DB_ReadWordData_Native(sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *db);
+SWINT_T    DB_ReadWordData_Native(sw_off_t wordID, unsigned char **worddata, int *data_size, int *saved_bytes, void *db);
 int     DB_EndReadWords_Native(void *db);
 
 
@@ -265,8 +265,8 @@ int    DB_EndReadTotalWordsPerFile_Native(SWISH *sw, void *DB);
 /* 04/00 Jose Ruiz
 ** Functions to read/write longs from a file
 */
-void    printlong(FILE * fp, unsigned long num, size_t (*f_write)(const void *, size_t, size_t, FILE *));
-unsigned long    readlong(FILE * fp, size_t (*f_read)(void *, size_t, size_t, FILE *));
+void    printlong(FILE * fp, SWUINT_T num, size_t (*f_write)(const void *, size_t, size_t, FILE *));
+SWUINT_T    readlong(FILE * fp, size_t (*f_read)(void *, size_t, size_t, FILE *));
 
 /* 2003/10 Jose Ruiz
 ** Functions to read/write file offsets

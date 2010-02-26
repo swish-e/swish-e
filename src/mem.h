@@ -50,6 +50,7 @@ $Id$
 **		If you turn on MEM_TRACE, turn on MEM_STATISTICS
 */
 
+#include "swishtypes.h"
 #include <memory.h>
 
 #ifdef __cplusplus

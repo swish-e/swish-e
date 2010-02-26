@@ -290,7 +290,7 @@ static char *regex_replace( char *str, regex_list *regex, int offset, int *match
     (*matched)++;        
 
 
-    /* allocate a string long enough */
+    /* allocate a string SWINT_T enough */
     newstr = (char *) emalloc( offset + strlen( str ) + regex->replace_length + (regex->replace_count * strlen( str )) + 1 );
 
     /* Copy everything before string */

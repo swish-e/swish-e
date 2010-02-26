@@ -1,7 +1,4 @@
 /*
-
-$Id: swish-e.h 2307 2009-04-09 16:14:41Z karpet $
-
     This file is part of Swish-e.
 
     Swish-e is free software; you can redistribute it and/or modify
@@ -38,9 +35,11 @@ extern "C" {
 #include <inttypes.h>
 #include <sys/types.h>
 
-// presence of 'no rw64' at start of comment tells rewriter not to touch this line
-//
-//
+/* If you change these typedefs or macros, remember to update swish-e.h too */
+
+/* presence of 'no rw64' at start of comment tells rewriter 
+ * not to touch this line
+ */
 typedef int64_t          SWINT_T;  // no rw64 
 typedef uint64_t         SWUINT_T; // no rw64 
 

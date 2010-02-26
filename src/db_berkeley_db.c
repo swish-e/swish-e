@@ -512,14 +512,14 @@ int     DB_EndWriteWords_db(void *db)
     return 0;
 }
 
-long    DB_GetWordID_db(void *db)
+SWINT_T    DB_GetWordID_db(void *db)
 {
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
 
-    return (long) ++(DB->wordcounter);
+    return (SWINT_T) ++(DB->wordcounter);
 }
 
-int     DB_WriteWord_db(char *word, long wordID, void *db)
+int     DB_WriteWord_db(char *word, SWINT_T wordID, void *db)
 {
     DB     *dbp;
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
@@ -549,7 +549,7 @@ int     DB_WriteWord_db(char *word, long wordID, void *db)
 }
 
 
-long    DB_WriteWordData_db(long wordID, unsigned char *worddata, int lendata, void *db)
+SWINT_T    DB_WriteWordData_db(SWINT_T wordID, unsigned char *worddata, int lendata, void *db)
 {
     DB     *dbp;
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
@@ -563,7 +563,7 @@ long    DB_WriteWordData_db(long wordID, unsigned char *worddata, int lendata, v
     memset(&key, 0, sizeof(key));
     memset(&content, 0, sizeof(content));
 
-    key.size = sizeof(long);
+    key.size = sizeof(SWINT_T);
 
     key.data = (char *) &wordID;
 
@@ -580,7 +580,7 @@ long    DB_WriteWordData_db(long wordID, unsigned char *worddata, int lendata, v
 
 
 
-int     DB_WriteWordHash_db(char *word, long wordID, void *db)
+int     DB_WriteWordHash_db(char *word, SWINT_T wordID, void *db)
 {
     DB     *dbp;
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
@@ -620,7 +620,7 @@ int     DB_EndReadWords_db(void *db)
 }
 
 
-int     DB_ReadWordHash_db(char *word, long *wordID, void *db)
+int     DB_ReadWordHash_db(char *word, SWINT_T *wordID, void *db)
 {
     DB     *dbp;
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
@@ -645,7 +645,7 @@ int     DB_ReadWordHash_db(char *word, long *wordID, void *db)
     }
     else
     {
-        *wordID = (long) *(int *) content.data;
+        *wordID = (SWINT_T) *(int *) content.data;
     }
 
     return 0;
@@ -653,7 +653,7 @@ int     DB_ReadWordHash_db(char *word, long *wordID, void *db)
 
 
 
-int     DB_ReadFirstWordInvertedIndex_db(char *word, char **resultword, long *wordID, void *db)
+int     DB_ReadFirstWordInvertedIndex_db(char *word, char **resultword, SWINT_T *wordID, void *db)
 {
     DB     *dbp;
     DBC    *dbcp;
@@ -692,7 +692,7 @@ int     DB_ReadFirstWordInvertedIndex_db(char *word, char **resultword, long *wo
             *resultword = emalloc(key.size + 1);
             memcpy(*resultword, key.data, key.size);
             (*resultword)[key.size] = '\0';
-            *wordID = *(long *) content.data;
+            *wordID = *(SWINT_T *) content.data;
             return 0;
         }
     }
@@ -704,7 +704,7 @@ int     DB_ReadFirstWordInvertedIndex_db(char *word, char **resultword, long *wo
     return 0;
 }
 
-int     DB_ReadNextWordInvertedIndex_db(char *word, char **resultword, long *wordID, void *db)
+int     DB_ReadNextWordInvertedIndex_db(char *word, char **resultword, SWINT_T *wordID, void *db)
 {
     DB     *dbp;
     DBC    *dbcp;
@@ -740,7 +740,7 @@ int     DB_ReadNextWordInvertedIndex_db(char *word, char **resultword, long *wor
                 *resultword = emalloc(key.size + 1);
                 memcpy(*resultword, key.data, key.size);
                 (*resultword)[key.size] = '\0';
-                *wordID = *(long *) content.data;
+                *wordID = *(SWINT_T *) content.data;
                 return 0;
             }
         }
@@ -753,7 +753,7 @@ int     DB_ReadNextWordInvertedIndex_db(char *word, char **resultword, long *wor
 }
 
 
-long    DB_ReadWordData_db(long wordID, unsigned char **worddata, int *lendata, void *db)
+SWINT_T    DB_ReadWordData_db(SWINT_T wordID, unsigned char **worddata, int *lendata, void *db)
 {
     DB     *dbp;
     struct Handle_DB_db *DB = (struct Handle_DB_db *) db;
@@ -767,7 +767,7 @@ long    DB_ReadWordData_db(long wordID, unsigned char **worddata, int *lendata, 
     memset(&key, 0, sizeof(key));
     memset(&content, 0, sizeof(content));
 
-    key.size = sizeof(long);
+    key.size = sizeof(SWINT_T);
 
     key.data = (char *) &wordID;
 
@@ -1019,8 +1019,8 @@ void    DB_WriteProperty_db( FileRec *fi, int propID, char *buffer, int datalen,
         int i;
 
         fi->propLocationsCount = fi->docProperties->n;
-        fi->propLocations = (long *) emalloc( fi->propLocationsCount * sizeof( int *) );
-        fi->propSize = (long *) emalloc( fi->propLocationsCount * sizeof( int *) );
+        fi->propLocations = (SWINT_T *) emalloc( fi->propLocationsCount * sizeof( int *) );
+        fi->propSize = (SWINT_T *) emalloc( fi->propLocationsCount * sizeof( int *) );
 
         /* Zero array */
         for( i = 0; i < fi->propLocationsCount; i++ )

@@ -731,7 +731,7 @@ static int file_is_newer_than_existing( SWISH *sw,  FileProp * fprop, int existi
     propEntry   *new_prop;
     FileRec     fi;
     int         error_flag;
-    unsigned long tmp;
+    SWUINT_T tmp;
 
     /* Get the date from the existing file */
 
@@ -1301,7 +1301,7 @@ void   addentry(SWISH * sw, ENTRY *e, int filenum, int structure, int metaID, in
     {
         struct metaEntry *m = getMetaNameByID(&indexf->header, metaID);
 
-        printf("    Adding:[%d:%s(%d)]   '%s'   Pos:%d  Stuct:0x%0X (", filenum, m ? m->metaName : "PROP_UNKNOWN", metaID, e->word, position, structure);
+        printf("    Adding:[%d:%s(%d)]   '%s'   Pos:%d  Stuct:0x%0llX (", filenum, m ? m->metaName : "PROP_UNKNOWN", metaID, e->word, position, structure);
         
         if ( structure & IN_EMPHASIZED ) printf(" EM");
         if ( structure & IN_HEADER ) printf(" HEADING");
@@ -1433,7 +1433,7 @@ void    addCommonProperties( SWISH *sw, FileProp *fprop, FileRec *fi, char *titl
 {
     struct metaEntry *q;
     docProperties   **properties = &fi->docProperties;
-    unsigned long   tmp;
+    SWUINT_T   tmp;
     int             metaID;
     INDEXDATAHEADER *header = &sw->indexlist->header;
     char            *filename = fprop->real_path;  /* should always have a path */
@@ -1509,7 +1509,7 @@ void    addCommonProperties( SWISH *sw, FileProp *fprop, FileRec *fi, char *titl
 
     if ( fprop->mtime && (q = getPropNameByName(header, AUTOPROPERTY_LASTMODIFIED)))
     {
-        tmp = (unsigned long) fprop->mtime;
+        tmp = (SWUINT_T) fprop->mtime;
         tmp = PACKLONG(tmp);      /* make it portable */
         addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp), 1, sw->PropDelimiter);
     }
@@ -1517,7 +1517,7 @@ void    addCommonProperties( SWISH *sw, FileProp *fprop, FileRec *fi, char *titl
     if ( (q = getPropNameByName(header, AUTOPROPERTY_DOCSIZE)))
     {
         /* Use the disk size, if available */
-        tmp = (unsigned long) ( fprop->source_size ? fprop->source_size : fprop->fsize);
+        tmp = (SWUINT_T) ( fprop->source_size ? fprop->source_size : fprop->fsize);
         tmp = PACKLONG(tmp);      /* make it portable */
         addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp), 1, sw->PropDelimiter);
     }
@@ -1525,7 +1525,7 @@ void    addCommonProperties( SWISH *sw, FileProp *fprop, FileRec *fi, char *titl
 
     if ( (q = getPropNameByName(header, AUTOPROPERTY_STARTPOS)))
     {
-        tmp = (unsigned long) start;
+        tmp = (SWUINT_T) start;
         tmp = PACKLONG(tmp);      /* make it portable */
         addDocProperty(properties, q, (unsigned char *) &tmp, sizeof(tmp), 1, sw->PropDelimiter);
     }
@@ -1830,7 +1830,7 @@ void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files,
             w_filenum;
     unsigned int       *posdata;
     int     i,j,k;
-    unsigned long    r_nextposmeta;
+    SWUINT_T    r_nextposmeta;
     unsigned char   *w_nextposmeta;
     unsigned int     local_posdata[MAX_STACK_POSITIONS];
     unsigned char r_flag, *w_flag;
@@ -1846,7 +1846,7 @@ void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files,
     metaID = uncompress2(&p);     /* metaID */
     r_nextposmeta =  UNPACKLONG2(p); 
     w_nextposmeta = p;
-    p += sizeof(long);
+    p += sizeof(SWINT_T);
 
     q = p;
     r_filenum = w_filenum = 0;
@@ -1902,7 +1902,7 @@ void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files,
         if ((p - worddata) == *sz_worddata)
              break;   /* End of worddata */
 
-        if ((unsigned long)(p - worddata) == r_nextposmeta)
+        if ((SWUINT_T)(p - worddata) == r_nextposmeta)
         {
             if(q != p)
                 PACKLONG2(q - worddata, w_nextposmeta);
@@ -1911,10 +1911,10 @@ void adjustWordPositions(unsigned char *worddata, int *sz_worddata, int n_files,
             q = compress3(metaID,q);
 
             r_nextposmeta = UNPACKLONG2(p); 
-            p += sizeof(long);
+            p += sizeof(SWINT_T);
 
             w_nextposmeta = q;
-            q += sizeof(long);
+            q += sizeof(SWINT_T);
 
             w_filenum = 0;
         }
@@ -2271,7 +2271,7 @@ void    write_index(SWISH * sw, IndexFILE * indexf)
     int     percent, lastPercent, n;
     int     last_loc_swap;
 
-    long    old_wordid;
+    SWINT_T    old_wordid;
     unsigned char *buffer =NULL;
     int     sz_buffer = 0;
 #define DELTA 10

@@ -388,7 +388,7 @@ static SWISH  *swish_new(void)
     /* Additional modules needed for indexin (which we are not sure about yet... */
     initModule_ResultSort(sw);
     initModule_Filter(sw);
-    initModule_Entities(sw);  /* used only by the old HTML parser -- not long to live */
+    initModule_Entities(sw);  /* used only by the old HTML parser -- not SWINT_T to live */
     initModule_Index(sw);
     initModule_FS(sw);
     initModule_HTTP(sw);
@@ -583,7 +583,7 @@ static char *next_param( char ***argv )
 static int get_param_number(char ***argv, char c )
 {
     char *badchar;
-    long  num;
+    SWINT_T  num;
     char *string = next_param( argv );
 
     if ( !string )

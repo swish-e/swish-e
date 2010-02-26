@@ -52,7 +52,7 @@ $Id$
 */
 
 typedef LongestType   double;     /* longest module internal type needed  */
-                                  /* maybe you can use also "long double" */
+                                  /* maybe you can use also "SWINT_T double" */
 
 
 static LongestType  cast_numeric (SwDataValue v);
@@ -120,9 +120,9 @@ char *datavalue2strfmt (SwDataValue *v, char *altfmt)
 
 	case DATE:
 		fmt = (altfmt) ? altfmt: "%Y-%m-%d %H:%M:%S";
-		if (!strcmp (fmt,"%ld")) {
+		if (!strcmp (fmt,"%lld")) {
 			/* special: Print date as serial int (for Bill) */
-		   n = sprintf (wordbuf,fmt, (long) v->value.v_date);
+		   n = sprintf (wordbuf,fmt, (SWINT_T) v->value.v_date);
 		} else {
 			/* fmt is strftime format control! */
 		   n = strftime (wordbuf,sizeof(wordbuf), fmt,

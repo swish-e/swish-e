@@ -648,7 +648,7 @@ static void load_filename_sort( SWISH *sw, IndexFILE *cur_index )
     /*
      * Since USE_PRESORT_ARRAY has a different internal format that what is generated
      * by CreatePropeSortArray() we must ALWAYS create an actual integer
-     * array total_files long.
+     * array total_files SWINT_T.
      * 
      * $$$ The problem is that with USE_PRESORT_ARRAY the format is different
      *     before and after saving the array to disk

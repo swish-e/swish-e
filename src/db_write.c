@@ -61,19 +61,19 @@ static int    write_hash_words_to_header(SWISH *sw, int header_ID, struct swline
 
 /* Header routines */
 
-#define write_header_int(sw,id,num,DB) {unsigned long itmp = (num); itmp = PACKLONG(itmp); DB_WriteHeaderData((sw),(id), (unsigned char *)&itmp, sizeof(long), (DB));}
+#define write_header_int(sw,id,num,DB) {SWUINT_T itmp = (num); itmp = PACKLONG(itmp); DB_WriteHeaderData((sw),(id), (unsigned char *)&itmp, sizeof(SWINT_T), (DB));}
 #define write_header_int2(sw,id,num1,num2,DB)\
 {  \
-        unsigned long itmp[2]; \
+        SWUINT_T itmp[2]; \
         itmp[0] = (num1); \
         itmp[1] = (num2); \
         itmp[0] = PACKLONG(itmp[0]); \
         itmp[1] = PACKLONG(itmp[1]); \
-        DB_WriteHeaderData((sw),(id), (unsigned char *)itmp, sizeof(long) * 2, (DB)); \
+        DB_WriteHeaderData((sw),(id), (unsigned char *)itmp, sizeof(SWINT_T) * 2, (DB)); \
 }
 #define write_header_int4(sw,id,num1,num2,num3,num4,DB)\
 {  \
-        unsigned long itmp[4]; \
+        SWUINT_T itmp[4]; \
         itmp[0] = (num1); \
         itmp[1] = (num2); \
         itmp[2] = (num3); \
@@ -82,7 +82,7 @@ static int    write_hash_words_to_header(SWISH *sw, int header_ID, struct swline
         itmp[1] = PACKLONG(itmp[1]); \
         itmp[2] = PACKLONG(itmp[2]); \
         itmp[3] = PACKLONG(itmp[3]); \
-        DB_WriteHeaderData((sw),(id), (unsigned char *)itmp, sizeof(long) * 4, (DB)); \
+        DB_WriteHeaderData((sw),(id), (unsigned char *)itmp, sizeof(SWINT_T) * 4, (DB)); \
 }
 
 void    write_header(SWISH *sw, int merged_flag )
@@ -212,7 +212,7 @@ void build_worddata(SWISH * sw, ENTRY * ep)
 {
     int     curmetaID,
             sz_worddata;
-    unsigned long    tmp,
+    SWUINT_T    tmp,
             curmetanamepos;
     int     metaID;
     int     chunk_size;
@@ -257,7 +257,7 @@ void build_worddata(SWISH * sw, ENTRY * ep)
                 /*
                 ** MAXINTCOMPSIZE is for the worst case metaID
                 **
-                ** sizeof(long) is to leave four bytes to
+                ** sizeof(SWINT_T) is to leave four bytes to
                 ** store the offset of the next metaname
                 ** (it will be 0 if no more metanames).
                 **
@@ -266,9 +266,9 @@ void build_worddata(SWISH * sw, ENTRY * ep)
 
             tmp=q - sw->Index->worddata_buffer;
 
-            if((long)(tmp + MAXINTCOMPSIZE + sizeof(long) + 1) >= (long)sw->Index->len_worddata_buffer)
+            if((SWINT_T)(tmp + MAXINTCOMPSIZE + sizeof(SWINT_T) + 1) >= (SWINT_T)sw->Index->len_worddata_buffer)
             {
-                sw->Index->len_worddata_buffer=sw->Index->len_worddata_buffer*2+MAXINTCOMPSIZE+sizeof(long)+1;
+                sw->Index->len_worddata_buffer=sw->Index->len_worddata_buffer*2+MAXINTCOMPSIZE+sizeof(SWINT_T)+1;
                 sw->Index->worddata_buffer=(unsigned char *) erealloc(sw->Index->worddata_buffer,sw->Index->len_worddata_buffer);
                 q=sw->Index->worddata_buffer+tmp;   /* reasign pointer inside buffer */
             }
@@ -280,13 +280,13 @@ void build_worddata(SWISH * sw, ENTRY * ep)
 
             /* preserve position for offset to next
             ** metaname. We do not know its size
-            ** so store it as a packed long */
+            ** so store it as a packed SWINT_T */
             curmetanamepos=q - sw->Index->worddata_buffer;
 
             /* Store 0 and increase pointer */
             tmp=0L;
             PACKLONG2(tmp,q);
-            q+=sizeof(unsigned long);
+            q+=sizeof(SWUINT_T);
 
         }
 
@@ -299,7 +299,7 @@ void build_worddata(SWISH * sw, ENTRY * ep)
 
         tmp=q - sw->Index->worddata_buffer;
 
-        if((long)(tmp + chunk_size + 1) >= (long)sw->Index->len_worddata_buffer)
+        if((SWINT_T)(tmp + chunk_size + 1) >= (SWINT_T)sw->Index->len_worddata_buffer)
         {
             sw->Index->len_worddata_buffer=sw->Index->len_worddata_buffer*2+chunk_size+1;
             sw->Index->worddata_buffer=(unsigned char *) erealloc(sw->Index->worddata_buffer,sw->Index->len_worddata_buffer);
@@ -372,7 +372,7 @@ int sz_newdata;
 int tfreq1, tfreq2;
 unsigned char *p1, *p2, *p;
 int curmetaID_1,curmetaID_2,metadata_length_1,num_metaids1;
-unsigned long nextposmetaname_1,nextposmetaname_2, curmetanamepos, curmetanamepos_1, curmetanamepos_2, tmp;
+SWUINT_T nextposmetaname_1,nextposmetaname_2, curmetanamepos, curmetanamepos_1, curmetanamepos_2, tmp;
 int last_filenum, filenum, tmpval, frequency;
 unsigned int *posdata;
 #define POSDATA_STACK 2000
@@ -394,7 +394,7 @@ unsigned char *q;
         metadata_length_1 = uncompress2(&p1);
         p1 += metadata_length_1;
     } while ((p1 - olddata) != sz_olddata);
-    maxtotsize = sw->Index->sz_worddata_buffer + (sz_olddata + num_metaids1 * sizeof(long));
+    maxtotsize = sw->Index->sz_worddata_buffer + (sz_olddata + num_metaids1 * sizeof(SWINT_T));
 
     if(maxtotsize > sw->Index->len_worddata_buffer)
     {
@@ -432,7 +432,7 @@ unsigned char *q;
 
     curmetanamepos_1 = p1 - olddata;
     nextposmetaname_2 = UNPACKLONG2(p2);
-    p2 += sizeof(long);
+    p2 += sizeof(SWINT_T);
 
     curmetanamepos_2 = p2 - newdata;
 
@@ -445,7 +445,7 @@ unsigned char *q;
         /* Store 0 and increase pointer */
         tmp=0L;
         PACKLONG2(tmp,p);
-        p+=sizeof(unsigned long);
+        p+=sizeof(SWUINT_T);
 
         if(curmetaID_1 == curmetaID_2)
         {
@@ -475,7 +475,7 @@ unsigned char *q;
                     break;   /* End of olddata */
                 }
 
-                if ((unsigned long)(p1 - olddata) == nextposmetaname_1)
+                if ((SWUINT_T)(p1 - olddata) == nextposmetaname_1)
                 {
                     break;
                 }
@@ -524,7 +524,7 @@ unsigned char *q;
             {
                 curmetaID_2 = uncompress2(&p2);  /* Next metaID */
                 nextposmetaname_2 = UNPACKLONG2(p2);
-                p2 += sizeof(long);
+                p2 += sizeof(SWINT_T);
                 curmetanamepos_2 = p2 - newdata;
             }
         }
@@ -558,7 +558,7 @@ unsigned char *q;
             {
                 curmetaID_2 = uncompress2(&p2);  /* Next metaID */
                 nextposmetaname_2 = UNPACKLONG2(p2);
-                p2 += sizeof(long);
+                p2 += sizeof(SWINT_T);
                 curmetanamepos_2 = p2 - newdata;
             }
         }
@@ -576,7 +576,7 @@ unsigned char *q;
                 /* Store 0 and increase pointer */
         tmp=0L;
         PACKLONG2(tmp,p);
-        p += sizeof(unsigned long);
+        p += sizeof(SWUINT_T);
 
         memcpy(p,p1,nextposmetaname_1 - (p1 - olddata));
         p += nextposmetaname_1 - (p1 - olddata);
@@ -604,7 +604,7 @@ unsigned char *q;
             /* Store 0 and increase pointer */
         tmp=0L;
         PACKLONG2(tmp,p);
-        p += sizeof(unsigned long);
+        p += sizeof(SWUINT_T);
 
         memcpy(p,p2,nextposmetaname_2 - (p2 - newdata));
         p += nextposmetaname_2 - (p2 - newdata);
@@ -617,7 +617,7 @@ unsigned char *q;
         {
             curmetaID_2 = uncompress2(&p2);  /* Next metaID */
             nextposmetaname_2 = UNPACKLONG2(p2);
-            p2+= sizeof(long);
+            p2+= sizeof(SWINT_T);
             curmetanamepos_2= p2 - newdata;
         }
         PACKLONG2(p - sw->Index->worddata_buffer, sw->Index->worddata_buffer + curmetanamepos);
@@ -861,7 +861,7 @@ int     DB_WriteWordHash(SWISH *sw, char *word, sw_off_t wordID, void *DB)
    return sw->Db->DB_WriteWordHash(word, wordID, DB);
 }
 
-long    DB_WriteWordData(SWISH *sw, sw_off_t wordID, unsigned char *worddata, int data_size, int saved_bytes, void *DB)
+SWINT_T    DB_WriteWordData(SWISH *sw, sw_off_t wordID, unsigned char *worddata, int data_size, int saved_bytes, void *DB)
 {
    return sw->Db->DB_WriteWordData(wordID, worddata, data_size, saved_bytes, DB);
 }

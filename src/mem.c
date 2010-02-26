@@ -61,7 +61,7 @@ $Id$
 #define PointerAlignmentSize 8
 
 #else
-#define PointerAlignmentSize sizeof(long)
+#define PointerAlignmentSize sizeof(SWINT_T)
 #endif
 
 /* typical machine has pagesize 4096 (not critical anyway, just can help malloc) */
@@ -91,7 +91,7 @@ void *emalloc(size_t size)
     void *p;
 
     if ((p = malloc(size)) == NULL)
-        progerr("Ran out of memory (could not malloc %lu more bytes)!", size);
+        progerr("Ran out of memory (could not malloc %llu more bytes)!", size);
 
     return p;
 }
@@ -103,7 +103,7 @@ void *erealloc(void *ptr, size_t size)
     void *p;
     
     if ((p = realloc(ptr, size)) == NULL)
-        progerr("Ran out of memory (could not reallocate %lu more bytes)!", size);
+        progerr("Ran out of memory (could not reallocate %llu more bytes)!", size);
 
     return p;
 }
@@ -135,7 +135,7 @@ void Mem_Summary(char *title, int final)
 
 /* parameters of typical allocators (just for statistics) */
 #define MIN_CHUNK 16
-#define CHUNK_ROUNDOFF (sizeof(long) - 1)
+#define CHUNK_ROUNDOFF (sizeof(SWINT_T) - 1)
 
 
 /* Random value for a GUARD at beginning and end of allocated memory */
@@ -176,12 +176,12 @@ typedef struct
     TraceBlock        *Trace;
 #endif
 #if MEM_DEBUG
-    unsigned long    Guard1;
+    SWUINT_T    Guard1;
 #endif
     size_t    Size;
 #if MEM_DEBUG
     void            *Start;
-    unsigned long    Guard2;
+    SWUINT_T    Guard2;
 #endif
 } MemHeader;
 
@@ -190,7 +190,7 @@ typedef struct
 #if MEM_DEBUG
 typedef struct
 {
-    unsigned long    Guard;
+    SWUINT_T    Guard;
 } MemTail;
 
 
@@ -318,13 +318,13 @@ void * Mem_Alloc (size_t Size, char *file, int line)
     if (MemPtr == NULL)
     {
         printf("At file %s line %d:\n", file, line);
-        progerr("Ran out of memory (could not Mem_Alloc %lu more bytes)!", MemSize);
+        progerr("Ran out of memory (could not Mem_Alloc %llu more bytes)!", MemSize);
     }
 
 
     /*
      *  Keep a running total of the memory allocated for statistical purposes.
-     *  Save the chunk size in the first long word of the chunk, and return the
+     *  Save the chunk size in the first SWINT_T word of the chunk, and return the
      *  address of the chunk (following the chunk size) to the caller.
      */
 
@@ -369,7 +369,7 @@ void * Mem_Alloc (size_t Size, char *file, int line)
     Header->Trace = AllocTrace(file, line, MemPtr, Size);
 #endif
 
-//    printf("Alloc: %s line %d: Addr: %08X Size: %u\n", file, line, MemPtr, Size);
+//    printf("Alloc: %s line %d: Addr: %08llX Size: %u\n", file, line, MemPtr, Size);
 
     return (MemPtr);
 }
@@ -411,7 +411,7 @@ void  Mem_Free (void *Address, char *file, int line)
         return;
 
     /*
-     *  Get the size of the chunk to free from the long word preceding the
+     *  Get the size of the chunk to free from the SWINT_T word preceding the
      *  address of the chunk.
      */
 
@@ -421,27 +421,27 @@ void  Mem_Free (void *Address, char *file, int line)
     {
     MemTail *Tail;
 
-    if ( (long)Address & (~(PointerAlignmentSize-1)) != 0 )
-        MEM_ERROR(("Address %08X not longword aligned\n", (unsigned int)Address));
+    if ( (SWINT_T)Address & (~(PointerAlignmentSize-1)) != 0 )
+        MEM_ERROR(("Address %08llX not longword aligned\n", (unsigned int)Address));
 
     if (Address != Header->Start)
-        MEM_ERROR(("Already free: %08X\n", (unsigned int)Address)); 
+        MEM_ERROR(("Already free: %08llX\n", (unsigned int)Address)); 
         // Err_Signal (PWRK$_BUGMEMFREE, 1, Address);
 
     if (Header->Guard1 != GUARD)
-        MEM_ERROR(("Head Guard 1 overwritten: %08X\n", (unsigned int)&Header->Guard1));
+        MEM_ERROR(("Head Guard 1 overwritten: %08llX\n", (unsigned int)&Header->Guard1));
         // Err_Signal (PWRK$_BUGMEMGUARD1, 4, Address,
         //    Header->Guard1, 4, &Header->Guard1);
 
     if (Header->Guard2 != GUARD)
-        MEM_ERROR(("Head Guard 2 overwritten: %08X\n", (unsigned int)&Header->Guard2));
+        MEM_ERROR(("Head Guard 2 overwritten: %08llX\n", (unsigned int)&Header->Guard2));
         // Err_Signal (PWRK$_BUGMEMGUARD1, 4, Address,
         //    Header->Guard2, 4, &Header->Guard2);
 
     Tail = (MemTail *)((unsigned char *)Address + Header->Size);
 
     if (Tail->Guard != GUARD)
-        MEM_ERROR(("Tail Guard overwritten: %08X\n", (unsigned int)&Tail->Guard));
+        MEM_ERROR(("Tail Guard overwritten: %08llX\n", (unsigned int)&Tail->Guard));
         // Err_Signal (PWRK$_BUGMEMGUARD2, 4, Address,
         //    Tail->Guard, 4, &Tail->Guard);
 
@@ -454,7 +454,7 @@ void  Mem_Free (void *Address, char *file, int line)
     UserSize = Header->Size;
     MemSize = UserSize + MEM_OVERHEAD_SIZE;
 
-//    printf("Free: %s line %d: Addr: %08X Size: %u\n", file, line, Address, UserSize);
+//    printf("Free: %s line %d: Addr: %08llX Size: %u\n", file, line, Address, UserSize);
 
 #if MEM_TRACE
     Free = Header->Trace;
@@ -505,7 +505,7 @@ void *Mem_Realloc (void *Address, size_t Size, char *file, int line)
         Mem_Free(Address, file, line);
     }
 
-//    printf("Realloc: %s line %d: Addr: %08X Size: %u to %u\n", file, line, Address, OldSize, Size);
+//    printf("Realloc: %s line %d: Addr: %08llX Size: %u to %u\n", file, line, Address, OldSize, Size);
 
     return MemPtr;
 }
@@ -554,7 +554,7 @@ void Mem_Summary(char *title, int final)
 **
 */
 
-/* round up to a long word */
+/* round up to a SWINT_T word */
 #define ROUND_LONG(n) (((n) + PointerAlignmentSize - 1) & (~(PointerAlignmentSize - 1)))
 
 /* round up to a page */

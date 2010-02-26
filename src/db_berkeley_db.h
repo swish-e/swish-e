@@ -79,17 +79,17 @@ int     DB_ReadHeaderData_db(int *id, unsigned char **s, int *len, void *db);
 int     DB_EndReadHeader_db(void *db);
 
 int     DB_InitWriteWords_db(void *db);
-long    DB_GetWordID_db(void *db);
-int     DB_WriteWord_db(char *word, long wordID, void *db);
-int     DB_WriteWordHash_db(char *word, long wordID, void *db);
-long    DB_WriteWordData_db(long wordID, unsigned char *worddata, int lendata, void *db);
+SWINT_T    DB_GetWordID_db(void *db);
+int     DB_WriteWord_db(char *word, SWINT_T wordID, void *db);
+int     DB_WriteWordHash_db(char *word, SWINT_T wordID, void *db);
+SWINT_T    DB_WriteWordData_db(SWINT_T wordID, unsigned char *worddata, int lendata, void *db);
 int     DB_EndWriteWords_db(void *db);
 
 int     DB_InitReadWords_db(void *db);
-int     DB_ReadWordHash_db(char *word, long *wordID, void *db);
-int     DB_ReadFirstWordInvertedIndex_db(char *word, char **resultword, long *wordID, void *db);
-int     DB_ReadNextWordInvertedIndex_db(char *word, char **resultword, long *wordID, void *db);
-long    DB_ReadWordData_db(long wordID, unsigned char **worddata, int *lendata, void *db);
+int     DB_ReadWordHash_db(char *word, SWINT_T *wordID, void *db);
+int     DB_ReadFirstWordInvertedIndex_db(char *word, char **resultword, SWINT_T *wordID, void *db);
+int     DB_ReadNextWordInvertedIndex_db(char *word, char **resultword, SWINT_T *wordID, void *db);
+SWINT_T    DB_ReadWordData_db(SWINT_T wordID, unsigned char **worddata, int *lendata, void *db);
 int     DB_EndReadWords_db(void *db);
 
 

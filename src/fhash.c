@@ -57,7 +57,7 @@ $Id$
 **       int FHASH_Search(FHASH *f, unsigned char *key, int key_len, unsigned char *data, int data_len);
 **           Searchs and returns the data for a given key of length key_len
 **           The data is returned in the data array that must be allocated by
-**               the caller. If data buffer is not long enough, data will
+**               the caller. If data buffer is not SWINT_T enough, data will
 **               be truncated
 **           Returns the copied length in data
 **
@@ -222,7 +222,7 @@ int FHASH_Search(FHASH *f, unsigned char *key, int key_len, unsigned char *data,
     {
         if ( 0 != sw_fseek(fp,next,SEEK_SET) )
             /* Will key be null terminated? */
-            progerrno( "Failed to seek to offset %ld looking for key '%s' :", next, key );
+            progerrno( "Failed to seek to offset %lld looking for key '%s' :", next, key );
 
         retval = sw_fread((unsigned char *)&tmp,1,sizeof(tmp),fp);
         if (feof(fp))

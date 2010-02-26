@@ -10,6 +10,12 @@ This document contains list of bug fixes and feature additions to Swish-e.
 
 =over 4
 
+=item index format changed to use all 64-bit sizes
+
+A global change was made to normalize index sizes for 64 bits.
+
+B<This requires reindexing if you are upgrading from a previous version.>
+
 =item fixed integer overflow issues
 
 Issues included:

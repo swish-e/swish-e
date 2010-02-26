@@ -254,13 +254,13 @@ void    indexpath(SWISH * sw, char *path)
 
 char   *read_stream(SWISH *sw, FileProp *fprop, int is_text)
 {
-    long    c,
+    SWINT_T    c,
             offset;
-    long    bufferlen;
+    SWINT_T    bufferlen;
     unsigned char *buffer, *tmp = NULL;
     size_t  bytes_read;
-    long    filelen     = fprop->fsize;   /* Number of bytes we think we need to read */
-    long    max_size    = sw->truncateDocSize; 
+    SWINT_T    filelen     = fprop->fsize;   /* Number of bytes we think we need to read */
+    SWINT_T    max_size    = sw->truncateDocSize; 
 
 
     if ( filelen && !fprop->hasfilter )
@@ -297,8 +297,8 @@ char   *read_stream(SWISH *sw, FileProp *fprop, int is_text)
         }
 
 
-        /* Reset length of buffer -- fsize is used by the parsers to say how long the buffer is */
-        fprop->fsize = (long)bytes_read;  /* should be the same as strlen if in text mode */
+        /* Reset length of buffer -- fsize is used by the parsers to say how SWINT_T the buffer is */
+        fprop->fsize = (SWINT_T)bytes_read;  /* should be the same as strlen if in text mode */
 
         return (char *) buffer;
 
@@ -488,7 +488,7 @@ FileProp *file_properties(char *real_path, char *work_file, SWISH * sw)
 
     if (!stat(fprop->work_path, &stbuf))
     {
-        fprop->fsize = (long) stbuf.st_size;
+        fprop->fsize = (SWINT_T) stbuf.st_size;
         fprop->source_size = fprop->fsize;  /* to report the size of the original file */
         fprop->mtime = stbuf.st_mtime;
     }
@@ -501,8 +501,8 @@ FileProp *file_properties(char *real_path, char *work_file, SWISH * sw)
 
 
 #ifdef DEBUG
-    fprintf(stderr, "file_properties: path=%s, (workpath=%s), fsize=%ld, last_mod=%ld Doctype: %d Filter: %p\n",
-            fprop->real_path, fprop->work_path, (long) fprop->fsize, (long) fprop->mtime, fprop->doctype, fprop->filterprog);
+    fprintf(stderr, "file_properties: path=%s, (workpath=%s), fsize=%lld, last_mod=%lld Doctype: %d Filter: %p\n",
+            fprop->real_path, fprop->work_path, (SWINT_T) fprop->fsize, (SWINT_T) fprop->mtime, fprop->doctype, fprop->filterprog);
 #endif
 
     return fprop;

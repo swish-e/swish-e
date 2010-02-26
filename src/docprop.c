@@ -187,17 +187,17 @@ static propEntry
 );
 
 /*******************************************************************
-*   Convert a propValue to a unsigned long
+*   Convert a propValue to a SWUINT_T
 *
 ********************************************************************/
 union _conv_ {
-      char            c[sizeof(unsigned long)];
-      unsigned long   l;
+      char            c[sizeof(SWUINT_T)];
+      SWUINT_T   l;
 };
-unsigned long convPropValue2ULong(unsigned char *propValue)
+SWUINT_T convPropValue2ULong(unsigned char *propValue)
 {
       union _conv_ u;
-      memcpy(u.c, propValue, sizeof(unsigned long));
+      memcpy(u.c, propValue, sizeof(SWUINT_T));
       return u.l;
 }
 
@@ -281,7 +281,7 @@ void freefileinfo(FileRec *fi)
 char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
 {
     char *s;
-    unsigned long i;
+    SWUINT_T i;
 
     if ( !meta_entry )
         progerr("DecodeDocProperty passed NULL meta_entry");
@@ -298,7 +298,7 @@ char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
     if ( is_meta_date(meta_entry) )
     {
         s=emalloc(30);
-        /* i = *(unsigned long *) prop->propValue; */  /* read binary */ 
+        /* i = *(SWUINT_T *) prop->propValue; */  /* read binary */ 
         i = convPropValue2ULong(prop->propValue); /* read binary */
         i = UNPACKLONG(i);     /* Convert the portable number */
         strftime(s,30, DATE_FORMAT_STRING, (struct tm *)localtime((time_t *)&i));
@@ -310,10 +310,10 @@ char *DecodeDocProperty( struct metaEntry *meta_entry, propEntry *prop )
     if ( is_meta_number(meta_entry) )
     {
         s=emalloc(14);
-        /* i=*(unsigned long *)prop->propValue; */ /* read binary */
+        /* i=*(SWUINT_T *)prop->propValue; */ /* read binary */
         i = convPropValue2ULong(prop->propValue); /* read binary */
         i = UNPACKLONG(i);     /* Convert the portable number */
-        sprintf(s,"%lu",i);
+        sprintf(s,"%llu",i);
         return s;
     }
 
@@ -347,7 +347,7 @@ propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int me
 {
     IndexFILE *indexf = result->db_results->indexf;
     int     error_flag;
-    unsigned long num;
+    SWUINT_T num;
 
 
     /* Grab the meta structure for this ID, unless one was passed in */
@@ -374,14 +374,14 @@ propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int me
             }
 
             double scale_factor = result->db_results->results->rank_scale_factor;
-            unsigned long rank_num;
+            SWUINT_T rank_num;
 
             /* scale_factor is zero while sorting, so use the raw rank */
             /* otherwise, scale for display */
 
             if ( scale_factor )
             {
-                rank_num = (unsigned long) (result->rank * scale_factor);
+                rank_num = (SWUINT_T) (result->rank * scale_factor);
 
                 if ( rank_num >= 999)
                     rank_num = 1000;
@@ -397,13 +397,13 @@ propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int me
 
         if ( is_meta_entry( *meta_entry, AUTOPROPERTY_REC_COUNT ) )
         {
-            num = PACKLONG( (unsigned long)result->db_results->results->cur_rec_number );
+            num = PACKLONG( (SWUINT_T)result->db_results->results->cur_rec_number );
             return CreateProperty( *meta_entry, (unsigned char *)&num, sizeof( num ), 1, &error_flag );
         }
 
         if ( is_meta_entry( *meta_entry, AUTOPROPERTY_FILENUM ) )
         {
-            num = PACKLONG( (unsigned long)result->filenum );
+            num = PACKLONG( (SWUINT_T)result->filenum );
             return CreateProperty( *meta_entry, (unsigned char *)&num, sizeof( num ), 1, &error_flag );
         }
 
@@ -540,7 +540,7 @@ char *SwishResultPropertyStr(RESULT *result, char *pname)
 
 
 /*******************************************************************
-*   SwishResultPropertyULong - Returns an unsigned long for the property *name* supplied
+*   SwishResultPropertyULong - Returns an SWUINT_T for the property *name* supplied
 *
 *   ** Library interface call **
 *
@@ -549,16 +549,16 @@ char *SwishResultPropertyStr(RESULT *result, char *pname)
 *       char * property name
 *
 *   Returns:
-*       unsigned long
+*       SWUINT_T
 *       ULONG_MAX on error
 *
 *
 ********************************************************************/
 
-unsigned long SwishResultPropertyULong(RESULT *result, char *pname)
+SWUINT_T SwishResultPropertyULong(RESULT *result, char *pname)
 {
     PropValue           *pv;
-    unsigned long       value = ULONG_MAX;
+    SWUINT_T       value = ULONG_MAX;
 
 
     /* Fetch the property */
@@ -665,8 +665,8 @@ PropValue *getResultPropValue (RESULT *r, char *pname, int ID )
 
     if ( is_meta_number(meta_entry) )
     {
-        unsigned long i;
-        /* i = *(unsigned long *) prop->propValue;*/  /* read binary */
+        SWUINT_T i;
+        /* i = *(SWUINT_T *) prop->propValue;*/  /* read binary */
         i = convPropValue2ULong(prop->propValue); /* read binary */
         i = UNPACKLONG(i);     /* Convert the portable number */
         pv->datatype = PROP_ULONG;
@@ -678,8 +678,8 @@ PropValue *getResultPropValue (RESULT *r, char *pname, int ID )
 
     if ( is_meta_date(meta_entry) )
     {
-        unsigned long i;
-        /* i = *(unsigned long *) prop->propValue; */ /* read binary */
+        SWUINT_T i;
+        /* i = *(SWUINT_T *) prop->propValue; */ /* read binary */
         i = convPropValue2ULong(prop->propValue); /* read binary */
         i = UNPACKLONG(i);     /* Convert the portable number */
         pv->datatype = PROP_DATE;
@@ -714,7 +714,7 @@ void    freeResultPropValue(PropValue *pv)
 /*******************************************************************
 *   Converts a string into a string for saving as a property
 *   Which means will either return a duplicated string,
-*   or a packed unsigned long.
+*   or a packed SWUINT_T.
 *
 *   Call with:
 *       *metaEntry
@@ -738,7 +738,7 @@ void    freeResultPropValue(PropValue *pv)
 ********************************************************************/
 static int EncodeProperty( struct metaEntry *meta_entry, char **encodedStr, char *propstring, int *error_flag )
 {
-    unsigned long int num;
+    SWUINT_T num;
     char     *newstr;
     char     *badchar;
     char     *tmpnum;
@@ -901,7 +901,7 @@ propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue
 
     /* sizeof(propEntry) already contains space for part of the propLen, so throw a null in */
     /* This *hack* should all compare of the properites using strcoll, which expects a null */
-    /* most places expect propValue to be exactly propLen long.  The null is not written to disk */
+    /* most places expect propValue to be exactly propLen SWINT_T.  The null is not written to disk */
     docProp->propValue[propLen] = '\0';
 
 
@@ -1234,9 +1234,9 @@ static propEntry *duplicate_in_mem_property( docProperties *props, int metaID, i
 *
 *********************************************************************/
 
-unsigned char *allocatePropIOBuffer(SWISH *sw, unsigned long buf_needed )
+unsigned char *allocatePropIOBuffer(SWISH *sw, SWUINT_T buf_needed )
 {
-    unsigned long total_size;
+    SWUINT_T total_size;
 
     if ( !buf_needed )
         progerr("Asked for too small of a buffer size!");

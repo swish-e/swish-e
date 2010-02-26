@@ -89,7 +89,7 @@ $Id$
 #define MAX_SORT_STRING_LEN 100
 
 /* MAX_SORT_STRING_LEN defines the max string length to use
-*  for sorting properties.  Should be long enough to sort ALL
+*  for sorting properties.  Should be SWINT_T enough to sort ALL
 *  file paths or URLs.  Useful if using StoreDescription to store
 *  a large amount of text.
 */

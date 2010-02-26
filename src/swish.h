@@ -75,6 +75,7 @@
 #ifndef SWISH_H
 #define SWISH_H 1
 
+#include "swishtypes.h"
 
 
 #include <stdio.h>
@@ -157,9 +158,9 @@ binary and the index.
 checked in db_native.c (DB_CheckHeader routine) */
 
 #ifdef USE_BTREE
-#define SWISH_MAGIC 05052004L
+#define SWISH_MAGIC 20100225L
 #else
-#define SWISH_MAGIC 11282006L
+#define SWISH_MAGIC 20100225L
 #endif
 
 #define INDEXFILE "index.swish-e"
@@ -424,9 +425,9 @@ typedef struct
     char   *orig_path;          /* original path provided to swish */
     char   *work_path;          /* path to file to index (may be tmpfile or real_path) */
     char   *real_filename;      /* basename() of real_path  */
-    long    source_size;        /* size reported by fstat() before filtering, if read from a file */
-    long    fsize;              /* size of orig file, but once read into buffer is size of buffer */
-    long    bytes_read;         /* Number of bytes read from the stream - important for sw->truncateDocSize and -S prog */
+    SWINT_T    source_size;        /* size reported by fstat() before filtering, if read from a file */
+    SWINT_T    fsize;              /* size of orig file, but once read into buffer is size of buffer */
+    SWINT_T    bytes_read;         /* Number of bytes read from the stream - important for sw->truncateDocSize and -S prog */
     int     done;               /* flag to read no more from this stream (truncate) */
     int     external_program;   /* Flag to only read fsize bytes from stream */
     time_t  mtime;              /* Date of last mod of or. file */
@@ -616,8 +617,8 @@ typedef struct IndexFILE
 
     char   *line;               /* Name of the index file */
 
-    unsigned long total_bytes;  /* Just to show total size when indexing */
-    unsigned long total_word_positions_cur_run;  /* count *while* indexing */
+    SWUINT_T total_bytes;  /* Just to show total size when indexing */
+    SWUINT_T total_word_positions_cur_run;  /* count *while* indexing */
 
 
 
@@ -798,7 +799,7 @@ typedef union
     int     v_int;              /* Integer */
     time_t  v_date;             /* Date    */
     double  v_float;            /* Double Float */
-    unsigned long v_ulong;      /* Unsigned long */
+    SWUINT_T v_ulong;      /* Unsigned SWINT_T */
 }
 u_PropValue1;
 
@@ -842,7 +843,7 @@ typedef struct SWISH
 
 
     unsigned char            *Prop_IO_Buf;      /* For compressing and uncompressing properties (static-like buffer) */
-    unsigned long             PropIO_allocated;// total size of the structure
+    SWUINT_T             PropIO_allocated;// total size of the structure
     int                       PropCompressionLevel;
     unsigned char             PropDelimiter;    /* char to use when appending property values (default is space ' ') */
 
@@ -883,7 +884,7 @@ typedef struct SWISH
     /* Limit indexing by a file date */
     time_t  mtime_limit;
 
-    long    truncateDocSize;    /* size of doc, at which it will be truncated (2001-03-16 rasc) */
+    SWINT_T    truncateDocSize;    /* size of doc, at which it will be truncated (2001-03-16 rasc) */
 
 
     /* structure for handling replace config data while searching */
@@ -1005,12 +1006,12 @@ typedef struct  {
  * be implemented to an Indexing Data Source.
  * Right now there are two Indexing Data Source types:
  *  file-system based and an HTTP web crawler.
- * Any Data Source can be created as long as all of the
+ * Any Data Source can be created as SWINT_T as all of the
  * functions below are properly initialized.
  */
 struct _indexing_data_source_def
 {
-    const char *IndexingDataSourceName; /* long name for data source */
+    const char *IndexingDataSourceName; /* SWINT_T name for data source */
     const char *IndexingDataSourceId; /* short name for data source */
     void    (*indexpath_fn) (SWISH * sw, char *path); /* routine to index a "path" */
     int     (*parseconfline_fn) (SWISH * sw, StringList *l); /* parse config file lines */

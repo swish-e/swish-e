@@ -91,7 +91,7 @@ $Id$
 ** 04/00 - Jose Ruiz
 ** Function getfileinfo rewrite
 **     - Now use a hash approach for faster searching
-**     - Solves the long timed searches (a* or b* or c*)
+**     - Solves the SWINT_T timed searches (a* or b* or c*)
 **
 ** 04/00 - Jose Ruiz
 ** Ordering of result rewrite
@@ -2036,7 +2036,7 @@ static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, 
 
             if (maxneed > 0)
             {
-              fprintf(ofd,"  maxneed: %ld\n", maxneed);
+              fprintf(ofd,"  maxneed: %lld\n", maxneed);
               maxneed = 0; // reset for next to come
             }
 
@@ -2046,27 +2046,27 @@ static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, 
 
 #ifdef DUMP_NEAR_VALUES
             // make sure to skip the found entry if not within given proximity
-            fprintf(ofd, "file %ld (andLevel %ld)\n", r1->filenum, andLevel);
+            fprintf(ofd, "file %lld (andLevel %lld)\n", r1->filenum, andLevel);
 
             // Detects if there was already a "nearx" executed before, which
             // means there must be one or more "0" present in positions
             if (r1->bArea > 0)
-              fprintf(ofd,"  bArea1: %ld\n", r1->bArea);
-            // This can never happen, as long as no parenthesis/brackets
+              fprintf(ofd,"  bArea1: %lld\n", r1->bArea);
+            // This can never happen, as SWINT_T as no parenthesis/brackets
             // are supported; the complete query is parsed left to right
             // TODO: modify if priority brackets are going to be supported
             if (r2->bArea > 0)
-              fprintf(ofd,"  bArea2: %ld\n", r2->bArea);
+              fprintf(ofd,"  bArea2: %lld\n", r2->bArea);
 
-            fprintf(ofd,"  maxpos: %ld\n", maxpos);
+            fprintf(ofd,"  maxpos: %lld\n", maxpos);
             fprintf(ofd,"  %s: ", "term1");
             for (j = 0; j < r1->frequency; j++)
-              fprintf(ofd, "  %ld:", GET_POSITION(r1->posdata[j]));
+              fprintf(ofd, "  %lld:", GET_POSITION(r1->posdata[j]));
             fprintf(ofd,"\n");
 
             fprintf(ofd,"  %s: ", "term2");
             for (j = 0; j < r2->frequency; j++)
-              fprintf(ofd, "  %ld:", GET_POSITION(r2->posdata[j]));
+              fprintf(ofd, "  %lld:", GET_POSITION(r2->posdata[j]));
             fprintf(ofd,"\n");
 #endif
 
@@ -2145,7 +2145,7 @@ static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, 
 
 #ifdef DUMP_NEAR_VALUES
                   maxneed++;
-                  fprintf(ofd, "  hit %ld: (%ld - %ld): %ld\n", i, pos1, pos2, abs(pos1 - pos2));
+                  fprintf(ofd, "  hit %lld: (%lld - %lld): %lld\n", i, pos1, pos2, abs(pos1 - pos2));
 #endif
                   cnt1++;
                   cnt2++;
@@ -2231,7 +2231,7 @@ static RESULT_LIST *nearresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, 
 
 #ifdef DUMP_NEAR_VALUES
     if (maxneed > 0)
-      fprintf(ofd,"  maxneed: %ld\n", maxneed);
+      fprintf(ofd,"  maxneed: %lld\n", maxneed);
 
     fclose(ofd);
 #endif
@@ -2322,7 +2322,7 @@ static RESULT_LIST *andresultlists(DB_RESULTS *db_results, RESULT_LIST * l_r1, R
 
 /* Takes two lists of results from searches and ORs them together.
 2001-11 jmruiz Completely rewritten. Older one was really
-               slow when the lists are very long
+               slow when the lists are very SWINT_T
                On input, both result lists r1 and r2 must be sorted by filenum
                On output, the new result list remains sorted
 

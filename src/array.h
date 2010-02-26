@@ -57,5 +57,5 @@ typedef struct ARRAY
 ARRAY *ARRAY_Create(FILE *fp);
 ARRAY *ARRAY_Open(FILE *fp, sw_off_t root_page);
 sw_off_t ARRAY_Close(ARRAY *bt);
-int ARRAY_Put(ARRAY *b, int index, unsigned long value);
-unsigned long ARRAY_Get(ARRAY *b, int index);
+int ARRAY_Put(ARRAY *b, int index, SWUINT_T value);
+SWUINT_T ARRAY_Get(ARRAY *b, int index);

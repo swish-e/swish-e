@@ -2,6 +2,7 @@
 #include <limits.h>
 
 #include "api.h"
+#include "../swishtypes.h"
 
 #define MAXINT INT_MAX
 #define MININT INT_MIN

@@ -51,7 +51,7 @@ void freefileinfo(FileRec *);
 
 unsigned char *storeDocProperties (docProperties *, int *);
 
-unsigned char *allocatePropIOBuffer(SWISH *sw, unsigned long buf_needed );
+unsigned char *allocatePropIOBuffer(SWISH *sw, SWUINT_T buf_needed );
 
 propEntry *getDocProperty( RESULT *result, struct metaEntry **meta_entry, int metaID, int max_size );
 propEntry *CreateProperty(struct metaEntry *meta_entry, unsigned char *propValue, int propLen, int preEncoded, int *error_flag );

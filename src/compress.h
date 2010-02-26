@@ -39,11 +39,11 @@ int uncompress1(FILE *fp, int (*f_getc)(FILE *fp));
 int uncompress2(unsigned char **buffer);
 
 
-unsigned long PACKLONG(unsigned long num);
-void PACKLONG2(unsigned long num, unsigned char *buffer);
+SWUINT_T PACKLONG(SWUINT_T num);
+void PACKLONG2(SWUINT_T num, unsigned char *buffer);
 
-unsigned long UNPACKLONG(unsigned long num);
-unsigned long UNPACKLONG2(unsigned char *buffer);
+SWUINT_T UNPACKLONG(SWUINT_T num);
+SWUINT_T UNPACKLONG2(unsigned char *buffer);
 
 
 sw_off_t PACKFILEOFFSET(sw_off_t num);

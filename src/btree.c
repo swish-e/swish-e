@@ -906,7 +906,7 @@ int key_len_k;
     *found_len = key_len_k = uncompress2(&key_k);
     *found = emalloc(key_len_k);
     memcpy(*found,key_k,key_len_k);
-    data_pointer = UNPACKFILEOFFSET(*(unsigned long *) (key_k + key_len_k));
+    data_pointer = UNPACKFILEOFFSET(*(SWUINT_T *) (key_k + key_len_k));
 
     BTREE_FreePage(b,pg);
 

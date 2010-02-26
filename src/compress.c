@@ -214,12 +214,12 @@ int     uncompress2(unsigned char **buffer)
     return num;
 }
 
-/* Routines to make long integers portable */
-unsigned long PACKLONG(unsigned long num)
+/* Routines to make SWINT_T integers portable */
+SWUINT_T PACKLONG(SWUINT_T num)
 {
-    unsigned long tmp = 0L;
+    SWUINT_T tmp = 0L;
     unsigned char *s;
-    int sz_long = sizeof(unsigned long);  
+    int sz_long = sizeof(SWUINT_T);  
 
     if (num && LITTLE_ENDIAN)
     {
@@ -232,10 +232,10 @@ unsigned long PACKLONG(unsigned long num)
     return num;
 }
 
-/* Same routine - Packs long in buffer */
-void    PACKLONG2(unsigned long num, unsigned char *s)
+/* Same routine - Packs SWINT_T in buffer */
+void    PACKLONG2(SWUINT_T num, unsigned char *s)
 {
-    int sz_long = sizeof(unsigned long);
+    int sz_long = sizeof(SWUINT_T);
 
     if(LITTLE_ENDIAN)
     {
@@ -249,10 +249,10 @@ void    PACKLONG2(unsigned long num, unsigned char *s)
 }
 
 
-unsigned long UNPACKLONG(unsigned long num)
+SWUINT_T UNPACKLONG(SWUINT_T num)
 {
-    int sz_long = sizeof(unsigned long);
-	unsigned long tmp = 0;
+    int sz_long = sizeof(SWUINT_T);
+	SWUINT_T tmp = 0;
     unsigned char *s = (unsigned char *) &num;
 
     if(LITTLE_ENDIAN)
@@ -264,11 +264,11 @@ unsigned long UNPACKLONG(unsigned long num)
     return num;
 }
 
-/* Same macro - UnPacks long from buffer */
-unsigned long UNPACKLONG2(unsigned char *s)
+/* Same macro - UnPacks SWINT_T from buffer */
+SWUINT_T UNPACKLONG2(unsigned char *s)
 {
-    int sz_long = sizeof(unsigned long);
-	unsigned long tmp = 0;
+    int sz_long = sizeof(SWUINT_T);
+	SWUINT_T tmp = 0;
 
     if(LITTLE_ENDIAN)
     {
@@ -384,7 +384,7 @@ explain better. This was useful for xml files with fields that contains
 just one value. For example:
 <code>00001</code>
 <date>20001231</date>
-But, now, I am not sure if this is useful because long time ago I
+But, now, I am not sure if this is useful because SWINT_T time ago I
 changed the position counter to not be reseted after a each field
 change.
 I need to check this.
@@ -536,7 +536,7 @@ static unsigned char *compress_location(SWISH * sw, LOCATION * l)
     unsigned char *flag;
     struct MOD_Index *idx = sw->Index;
 
-    /* check if the work buffer is long enough */
+    /* check if the work buffer is SWINT_T enough */
     /* just to avoid bufferoverruns */
     /* In the worst case and integer will need MAXINTCOMPSIZE bytes */
     /* but fortunatelly this is very uncommon */
@@ -612,12 +612,12 @@ void uncompress_location_values(unsigned char **buf,unsigned char *flag, int *fi
     *buf = p;
 }
 
-unsigned long four_bit_count = 0;
-unsigned long four_bit_bytes = 0;
-unsigned long not_four = 0;
-unsigned long not_four_bytes = 0;
-unsigned long four_bit_called = 0;
-unsigned long not_four_called;
+SWUINT_T four_bit_count = 0;
+SWUINT_T four_bit_bytes = 0;
+SWUINT_T not_four = 0;
+SWUINT_T not_four_bytes = 0;
+SWUINT_T four_bit_called = 0;
+SWUINT_T not_four_called;
 
 
 void uncompress_location_positions(unsigned char **buf, unsigned char flag, int frequency, unsigned int *posdata)
@@ -944,8 +944,8 @@ void uncompress_worddata(unsigned char **buf, int *buf_size, int saved_bytes)
 ** Here are two reasons for using compressed numbers in worddata
 ** instead of longs:
 **   - Compressed numbers are more portable: longs are usually 4 bytes
-**     long in a 32 bit machine but in a 64 bit alpha they are 8 bytes
-**     long (this a waste of space).
+**     SWINT_T in a 32 bit machine but in a 64 bit alpha they are 8 bytes
+**     SWINT_T (this a waste of space).
 **   - The obvious one is that compressed numbers use less disk space
 **
 ** BTW, Any change in worddata will also affect to dump.c, merge.c and search.c
@@ -956,7 +956,7 @@ void uncompress_worddata(unsigned char **buf, int *buf_size, int saved_bytes)
 **
 **  Entering this routine nextposmetaID is the offset to next metaid
 **  in bytes starting to count them from the begining of worddata.
-**  It is a packed long number (sizeof(long) bytes).
+**  It is a packed SWINT_T number (sizeof(SWINT_T) bytes).
 **
 **  Exiting this routine, nextposmetaID has changed to be the size of
 **  the data block and is stored as a compressed number.
@@ -969,7 +969,7 @@ void    remove_worddata_longs(unsigned char *worddata,int *sz_worddata)
 {
     unsigned char *src,*dst;   //source and dest pointers for worddata
     unsigned int metaID, tfrequency, data_len;
-    unsigned long nextposmetaID;
+    SWUINT_T nextposmetaID;
 
     src = worddata;
 
@@ -982,7 +982,7 @@ void    remove_worddata_longs(unsigned char *worddata,int *sz_worddata)
     {
         /* Get offset to next one */
         nextposmetaID = UNPACKLONG2(src);
-        src += sizeof(long);
+        src += sizeof(SWINT_T);
 
         /* Compute data length for this metaID */
         data_len = (int)nextposmetaID - (src - worddata);

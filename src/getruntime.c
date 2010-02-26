@@ -112,7 +112,7 @@ get_cpu_secs (void)
 
 #else /* ! HAVE_TIMES */
   /* Fall back on clock and hope it's correctly implemented. */
-  /* clock() returns clock_t, which seems to be a long.  On Linux CLOCKS_PER_SEC is 10^6 */
+  /* clock() returns clock_t, which seems to be a SWINT_T.  On Linux CLOCKS_PER_SEC is 10^6 */
   /* so expect an overflow at about 35 minutes. */
 
   clock_t t = clock();

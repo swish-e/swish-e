@@ -32,6 +32,7 @@ $Id$
 #ifndef STEMMER_H
 #define STEMMER_H 1
 
+#include "swishtypes.h"
 #include "snowball/api.h"  /* For snoball's SN_env */
 
 /* 

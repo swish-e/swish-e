@@ -616,7 +616,7 @@ static void start_hndl(void *data, const char *el, const char **attr)   // no rw
 
     if(strlen(el) >= MAXSTRLEN)  // easy way out
     {
-        warning( (void *)data, "Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, el );
+        warning( (void *)data, "Warning: Tag found in %s is too SWINT_T: '%s'\n", parse_data->fprop->real_path, el );
         return;
     }
 
@@ -716,7 +716,7 @@ static void end_hndl(void *data, const char *el)    // no rw64
 
     if(strlen(el) > MAXSTRLEN)
     {
-        warning( (void *)data, "Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, el );
+        warning( (void *)data, "Warning: Tag found in %s is too SWINT_T: '%s'\n", parse_data->fprop->real_path, el );
         return;
     }
 
@@ -942,8 +942,8 @@ static void Convert_to_latin1( PARSE_DATA *parse_data, char *txt, int txtlen )
             }
 
             /* Calculate the remaining length of the input string */
-            /* inlen = (unsigned long)end_buf - (unsigned long)txt + 1; */
-            inlen = ((unsigned long)(end_buf - txt)) + 1;
+            /* inlen = (SWUINT_T)end_buf - (SWUINT_T)txt + 1; */
+            inlen = ((SWUINT_T)(end_buf - txt)) + 1;
 
             if ( inlen <= 0 )
                 return;
@@ -1333,7 +1333,7 @@ static int  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, const
 
     if(strlen(tag) >= MAXSTRLEN)  // easy way out
     {
-        warning( (void *)parse_data, "Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, tag );
+        warning( (void *)parse_data, "Warning: Tag found in %s is too SWINT_T: '%s'\n", parse_data->fprop->real_path, tag );
         return 0;
     }
 
@@ -1350,10 +1350,10 @@ static int  start_XML_ClassAttributes(  PARSE_DATA *parse_data, char *tag, const
             continue;
 
 
-        /* Is the tag going to be too long? */
+        /* Is the tag going to be too SWINT_T? */
         if ( strlen( (char *)attr[i+1] ) + taglen + 2 > 256 )
         {
-            warning( (void *)parse_data, "ClassAttribute on tag '%s' too long\n", tag );
+            warning( (void *)parse_data, "ClassAttribute on tag '%s' too SWINT_T\n", tag );
             continue;
         }
 
@@ -1426,7 +1426,7 @@ static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char 
 
     if(strlen(tag) >= MAXSTRLEN)  // easy way out
     {
-        warning( (void *)parse_data, "Warning: Tag found in %s is too long: '%s'\n", parse_data->fprop->real_path, tag );
+        warning( (void *)parse_data, "Warning: Tag found in %s is too SWINT_T: '%s'\n", parse_data->fprop->real_path, tag );
         return;
     }
 
@@ -1448,7 +1448,7 @@ static void index_XML_attributes( PARSE_DATA *parse_data, char *tag, const char 
 
         if ( strlen( (char *)attr[i] ) + taglen + 2 > 256 )
         {
-            warning(" (void *)parse_data, Attribute '%s' on tag '%s' too long to build metaname\n", (char *)attr[i], tag );
+            warning(" (void *)parse_data, Attribute '%s' on tag '%s' too SWINT_T to build metaname\n", (char *)attr[i], tag );
             continue;
         }
 
@@ -1570,7 +1570,7 @@ static void append_buffer( CHAR_BUFFER *buf, const char *txt, int txtlen )
 *   Otherwise, every thing up to the last *partial* word is flushed.
 *   It's partial if there is not white-space at the very end of the buffer.
 *
-*   This prevents some<b>long</b>word from being flushed into part words.
+*   This prevents some<b>SWINT_T</b>word from being flushed into part words.
 *
 *********************************************************************/
 static void flush_buffer( PARSE_DATA  *parse_data, int clear )

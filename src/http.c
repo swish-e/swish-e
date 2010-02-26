@@ -635,7 +635,7 @@ void    http_indexpath(SWISH * sw, char *url)
 
 
     file_prefix = emalloc( strlen(idx->tmpdir) + MAXPIDLEN + strlen("/swishspider@.contents+fill") );
-    sprintf(file_prefix, "%s/swishspider@%ld", idx->tmpdir, (long) lgetpid());
+    sprintf(file_prefix, "%s/swishspider@%lld", idx->tmpdir, (SWINT_T) lgetpid());
     file_suffix = file_prefix + strlen( file_prefix );
     
 

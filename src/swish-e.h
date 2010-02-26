@@ -1,7 +1,4 @@
 /*
-
-$Id$
-
     This file is part of Swish-e.
 
     Swish-e is free software; you can redistribute it and/or modify
@@ -25,18 +22,41 @@ $Id$
 ** Mon May  9 18:19:34 CDT 2005
 ** added GPL
 
-
+** This file contains public API signatures for libswish-e.
+** Some data is duplicated from other internal .h files
+** so make sure if you change typedefs, etc., to keep this file
+** in sync. (And yes, we know this is not an ideal setup.)
 
 */
 
 #ifndef SEARCHSWISH_H
 #define SEARCHSWISH_H 1
 
+#include <inttypes.h>
+#include <sys/types.h>
+
 #include "time.h"  /* for time_t, which isn't really needed */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/***********************************************************
+ * This section also in swishtypes.h
+ */
+ 
+/* presence of 'no rw64' at start of comment tells rewriter 
+ * not to touch this line
+ */
+
+typedef int64_t          SWINT_T;  // no rw64 
+typedef uint64_t         SWUINT_T; // no rw64 
+
+#define SWINT_FORMAT    PRIi64
+#define SWUINT_FORMAT   PRIu64
+#define SWXINT_FORMAT   PRIx64   /* lowercase 64bit hex */
+
+/* end swishtypes.h section ****************/
 
 typedef void * SW_HANDLE;
 typedef void * SW_SEARCH;
@@ -61,7 +81,7 @@ typedef union
 {
     const char           *string;
     const char          **string_list;
-          unsigned long   number;
+          SWUINT_T   number;
           int             boolean;
 } SWISH_HEADER_VALUE;
 
@@ -152,7 +172,7 @@ int SwishSeekResult( SW_RESULTS, int position );
 SW_RESULT SwishNextResult( SW_RESULTS );
 
 char *SwishResultPropertyStr(SW_RESULT, char *propertyname);
-unsigned long SwishResultPropertyULong(SW_RESULT, char *propertyname);
+SWUINT_T SwishResultPropertyULong(SW_RESULT, char *propertyname);
 SW_HANDLE SW_ResultToSW_HANDLE( SW_RESULT );
 SW_HANDLE SW_ResultsToSW_HANDLE( SW_RESULTS );
 
@@ -211,7 +231,7 @@ typedef union
     int     v_int;              /* Integer */
     time_t  v_date;             /* Date    */
     double  v_float;            /* Double Float */
-    unsigned long v_ulong;      /* Unsigned long */
+    SWUINT_T v_ulong;      /* Unsigned SWINT_T */
 }
 u_PropValue1;
  

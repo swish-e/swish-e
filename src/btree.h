@@ -58,7 +58,7 @@ typedef struct BTREE
     sw_off_t tree[1024];
           /* Values for sequential reading */
     sw_off_t current_page;
-    unsigned long current_position;
+    SWUINT_T current_position;
 
     FILE *fp;
 } BTREE;

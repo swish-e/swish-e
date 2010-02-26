@@ -440,7 +440,7 @@ static int checkbuzzword(INDEXDATAHEADER *header, char *word )
     return is_word_in_hash_table( header->hashbuzzwordlist, word ) ? 1 : 0;
 }
 
-/* I hope this doesn't live too long */
+/* I hope this doesn't live too SWINT_T */
 
 static void fudge_wildcard( struct swline **original, struct swline *entry )
 {
