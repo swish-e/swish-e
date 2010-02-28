@@ -995,7 +995,21 @@ void    remove_worddata_longs(unsigned char *worddata,int *sz_worddata)
             progerr("Internal error in remove_worddata_longs");
 
         /* dst may be smaller than src. So move the data */
-        memcpy(dst,src,data_len);
+        /* memcpy(dst,src,data_len); */
+        memmove(dst,src,data_len);  /* use memmove(), not memcpy(). See comment below */
+        /***********************
+         * use memmove() in place of memcpy() to avoid valgrind warning 
+         * (from Swishetest's 025-valgrind.t):
+         * ==3493== Source and destination overlap in memcpy(0x40DD883, 0x40DD88A, 9)
+         * ==3493==    at 0x4006CA6: memcpy (mc_replace_strmem.c:116)
+         * ==3493==    by 0x401B984: remove_worddata_longs (compress.c:998)
+         * ==3493==    by 0x8061800: write_worddata (db_write.c:349)
+         * ==3493==    by 0x80563C2: write_index (index.c:2242)
+         * ==3493==    by 0x804BC42: write_index_file (swish.c:1709)
+         * ==3493==    by 0x804CD51: main (swish.c:1438)
+         * ==3493==    by 0x625E9B: (below main) (in /lib/libc-2.5.so)
+         * ==3493==    by 0x804B5E0: (within /usr/local/bin/swish-e)
+         *******************/
 
         /* Increase pointers */
         src += data_len;
