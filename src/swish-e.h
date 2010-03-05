@@ -37,10 +37,10 @@ $Id$
 extern "C" {
 #endif
 
-#include <sys/types.h>
+#include <sys/types.h> 
+#include <inttypes.h>   /* quotes, not <>, because it's not a sys header */
 
 #include "time.h"  /* for time_t, which isn't really needed */
-#include "inttypes.h"   /* quotes, not <>, because it's not a sys header */
 
 /***********************************************************
 * This section also in swishtypes.h
