@@ -158,9 +158,9 @@ binary and the index.
 checked in db_native.c (DB_CheckHeader routine) */
 
 #ifdef USE_BTREE
-#define SWISH_MAGIC 05052004L
+#define SWISH_MAGIC 20100225L
 #else
-#define SWISH_MAGIC 11282006L
+#define SWISH_MAGIC 20100225L   
 #endif
 
 #define INDEXFILE "index.swish-e"
