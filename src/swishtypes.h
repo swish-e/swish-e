@@ -35,8 +35,8 @@ $Id: swish-e.h 2307 2009-04-09 16:14:41Z karpet $
 extern "C" {
 #endif
 
-#include <inttypes.h>
 #include <sys/types.h>
+#include "inttypes.h"   /* quotes, not <>, because this is not a system header */
 
 // presence of 'no rw64' at start of comment tells rewriter not to touch this line
 //
