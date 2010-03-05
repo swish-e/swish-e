@@ -14,7 +14,7 @@ AM_CFLAGS = -Wall @LARGEFILES_MACROS@
 
 
 bin_PROGRAMS = swish-e
-swish_e_SOURCES = swish.c swish.h  keychar_out.c keychar_out.h dump.c dump.h result_output.c result_output.h
+swish_e_SOURCES = swish.c swish.h swishtypes.h keychar_out.c keychar_out.h dump.c dump.h result_output.c result_output.h
 swish_e_LDADD = libswishindex.la libswish-e.la
 
 EXTRA_PROGRAMS = libtest

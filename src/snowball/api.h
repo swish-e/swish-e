@@ -1,6 +1,6 @@
 #ifndef STEMMER_API_H
 #define STEMMER_API_H 1
-#include "../swishtypes.h"
+#include "swishtypes.h"
 
 typedef unsigned char symbol;
 
